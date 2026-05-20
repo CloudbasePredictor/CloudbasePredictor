@@ -112,7 +112,7 @@
     <string name="help_thermic_title">Thermic forecast help</string>
     <string name="help_thermic_summary">Color shows estimated air updraft in m/s, not glider net climb.</string>
     <string name="help_thermic_model_blocks_info">Colored squares are time-altitude bins; bluer solid colors mean stronger updraft.</string>
-    <string name="help_thermic_cursor_info">Cursor details show time, altitude, lift range, top range, confidence, limiter, cloud layer, and model diagnostics.</string>
+    <string name="help_thermic_cursor_info">Tap a cell for time, altitude, lift range, cloud layer, confidence, and model diagnostics.</string>
     <string name="help_thermic_dashed_lines_title">Lines, bands and diagnostics:</string>
     <string name="help_thermic_dry_top_line">Orange hatch - thermal-top uncertainty</string>
     <string name="help_thermic_cloud_base_line">Blue translucent area - possible cloud layer, not dry lift</string>
@@ -121,32 +121,35 @@
 
     <!-- Help dialog - Skew-T -->
     <string name="help_stuve_title">Skew-T log-P diagram</string>
-    <string name="help_stuve_summary">The Skew-T diagram shows temperature (red) and dewpoint (blue) soundings on a skewed coordinate grid. Tilted isotherms, dry adiabats (green), moist adiabats (dashed teal), and mixing ratio lines (dotted blue) help assess atmospheric stability.</string>
-    <string name="help_stuve_tip_1">Where the temperature line is to the right of the parcel path (dashed), the atmosphere is stable; to the left means instability and convection potential.</string>
-    <string name="help_stuve_tip_2">The temperature-dewpoint gap indicates moisture. CCL marks an approximate cumulus base only when surface heating reaches convective temperature.</string>
-    <string name="help_stuve_tip_3">Dots on the sounding lines mark actual model data levels. Use the time slider to view different hours.</string>
-    <string name="help_stuve_moisture_strip_info">The pale strip on the right marks layers with elevated relative humidity. It starts around 55% RH; stronger shading means higher RH. It is a moisture cue, not cloud base. Use CCL with convective temperature for cumulus-base estimates.</string>
+    <string name="help_stuve_summary">Vertical sounding for one forecast hour. Higher altitude is upward; pressure decreases upward.</string>
+    <string name="help_stuve_lines_title">Lines:</string>
+    <string name="help_stuve_temperature_line">Red - air temperature</string>
+    <string name="help_stuve_dewpoint_line">Blue - dew point</string>
+    <string name="help_stuve_parcel_line">Grey dashed - default parcel path</string>
+    <string name="help_stuve_active_parcel_line">Green - parcel path from your tap or heating change</string>
+    <string name="help_stuve_ccl_line">Brown dashed - estimated cumulus base (CCL)</string>
+    <string name="help_stuve_reference_grid">Pale green, teal, and blue grid lines are dry adiabats, moist adiabats, and mixing-ratio lines. The right strip marks humid layers.</string>
+    <string name="help_stuve_controls_title">Controls:</string>
+    <string name="help_stuve_control_hour">Time slider - switch forecast hour.</string>
+    <string name="help_stuve_control_cursor">Tap or drag the chart - read temperature, dew point, parcel, wind, pressure, and altitude at a level.</string>
+    <string name="help_stuve_control_heating_zoom">Drag the green bottom handle to change parcel start temperature. Pinch to zoom altitude.</string>
 
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Wind forecast help</string>
     <string name="help_wind_summary">Wind speed legend (km/h):</string>
     <string name="help_wind_moisture_title">Moisture cues:</string>
-    <string name="help_wind_ccl_line">Orange CCL line - approximate cumulus-base level when heating is sufficient.</string>
+    <string name="help_wind_ccl_line">Orange CCL line - estimated cumulus base when heating is sufficient.</string>
 
     <!-- Help dialog - Cloud -->
     <string name="help_cloud_title">Cloud forecast help</string>
     <string name="help_cloud_summary">Cloud coverage and solar energy at the ground.</string>
-    <string name="help_cloud_legend_sun">Sun h - direct sun time above the WMO threshold; clouds may still cover the sky.</string>
-    <string name="help_cloud_legend_radiation">W/m² - solar energy reaching the ground; main heating signal for thermals.</string>
-    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low - sky coverage by cloud layer, not cloud thickness.</string>
+    <string name="help_cloud_legend_sun">Sun h - direct sunshine reaching the ground.</string>
+    <string name="help_cloud_legend_radiation">W/m² - solar energy at the ground; the main thermal trigger.</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low - sky coverage by layer, not cloud thickness.</string>
     <string name="help_cloud_legend_rain" formatted="false">Rain - probability and amount.</string>
-    <string name="help_cloud_tip_1">Use cloud mode together with thermic mode to estimate whether lift reaches cloud base or stays blue.</string>
-    <string name="help_cloud_tip_2">Compare altitude bands to spot when cloud development starts climbing higher.</string>
 
     <!-- Help dialog - Status messages -->
     <string name="help_status_no_place">No place is selected yet. Open a point from the map to load forecast context for this screen.</string>
-    <string name="help_status_error">Forecast refresh failed: %1$s</string>
-    <string name="help_status_loading">Forecast data is currently loading for %1$s.</string>
 
     <!-- Help dialog - Model info -->
     <string name="help_model_label">Weather model</string>

@@ -117,18 +117,8 @@ internal fun HelpButtonOverlay(
                                 text = helpContent.summary,
                                 style = MaterialTheme.typography.bodyMedium,
                             )
-                            helpContent.tips.forEach { tip ->
-                                Text(
-                                    text = "\u2022 $tip",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(start = 4.dp),
-                                )
-                            }
-                            Text(
-                                text = stringResource(R.string.help_stuve_moisture_strip_info),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            StuveDiagramLegend()
+                            StuveControlsHelp()
                         }
                         ForecastMode.WIND -> {
                             Text(
@@ -140,6 +130,10 @@ internal fun HelpButtonOverlay(
                             WindMoistureLegend()
                         }
                         ForecastMode.CLOUD -> {
+                            Text(
+                                text = helpContent.summary,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                             CloudForecastLegend()
                         }
                     }
@@ -215,30 +209,22 @@ private fun rememberForecastHelpContent(uiState: ForecastReadyUiState): Forecast
             summary = stringResource(R.string.help_thermic_summary)
                 .replace("m/s", uiState.displayUnits.verticalSpeed.label),
             statusMessage = forecastStatusMessage(uiState),
-            tips = emptyList(),
         )
         ForecastMode.STUVE -> ForecastHelpContent(
             title = stringResource(R.string.help_stuve_title),
             summary = stringResource(R.string.help_stuve_summary),
             statusMessage = forecastStatusMessage(uiState),
-            tips = listOf(
-                stringResource(R.string.help_stuve_tip_1),
-                stringResource(R.string.help_stuve_tip_2),
-                stringResource(R.string.help_stuve_tip_3),
-            ),
         )
         ForecastMode.WIND -> ForecastHelpContent(
             title = stringResource(R.string.help_wind_title),
             summary = stringResource(R.string.help_wind_summary)
                 .replace("km/h", uiState.displayUnits.windSpeed.label),
             statusMessage = forecastStatusMessage(uiState),
-            tips = emptyList(),
         )
         ForecastMode.CLOUD -> ForecastHelpContent(
             title = stringResource(R.string.help_cloud_title),
             summary = stringResource(R.string.help_cloud_summary),
             statusMessage = forecastStatusMessage(uiState),
-            tips = emptyList(),
         )
     }
 }
@@ -277,8 +263,79 @@ private data class ForecastHelpContent(
     val title: String,
     val summary: String,
     val statusMessage: String,
-    val tips: List<String>,
 )
+
+@Composable
+private fun StuveDiagramLegend() {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.help_stuve_lines_title),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        ForecastLineLegendRow(
+            color = Color(0xFFD83A3A),
+            dashOnDp = 0f,
+            dashOffDp = 0f,
+            label = stringResource(R.string.help_stuve_temperature_line),
+        )
+        ForecastLineLegendRow(
+            color = Color(0xFF2E6FB5),
+            dashOnDp = 0f,
+            dashOffDp = 0f,
+            label = stringResource(R.string.help_stuve_dewpoint_line),
+        )
+        ForecastLineLegendRow(
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f),
+            dashOnDp = 8f,
+            dashOffDp = 5f,
+            label = stringResource(R.string.help_stuve_parcel_line),
+        )
+        ForecastLineLegendRow(
+            color = Color(0xFF59A36A),
+            dashOnDp = 10f,
+            dashOffDp = 5f,
+            label = stringResource(R.string.help_stuve_active_parcel_line),
+        )
+        ForecastLineLegendRow(
+            color = Color(0xFFB36A27),
+            dashOnDp = 7f,
+            dashOffDp = 4f,
+            label = stringResource(R.string.help_stuve_ccl_line),
+        )
+        Text(
+            text = stringResource(R.string.help_stuve_reference_grid),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun StuveControlsHelp() {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.help_stuve_controls_title),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = stringResource(R.string.help_stuve_control_hour),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.help_stuve_control_cursor),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.help_stuve_control_heating_zoom),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
 
 // ── Thermic strength legend (0 → 5+ m/s) ────────────────────────────────
 
@@ -290,25 +347,25 @@ private fun ThermicDiagnosticLineLegend() {
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
         )
-        ThermicDiagnosticLineLegendRow(
+        ForecastLineLegendRow(
             color = Color(0xFFE07020),
             dashOnDp = 0f,
             dashOffDp = 0f,
             label = stringResource(R.string.help_thermic_dry_top_line),
         )
-        ThermicDiagnosticLineLegendRow(
+        ForecastLineLegendRow(
             color = Color(0xFF2088E0),
             dashOnDp = 10f,
             dashOffDp = 4f,
             label = stringResource(R.string.help_thermic_cloud_base_line),
         )
-        ThermicDiagnosticLineLegendRow(
+        ForecastLineLegendRow(
             color = Color(0xFFA040C0),
             dashOnDp = 4f,
             dashOffDp = 6f,
             label = stringResource(R.string.help_thermic_moist_top_line),
         )
-        ThermicDiagnosticLineLegendRow(
+        ForecastLineLegendRow(
             color = MaterialTheme.colorScheme.outline,
             dashOnDp = 2f,
             dashOffDp = 6f,
@@ -318,7 +375,7 @@ private fun ThermicDiagnosticLineLegend() {
 }
 
 @Composable
-private fun ThermicDiagnosticLineLegendRow(
+private fun ForecastLineLegendRow(
     color: Color,
     dashOnDp: Float,
     dashOffDp: Float,
