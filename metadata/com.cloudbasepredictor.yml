@@ -13,6 +13,46 @@ RepoType: git
 Repo: https://github.com/CloudbasePredictor/CloudbasePredictor.git
 
 Builds:
+  - versionName: 1.3.0
+    versionCode: 81
+    commit: v1.3.0
+    subdir: app
+    gradle:
+      - yes
+    output: build/outputs/apk/release/CloudbasePredictor_v$$VERSION$$_armeabi-v7a.apk
+    gradleprops:
+      - ABI_FILTERS=armeabi-v7a
+
+  - versionName: 1.3.0
+    versionCode: 82
+    commit: v1.3.0
+    subdir: app
+    gradle:
+      - yes
+    output: build/outputs/apk/release/CloudbasePredictor_v$$VERSION$$_arm64-v8a.apk
+    gradleprops:
+      - ABI_FILTERS=arm64-v8a
+
+  - versionName: 1.3.0
+    versionCode: 83
+    commit: v1.3.0
+    subdir: app
+    gradle:
+      - yes
+    output: build/outputs/apk/release/CloudbasePredictor_v$$VERSION$$_x86.apk
+    gradleprops:
+      - ABI_FILTERS=x86
+
+  - versionName: 1.3.0
+    versionCode: 84
+    commit: v1.3.0
+    subdir: app
+    gradle:
+      - yes
+    output: build/outputs/apk/release/CloudbasePredictor_v$$VERSION$$_x86_64.apk
+    gradleprops:
+      - ABI_FILTERS=x86_64
+
   - versionName: 1.2.0
     versionCode: 71
     commit: v1.2.0
@@ -140,5 +180,5 @@ VercodeOperation:
   - 10 * %c + 2
   - 10 * %c + 3
   - 10 * %c + 4
-CurrentVersion: 1.2.0
-CurrentVersionCode: 74
+CurrentVersion: 1.3.0
+CurrentVersionCode: 84

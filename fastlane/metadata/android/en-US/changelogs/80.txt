@@ -1,0 +1,5 @@
+New in 1.3.0:
+
+- Add favorite place switching directly from the forecast screen.
+- Refine Favorites dialog actions and manual place entry styling.
+- Simplify forecast help text, especially the Skew-T guide.
