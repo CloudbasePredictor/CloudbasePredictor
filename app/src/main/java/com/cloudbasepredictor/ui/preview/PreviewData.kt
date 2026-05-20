@@ -97,6 +97,7 @@ object PreviewData {
         resolvedModel = ForecastModel.ICON_D2,
         forecastUpdatedAtMillis = 1_715_777_600_000L,
         elevationKm = 0.58f, // Interlaken ~580m ASL
+        favoritePlaces = favoritePlaces,
     )
 
     val forecastLoadingUiState = ForecastLoadingUiState(

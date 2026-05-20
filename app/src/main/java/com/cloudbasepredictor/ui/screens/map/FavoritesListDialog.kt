@@ -14,12 +14,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -49,9 +48,7 @@ internal fun FavoritesListDialog(
         },
         text = {
             if (favorites.isEmpty()) {
-                FavoritesEmptyContent(
-                    onAddManualClick = onAddManualClick,
-                )
+                FavoritesEmptyContent()
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -68,18 +65,15 @@ internal fun FavoritesListDialog(
                         )
                         HorizontalDivider()
                     }
-                    item(key = "add_manual_favorite") {
-                        AddManualFavoriteButton(
-                            onClick = onAddManualClick,
-                            modifier = Modifier.padding(top = 12.dp),
-                        )
-                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.action_close))
+            AddManualFavoriteButton(onClick = onAddManualClick)
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
             }
         },
     )
@@ -87,7 +81,6 @@ internal fun FavoritesListDialog(
 
 @Composable
 private fun FavoritesEmptyContent(
-    onAddManualClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -99,7 +92,6 @@ private fun FavoritesEmptyContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        AddManualFavoriteButton(onClick = onAddManualClick)
     }
 }
 
@@ -108,10 +100,9 @@ private fun AddManualFavoriteButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Button(
+    OutlinedButton(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth()
             .testTag(MapTestTags.ADD_MANUAL_FAVORITE_BUTTON)
             .padding(vertical = 4.dp),
     ) {

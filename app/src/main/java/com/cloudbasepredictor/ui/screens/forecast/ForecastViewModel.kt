@@ -462,6 +462,12 @@ class ForecastViewModel @Inject constructor(
         }
     }
 
+    fun selectFavoritePlace(place: SavedPlace) {
+        viewModelScope.launch {
+            placeRepository.selectPlace(place)
+        }
+    }
+
     fun saveFavorite(name: String) {
         val place = uiState.value.selectedPlace ?: return
         viewModelScope.launch {

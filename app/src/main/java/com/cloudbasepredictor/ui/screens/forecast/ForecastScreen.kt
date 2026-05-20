@@ -53,6 +53,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.ui.components.SaveFavoriteDialog
 import com.cloudbasepredictor.ui.preview.PreviewData
@@ -85,6 +86,7 @@ fun ForecastRoute(
         onStuveHourChanged = viewModel::updateStuveHour,
         onSaveFavorite = viewModel::saveFavorite,
         onDeleteFavorite = viewModel::deleteFavorite,
+        onFavoriteSelected = viewModel::selectFavoritePlace,
         onRetryLoad = viewModel::retryLoad,
         onModelSelected = viewModel::selectModel,
         onOpenMap = onOpenMap,
@@ -101,6 +103,7 @@ fun ForecastScreen(
     onStuveHourChanged: (Int) -> Unit = {},
     onSaveFavorite: (String) -> Unit = {},
     onDeleteFavorite: () -> Unit = {},
+    onFavoriteSelected: (SavedPlace) -> Unit = {},
     onRetryLoad: () -> Unit = {},
     onModelSelected: (ForecastModel) -> Unit = {},
     onOpenMap: () -> Unit,
@@ -212,8 +215,11 @@ fun ForecastScreen(
             SaveFavoriteDialog(
                 currentName = if (place?.isFavorite == true) place.name else "",
                 isFavorite = place?.isFavorite == true,
+                favoritePlaces = uiState.favoritePlaces,
+                selectedPlaceId = place?.id,
                 onSave = onSaveFavorite,
                 onDelete = onDeleteFavorite,
+                onFavoriteSelected = onFavoriteSelected,
                 onDismiss = { showFavoriteDialog = false },
             )
         }

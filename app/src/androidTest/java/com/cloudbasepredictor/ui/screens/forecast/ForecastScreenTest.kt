@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -18,6 +19,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.testutil.SimulatedTestData
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.CLOUD_LAYERS_ROW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.CLOUD_RADIATION_ROW
@@ -143,6 +145,45 @@ class ForecastScreenTest {
 
         composeRule.runOnIdle {
             assertEquals(ForecastModel.ICON_D2, selectedModel)
+        }
+    }
+
+    @Test
+    fun forecastScreen_favoriteDialogSelectsFavoritePlace() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val favoritesContentDescription = context.getString(R.string.cd_favorites)
+        val zurichPlace = SavedPlace(
+            id = "favorite-zurich",
+            name = "Zurich",
+            latitude = 47.3769,
+            longitude = 8.5417,
+            isFavorite = true,
+        )
+        val favoritePlaces = listOf(SimulatedTestData.brauneckPlace, zurichPlace)
+        var selectedPlace: SavedPlace? = null
+
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                ForecastScreen(
+                    uiState = SimulatedTestData.forecastUiState(context).copy(
+                        favoritePlaces = favoritePlaces,
+                    ),
+                    onDateSelected = {},
+                    onFavoriteSelected = { selectedPlace = it },
+                    onOpenMap = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(favoritesContentDescription)
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithText(zurichPlace.name)
+            .assertIsDisplayed()
+            .performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(zurichPlace, selectedPlace)
         }
     }
 
