@@ -154,6 +154,8 @@ export KEY_ALIAS=cloudbase
 export KEY_PASSWORD=<password> # same as KEYSTORE_PASSWORD for the PKCS12 command above
 
 ./gradlew :app:assembleRelease
+./gradlew :app:bundleRelease
 ```
 
 The signed universal and ABI APKs will be at `app/build/outputs/apk/release/`.
+The signed AAB will be at `app/build/outputs/bundle/release/CloudbasePredictor_v<versionName>.aab`.

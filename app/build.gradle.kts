@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.tasks.FinalizeBundleTask
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
@@ -7,7 +9,7 @@ plugins {
 }
 
 val requestedTasks = gradle.startParameter.taskNames
-val apkArchiveName = "CloudbasePredictor"
+val releaseArchiveName = "CloudbasePredictor"
 val buildAbiSplitApks = requestedTasks.none { it.contains("bundle", ignoreCase = true) }
 val buildUniversalApk = buildAbiSplitApks && !providers.gradleProperty("ABI_FILTERS").isPresent
 val abiVersionCodeOffsets = linkedMapOf(
@@ -37,6 +39,8 @@ val activeAbiVersionCodeOffsets = if (requestedAbiFilters.isEmpty()) {
     }
 }
 val universalVersionCodeOffset = 0
+fun releaseArtifactFileName(version: String, suffix: String = "", extension: String) =
+    "${releaseArchiveName}_v$version$suffix.$extension"
 
 android {
     namespace = "com.cloudbasepredictor"
@@ -149,9 +153,29 @@ androidComponents {
             output.versionCode.set(baseVersionCode * 10 + versionCodeOffset)
 
             (output as com.android.build.api.variant.impl.VariantOutputImpl).outputFileName.set(
-                "${apkArchiveName}_v${version}${outputSuffix}${buildTypeSuffix}.apk"
+                releaseArtifactFileName(
+                    version = version,
+                    suffix = "$outputSuffix$buildTypeSuffix",
+                    extension = "apk"
+                )
             )
         }
+    }
+}
+
+val releaseVersionName = requireNotNull(android.defaultConfig.versionName) {
+    "versionName must be set to name release bundle outputs"
+}
+val renamedReleaseBundleFileName = releaseArtifactFileName(
+    version = releaseVersionName,
+    extension = "aab"
+)
+
+afterEvaluate {
+    tasks.named<FinalizeBundleTask>("signReleaseBundle") {
+        finalBundleFile.set(
+            layout.buildDirectory.file("outputs/bundle/release/$renamedReleaseBundleFileName")
+        )
     }
 }
 
