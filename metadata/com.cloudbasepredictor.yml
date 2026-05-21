@@ -1,3 +1,12 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: The optional Esri World Imagery map layer uses Esri's proprietary hosted
+      imagery service.
+  TetheredNet:
+    en-US: Forecasts use the fixed Open-Meteo API endpoint. Bundled map layers use
+      fixed hosted services from OpenFreeMap, OpenTopoMap, NASA GIBS, and Esri World
+      Imagery. Users can choose between bundled map layers, but cannot configure
+      alternate service instances.
 Categories:
   - Weather
 License: GPL-3.0-or-later
