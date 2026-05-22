@@ -22,6 +22,7 @@ import com.cloudbasepredictor.model.DailyForecast
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.ForecastSnapshot
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.model.WeatherCode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -171,11 +172,27 @@ class ForecastViewModel @Inject constructor(
     private val errorMessage = MutableStateFlow<String?>(null)
     private var forecastLoadJob: Job? = null
     private var forecastLoadGeneration = 0
+    private val placeLocation = MutableStateFlow<PlaceLocation?>(null)
 
     private val _networkErrorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val networkErrorEvent: SharedFlow<String> = _networkErrorEvent
 
-    private val selectedPlace = placeRepository.selectedPlace
+    private val favoritePlaces = placeRepository.observeFavoritePlaces().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList(),
+    )
+
+    private val selectedPlace: StateFlow<SavedPlace?> = combine(
+        placeLocation,
+        favoritePlaces,
+    ) { location, favorites ->
+        location?.resolveSavedPlace(favorites)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null,
+    )
 
     private val selectedForecast = combine(
         selectedPlace,
@@ -241,7 +258,7 @@ class ForecastViewModel @Inject constructor(
     val uiState: StateFlow<ForecastUiState> = combine(
         uiInputs,
         forecastModelRepository.selectedModel,
-        placeRepository.observeFavoritePlaces(),
+        favoritePlaces,
         mapAndUnitPreferences,
     ) { inputs, currentModel, favorites, preferences ->
         val place = inputs.place
@@ -416,6 +433,10 @@ class ForecastViewModel @Inject constructor(
         }
     }
 
+    fun setPlaceLocation(location: PlaceLocation) {
+        placeLocation.value = location
+    }
+
     fun selectDay(index: Int) {
         selectedDayIndex.value = index
         val place = selectedPlace.value ?: return
@@ -453,25 +474,22 @@ class ForecastViewModel @Inject constructor(
     }
 
     fun updateForecastLocation(latitude: Double, longitude: Double) {
-        val matchingFavorite = uiState.value.favoritePlaces.find { fav ->
-            fav.isNearby(latitude, longitude)
-        }
-        val newPlace = matchingFavorite ?: SavedPlace.fromCoordinates(latitude, longitude)
-        viewModelScope.launch {
-            placeRepository.saveAndSelectPlace(newPlace)
-        }
+        setPlaceLocation(PlaceLocation(latitude = latitude, longitude = longitude))
     }
 
     fun selectFavoritePlace(place: SavedPlace) {
-        viewModelScope.launch {
-            placeRepository.selectPlace(place)
-        }
+        setPlaceLocation(PlaceLocation.fromSavedPlace(place))
     }
 
     fun saveFavorite(name: String) {
         val place = uiState.value.selectedPlace ?: return
         viewModelScope.launch {
-            placeRepository.saveFavorite(place.id, name)
+            placeRepository.saveFavoritePlace(
+                place.copy(
+                    name = name,
+                    isFavorite = true,
+                ),
+            )
         }
     }
 
@@ -605,6 +623,12 @@ private data class MapAndUnitPreferences(
 )
 
 private const val INCOMPLETE_FORECAST_DATA_ERROR = "Forecast data is incomplete."
+
+private fun PlaceLocation.resolveSavedPlace(favoritePlaces: List<SavedPlace>): SavedPlace {
+    return favoritePlaces.find { favorite ->
+        favorite.isNearby(latitude, longitude)
+    } ?: toSavedPlace()
+}
 
 private fun HourlyForecastData.hasRequiredForecastInputs(
     dayIndex: Int,

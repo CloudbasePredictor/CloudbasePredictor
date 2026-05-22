@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.map.MapLayerRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,7 +34,7 @@ data class MapUiState(
 )
 
 sealed interface MapEvent {
-    data object OpenForecast : MapEvent
+    data class OpenForecast(val placeLocation: PlaceLocation) : MapEvent
 }
 
 @HiltViewModel
@@ -89,15 +90,13 @@ class MapViewModel @Inject constructor(
         val place = selectedPlaceDraft.value ?: return
 
         viewModelScope.launch {
-            placeRepository.saveAndSelectPlace(place)
-            mutableEvents.emit(MapEvent.OpenForecast)
+            mutableEvents.emit(MapEvent.OpenForecast(PlaceLocation.fromSavedPlace(place)))
         }
     }
 
     fun openForecastForPlace(place: SavedPlace) {
         viewModelScope.launch {
-            placeRepository.selectPlace(place)
-            mutableEvents.emit(MapEvent.OpenForecast)
+            mutableEvents.emit(MapEvent.OpenForecast(PlaceLocation.fromSavedPlace(place)))
         }
     }
 

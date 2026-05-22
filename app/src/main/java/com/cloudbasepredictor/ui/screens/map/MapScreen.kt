@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.BuildConfig
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapAttributionOverlay
 import com.cloudbasepredictor.ui.components.MapFavoriteLabelsOverlay
@@ -114,7 +115,7 @@ private val LOCATION_PERMISSIONS = arrayOf(
 
 @Composable
 fun MapRoute(
-    onOpenForecast: () -> Unit,
+    onOpenForecast: (PlaceLocation) -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
 ) {
@@ -122,8 +123,8 @@ fun MapRoute(
 
     LaunchedEffect(viewModel) {
         viewModel.events.collectLatest { event ->
-            if (event == MapEvent.OpenForecast) {
-                onOpenForecast()
+            when (event) {
+                is MapEvent.OpenForecast -> onOpenForecast(event.placeLocation)
             }
         }
     }

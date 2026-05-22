@@ -19,6 +19,7 @@ import com.cloudbasepredictor.data.units.resolveDisplayUnits
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.ForecastSnapshot
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -60,6 +61,7 @@ class ForecastViewModelTest {
 
         instrumentation.runOnMainSync {
             viewModel = createForecastViewModel(forecastRepository)
+            viewModel.setPlaceLocation(PlaceLocation(47.7181, 12.5497))
             eventCollectionJob = CoroutineScope(Dispatchers.Main.immediate).launch {
                 viewModel.networkErrorEvent.collect {
                     networkErrorReceived.countDown()

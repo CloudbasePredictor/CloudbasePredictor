@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cloudbasepredictor.model.ForecastMode
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.testutil.SimulatedTestData
 import com.cloudbasepredictor.ui.CloudbasePredictorApp
@@ -69,7 +70,7 @@ class ForecastAppFlowInstrumentedTest {
                                 onOpenForecast = onOpenForecast,
                             )
                         },
-                        forecastDestination = { onOpenMap ->
+                        forecastDestination = { _, onOpenMap, _ ->
                             val context = composeRule.activity
                             ForecastScreen(
                                 uiState = SimulatedTestData.forecastUiState(context, mode = selectedMode).copy(
@@ -176,7 +177,7 @@ class ForecastAppFlowInstrumentedTest {
 private fun TestMapDestination(
     selectedPlace: SavedPlace?,
     onSelectLocation: () -> Unit,
-    onOpenForecast: () -> Unit,
+    onOpenForecast: (PlaceLocation) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -192,7 +193,11 @@ private fun TestMapDestination(
             Text(text = "Select Brauneck")
         }
         Button(
-            onClick = onOpenForecast,
+            onClick = {
+                selectedPlace?.let { place ->
+                    onOpenForecast(PlaceLocation.fromSavedPlace(place))
+                }
+            },
             enabled = selectedPlace != null,
         ) {
             Text(text = "Open forecast")

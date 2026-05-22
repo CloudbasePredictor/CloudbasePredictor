@@ -51,10 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cloudbasepredictor.R
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
-import com.cloudbasepredictor.R
 import com.cloudbasepredictor.ui.components.SaveFavoriteDialog
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView
@@ -66,11 +67,17 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ForecastRoute(
+    placeLocation: PlaceLocation,
     onOpenMap: () -> Unit,
+    onPlaceLocationChanged: (PlaceLocation) -> Unit,
     viewModel: ForecastViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    LaunchedEffect(viewModel, placeLocation) {
+        viewModel.setPlaceLocation(placeLocation)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.networkErrorEvent.collectLatest { errorMsg ->
@@ -86,11 +93,20 @@ fun ForecastRoute(
         onStuveHourChanged = viewModel::updateStuveHour,
         onSaveFavorite = viewModel::saveFavorite,
         onDeleteFavorite = viewModel::deleteFavorite,
-        onFavoriteSelected = viewModel::selectFavoritePlace,
+        onFavoriteSelected = { place ->
+            onPlaceLocationChanged(PlaceLocation.fromSavedPlace(place))
+        },
         onRetryLoad = viewModel::retryLoad,
         onModelSelected = viewModel::selectModel,
         onOpenMap = onOpenMap,
-        onMapLocationChanged = viewModel::updateForecastLocation,
+        onMapLocationChanged = { latitude, longitude ->
+            onPlaceLocationChanged(
+                PlaceLocation(
+                    latitude = latitude,
+                    longitude = longitude,
+                ),
+            )
+        },
     )
 }
 
@@ -145,16 +161,10 @@ fun ForecastScreen(
                 val forecastContentHeight = (maxHeight - mapPanelHeightDp).coerceAtLeast(0.dp)
 
                 when (uiState) {
-                    is ForecastLoadingUiState -> {
+                    is ForecastLoadingUiState,
+                    is ForecastNoPlaceUiState -> {
                         ForecastLoadingContent(
                             placeName = uiState.selectedPlace?.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(forecastContentHeight),
-                        )
-                    }
-                    is ForecastNoPlaceUiState -> {
-                        ForecastNoPlaceContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(forecastContentHeight),
@@ -223,24 +233,6 @@ fun ForecastScreen(
                 onDismiss = { showFavoriteDialog = false },
             )
         }
-    }
-}
-
-@Composable
-private fun ForecastNoPlaceContent(
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.forecast_select_place),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
     }
 }
 

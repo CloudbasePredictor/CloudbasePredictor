@@ -15,7 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+
+private const val FORECAST_ROUTE_BASE_VALUE = "forecast"
+private const val FORECAST_PLACE_LOCATION_ARGUMENT_VALUE = "placeLocation"
 
 enum class TopLevelDestination(
     val route: String,
@@ -28,7 +32,7 @@ enum class TopLevelDestination(
         iconVector = Icons.Outlined.Map,
     ),
     Forecast(
-        route = "forecast",
+        route = "$FORECAST_ROUTE_BASE_VALUE/{$FORECAST_PLACE_LOCATION_ARGUMENT_VALUE}",
         label = "Forecast",
         iconVector = Icons.Outlined.WbCloudy,
     ),
@@ -50,6 +54,16 @@ enum class TopLevelDestination(
             imageVector = iconVector,
             contentDescription = label,
         )
+    }
+
+    companion object {
+        const val FORECAST_ROUTE_BASE = "forecast"
+        const val FORECAST_PLACE_LOCATION_ARGUMENT = "placeLocation"
+        const val LEGACY_FORECAST_ROUTE = FORECAST_ROUTE_BASE
+
+        fun forecastRoute(placeLocation: PlaceLocation): String {
+            return "$FORECAST_ROUTE_BASE/${placeLocation.toRouteValue()}"
+        }
     }
 }
 

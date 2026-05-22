@@ -76,7 +76,7 @@
     <string name="title_forecast">Forecast</string>
     <string name="loading_forecast_for_place">Loading forecast for %1$s…</string>
     <string name="loading_forecast">Loading forecast…</string>
-    <string name="forecast_select_place">Select a point on the map to load the forecast.</string>
+    <string name="forecast_location_restore_failed">Forecast location could not be restored. Returning to map.</string>
 
     <!-- Forecast information messages -->
     <string name="forecast_no_thermals">Unfortunately, no thermals are expected.</string>

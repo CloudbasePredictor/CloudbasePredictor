@@ -7,8 +7,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cloudbasepredictor.data.place.PlaceRepository
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.screens.forecast.ForecastRoute
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.MODEL_OPTION_PREFIX
@@ -17,8 +17,6 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import javax.inject.Inject
-import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -42,9 +40,6 @@ class ForecastModelE2eTest {
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<HiltTestActivity>()
 
-    @Inject
-    lateinit var placeRepository: PlaceRepository
-
     /** Innsbruck, Austria — Central Europe, covered by ICON D2 and AROME fallback chain. */
     private val testPlace = SavedPlace(
         id = "e2e_innsbruck",
@@ -59,12 +54,13 @@ class ForecastModelE2eTest {
     @Before
     fun setUp() {
         hiltRule.inject()
-        runBlocking {
-            placeRepository.selectPlace(testPlace)
-        }
         composeRule.setContent {
             CloudbasePredictorTheme {
-                ForecastRoute(onOpenMap = {})
+                ForecastRoute(
+                    placeLocation = PlaceLocation.fromSavedPlace(testPlace),
+                    onOpenMap = {},
+                    onPlaceLocationChanged = {},
+                )
             }
         }
     }
