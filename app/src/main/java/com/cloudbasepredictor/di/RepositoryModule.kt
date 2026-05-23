@@ -10,6 +10,10 @@ import com.cloudbasepredictor.data.forecast.InMemoryForecastRepository
 import com.cloudbasepredictor.data.forecast.InMemoryForecastModeRepository
 import com.cloudbasepredictor.data.forecast.InMemoryForecastModelRepository
 import com.cloudbasepredictor.data.forecast.SharedPrefsForecastViewportRepository
+import com.cloudbasepredictor.data.launch.DefaultLaunchSiteRepository
+import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
+import com.cloudbasepredictor.data.launch.LaunchSiteRepository
+import com.cloudbasepredictor.data.launch.SharedPrefsLaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.map.MapLayerRepository
 import com.cloudbasepredictor.data.map.SharedPrefsMapLayerRepository
 import com.cloudbasepredictor.data.place.DefaultPlaceRepository
@@ -80,4 +84,16 @@ abstract class RepositoryModule {
     abstract fun bindMapLayerRepository(
         repository: SharedPrefsMapLayerRepository,
     ): MapLayerRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLaunchSiteRepository(
+        repository: DefaultLaunchSiteRepository,
+    ): LaunchSiteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLaunchSiteDisplayRepository(
+        repository: SharedPrefsLaunchSiteDisplayRepository,
+    ): LaunchSiteDisplayRepository
 }

@@ -7,6 +7,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.cloudbasepredictor.data.local.AppDatabase
 import com.cloudbasepredictor.data.local.ForecastCacheDao
+import com.cloudbasepredictor.data.local.LaunchSiteCacheDao
+import com.cloudbasepredictor.data.local.MIGRATION_1_2
 import com.cloudbasepredictor.data.local.SavedPlaceDao
 import com.cloudbasepredictor.data.place.FavoritePlacesBackupContract
 import dagger.Module
@@ -44,6 +46,7 @@ object DatabaseModule {
             "cloudbase_predictor.db",
         )
             .openHelperFactory(factory)
+            .addMigrations(MIGRATION_1_2)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
@@ -57,6 +60,11 @@ object DatabaseModule {
     fun provideForecastCacheDao(
         appDatabase: AppDatabase,
     ): ForecastCacheDao = appDatabase.forecastCacheDao()
+
+    @Provides
+    fun provideLaunchSiteCacheDao(
+        appDatabase: AppDatabase,
+    ): LaunchSiteCacheDao = appDatabase.launchSiteCacheDao()
 
     @Provides
     @Singleton

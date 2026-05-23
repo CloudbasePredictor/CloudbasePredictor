@@ -3,6 +3,7 @@ package com.cloudbasepredictor.ui.screens.settings
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
 import com.cloudbasepredictor.data.datasource.InMemoryDataSourceRepository
 import com.cloudbasepredictor.data.forecast.ForecastRepository
+import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.theme.InMemoryThemeRepository
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
@@ -26,7 +27,13 @@ class SettingsViewModelTest {
     fun switchingDataSource_samePreference_noCacheClear() {
         val dataSourceRepo = InMemoryDataSourceRepository()
         val forecastRepo = FakeForecastRepository()
-        val vm = SettingsViewModel(dataSourceRepo, InMemoryThemeRepository(), FakeUnitSettingsRepository(), forecastRepo)
+        val vm = SettingsViewModel(
+            dataSourceRepo,
+            InMemoryThemeRepository(),
+            FakeUnitSettingsRepository(),
+            FakeLaunchSiteDisplayRepository(),
+            forecastRepo,
+        )
 
         // Default is REAL; setting REAL again should not clear caches
         vm.setDataSource(DataSourcePreference.REAL)
@@ -65,12 +72,31 @@ class SettingsViewModelTest {
             InMemoryDataSourceRepository(),
             InMemoryThemeRepository(),
             unitRepo,
+            FakeLaunchSiteDisplayRepository(),
             forecastRepo,
         )
 
         vm.setUnitPreset(UnitPreset.IMPERIAL)
 
         assertEquals(UnitPreset.IMPERIAL, vm.unitPreset.value)
+        assertEquals(0, forecastRepo.clearAllCachesCallCount)
+    }
+
+    @Test
+    fun showLaunchSites_updatesWithoutClearingForecastCaches() {
+        val launchSiteDisplayRepo = FakeLaunchSiteDisplayRepository()
+        val forecastRepo = FakeForecastRepository()
+        val vm = SettingsViewModel(
+            InMemoryDataSourceRepository(),
+            InMemoryThemeRepository(),
+            FakeUnitSettingsRepository(),
+            launchSiteDisplayRepo,
+            forecastRepo,
+        )
+
+        vm.setShowLaunchSites(false)
+
+        assertEquals(false, vm.showLaunchSites.value)
         assertEquals(0, forecastRepo.clearAllCachesCallCount)
     }
 
@@ -112,6 +138,16 @@ class SettingsViewModelTest {
         override fun setUnitPreset(unitPreset: UnitPreset) {
             mutableUnitPreset.value = unitPreset
             mutableDisplayUnits.value = unitPreset.resolveDisplayUnits()
+        }
+    }
+
+    private class FakeLaunchSiteDisplayRepository : LaunchSiteDisplayRepository {
+        private val mutableShowLaunchSites = MutableStateFlow(true)
+
+        override val showLaunchSites: StateFlow<Boolean> = mutableShowLaunchSites.asStateFlow()
+
+        override fun setShowLaunchSites(showLaunchSites: Boolean) {
+            mutableShowLaunchSites.value = showLaunchSites
         }
     }
 }

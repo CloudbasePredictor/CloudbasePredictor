@@ -1,0 +1,320 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "a457c530bd8a84fa0f18aca98ae48331",
+    "entities": [
+      {
+        "tableName": "saved_places",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `isFavorite` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "forecast_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`placeId` TEXT NOT NULL, `modelApiName` TEXT NOT NULL, `resolvedModelApiName` TEXT NOT NULL, `forecastDays` INTEGER NOT NULL, `hourlyDataJson` TEXT NOT NULL, `fetchedAtMillis` INTEGER NOT NULL, `nextExpectedUpdateMillis` INTEGER NOT NULL, PRIMARY KEY(`placeId`, `modelApiName`))",
+        "fields": [
+          {
+            "fieldPath": "placeId",
+            "columnName": "placeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelApiName",
+            "columnName": "modelApiName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolvedModelApiName",
+            "columnName": "resolvedModelApiName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "forecastDays",
+            "columnName": "forecastDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hourlyDataJson",
+            "columnName": "hourlyDataJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtMillis",
+            "columnName": "fetchedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextExpectedUpdateMillis",
+            "columnName": "nextExpectedUpdateMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "placeId",
+            "modelApiName"
+          ]
+        }
+      },
+      {
+        "tableName": "paragliding_launch_sites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `altitudeMeters` INTEGER, `countryCode` TEXT, `description` TEXT, `flightRules` TEXT, `access` TEXT, `comments` TEXT, `weather` TEXT, `lastEdit` TEXT, `link` TEXT, `orientationsJson` TEXT NOT NULL, `activitiesJson` TEXT NOT NULL, `landingName` TEXT, `landingLatitude` REAL, `landingLongitude` REAL, `fetchedAtMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "altitudeMeters",
+            "columnName": "altitudeMeters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "countryCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "flightRules",
+            "columnName": "flightRules",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "access",
+            "columnName": "access",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "comments",
+            "columnName": "comments",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "weather",
+            "columnName": "weather",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastEdit",
+            "columnName": "lastEdit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orientationsJson",
+            "columnName": "orientationsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activitiesJson",
+            "columnName": "activitiesJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "landingName",
+            "columnName": "landingName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "landingLatitude",
+            "columnName": "landingLatitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "landingLongitude",
+            "columnName": "landingLongitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "fetchedAtMillis",
+            "columnName": "fetchedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_paragliding_launch_sites_latitude_longitude",
+            "unique": false,
+            "columnNames": [
+              "latitude",
+              "longitude"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_paragliding_launch_sites_latitude_longitude` ON `${TABLE_NAME}` (`latitude`, `longitude`)"
+          }
+        ]
+      },
+      {
+        "tableName": "paragliding_launch_bounds_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`boundsKey` TEXT NOT NULL, `south` REAL NOT NULL, `west` REAL NOT NULL, `north` REAL NOT NULL, `east` REAL NOT NULL, `fetchedAtMillis` INTEGER NOT NULL, PRIMARY KEY(`boundsKey`))",
+        "fields": [
+          {
+            "fieldPath": "boundsKey",
+            "columnName": "boundsKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "south",
+            "columnName": "south",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "west",
+            "columnName": "west",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "north",
+            "columnName": "north",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "east",
+            "columnName": "east",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtMillis",
+            "columnName": "fetchedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "boundsKey"
+          ]
+        }
+      },
+      {
+        "tableName": "paragliding_launch_bounds_sites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`boundsKey` TEXT NOT NULL, `siteId` TEXT NOT NULL, PRIMARY KEY(`boundsKey`, `siteId`))",
+        "fields": [
+          {
+            "fieldPath": "boundsKey",
+            "columnName": "boundsKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "siteId",
+            "columnName": "siteId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "boundsKey",
+            "siteId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_paragliding_launch_bounds_sites_siteId",
+            "unique": false,
+            "columnNames": [
+              "siteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_paragliding_launch_bounds_sites_siteId` ON `${TABLE_NAME}` (`siteId`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a457c530bd8a84fa0f18aca98ae48331')"
+    ]
+  }
+}

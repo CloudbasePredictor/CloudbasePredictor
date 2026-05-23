@@ -17,9 +17,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 private const val FORECAST_ROUTE_BASE_VALUE = "forecast"
 private const val FORECAST_PLACE_LOCATION_ARGUMENT_VALUE = "placeLocation"
+private const val FORECAST_PLACE_NAME_ARGUMENT_VALUE = "placeName"
 
 enum class TopLevelDestination(
     val route: String,
@@ -32,7 +35,8 @@ enum class TopLevelDestination(
         iconVector = Icons.Outlined.Map,
     ),
     Forecast(
-        route = "$FORECAST_ROUTE_BASE_VALUE/{$FORECAST_PLACE_LOCATION_ARGUMENT_VALUE}",
+        route = "$FORECAST_ROUTE_BASE_VALUE/{$FORECAST_PLACE_LOCATION_ARGUMENT_VALUE}" +
+            "?$FORECAST_PLACE_NAME_ARGUMENT_VALUE={$FORECAST_PLACE_NAME_ARGUMENT_VALUE}",
         label = "Forecast",
         iconVector = Icons.Outlined.WbCloudy,
     ),
@@ -59,12 +63,20 @@ enum class TopLevelDestination(
     companion object {
         const val FORECAST_ROUTE_BASE = "forecast"
         const val FORECAST_PLACE_LOCATION_ARGUMENT = "placeLocation"
+        const val FORECAST_PLACE_NAME_ARGUMENT = "placeName"
         const val LEGACY_FORECAST_ROUTE = FORECAST_ROUTE_BASE
 
         fun forecastRoute(placeLocation: PlaceLocation): String {
-            return "$FORECAST_ROUTE_BASE/${placeLocation.toRouteValue()}"
+            val baseRoute = "$FORECAST_ROUTE_BASE/${placeLocation.toRouteValue()}"
+            val placeName = placeLocation.name?.trim()?.takeIf { it.isNotEmpty() } ?: return baseRoute
+            return "$baseRoute?$FORECAST_PLACE_NAME_ARGUMENT=${placeName.encodeRouteQueryValue()}"
         }
     }
+}
+
+private fun String.encodeRouteQueryValue(): String {
+    return URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+        .replace("+", "%20")
 }
 
 @Preview(showBackground = true)

@@ -40,4 +40,16 @@ class PlaceLocationTest {
         assertEquals("place:46.5582:7.8354", place.id)
         assertEquals("46.5582, 7.8354", place.name)
     }
+
+    @Test
+    fun toSavedPlace_usesOptionalRouteNameWhenPresent() {
+        val place = PlaceLocation(
+            latitude = 45.3069,
+            longitude = 5.88806,
+            name = "Saint Hilaire du Touvet",
+        ).toSavedPlace()
+
+        assertEquals("place:45.3069:5.8881", place.id)
+        assertEquals("Saint Hilaire du Touvet", place.name)
+    }
 }

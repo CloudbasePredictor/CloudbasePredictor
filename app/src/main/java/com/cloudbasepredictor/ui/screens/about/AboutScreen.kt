@@ -38,6 +38,7 @@ import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 
 private const val SOURCE_CODE_URL = "https://github.com/CloudbasePredictor/CloudbasePredictor"
 private const val OPEN_METEO_URL = "https://open-meteo.com"
+private const val PARAGLIDINGEARTH_URL = "https://paragliding.earth"
 private const val OPENFREEMAP_URL = "https://openfreemap.org"
 private const val OPENTOPOMAP_URL = "https://opentopomap.org/about"
 private const val OPENMAPTILES_URL = "https://openmaptiles.org"
@@ -146,6 +147,21 @@ fun AboutScreen(
                                 title = stringResource(R.string.about_open_meteo),
                                 url = OPEN_METEO_URL,
                             ),
+                            linkColor = linkColor,
+                            onOpenUrl = ::openUrl,
+                        )
+                    },
+                )
+
+                DataSourceGroup(
+                    label = stringResource(R.string.about_launch_sites_label),
+                    content = {
+                        ProviderBlock(
+                            primaryLink = DataSourceLink(
+                                title = stringResource(R.string.about_paraglidingearth),
+                                url = PARAGLIDINGEARTH_URL,
+                            ),
+                            detail = stringResource(R.string.about_paraglidingearth_detail),
                             linkColor = linkColor,
                             onOpenUrl = ::openUrl,
                         )

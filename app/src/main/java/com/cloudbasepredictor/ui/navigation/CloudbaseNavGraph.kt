@@ -30,6 +30,8 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastRoute
 import com.cloudbasepredictor.ui.screens.map.MapRoute
 import com.cloudbasepredictor.ui.screens.settings.SettingsRoute
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import timber.log.Timber
 
 private const val NAV_ANIM_DURATION = 300
@@ -80,6 +82,11 @@ fun CloudbaseNavGraph(
             arguments = listOf(
                 navArgument(TopLevelDestination.FORECAST_PLACE_LOCATION_ARGUMENT) {
                     type = NavType.StringType
+                },
+                navArgument(TopLevelDestination.FORECAST_PLACE_NAME_ARGUMENT) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 },
             ),
             enterTransition = {
@@ -194,9 +201,22 @@ private fun InvalidForecastDestination(
 }
 
 private fun NavBackStackEntry.placeLocationArgument(): PlaceLocation? {
-    return arguments
+    val location = arguments
         ?.getString(TopLevelDestination.FORECAST_PLACE_LOCATION_ARGUMENT)
         ?.let(PlaceLocation::fromRouteValue)
+        ?: return null
+    val placeName = arguments
+        ?.getString(TopLevelDestination.FORECAST_PLACE_NAME_ARGUMENT)
+        ?.decodeRouteQueryValue()
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+    return location.copy(name = placeName)
+}
+
+private fun String.decodeRouteQueryValue(): String {
+    return runCatching {
+        URLDecoder.decode(this, StandardCharsets.UTF_8.toString())
+    }.getOrDefault(this)
 }
 
 private fun NavHostController.openMapDestination() {

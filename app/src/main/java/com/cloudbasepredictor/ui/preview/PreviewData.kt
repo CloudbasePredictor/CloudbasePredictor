@@ -4,6 +4,8 @@ import com.cloudbasepredictor.model.DailyForecast
 import com.cloudbasepredictor.model.ForecastSnapshot
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.model.LaunchSiteOrientation
+import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
 import com.cloudbasepredictor.data.theme.ThemePreference
@@ -30,6 +32,7 @@ object PreviewData {
     val settingsMetricMpsUnits = UnitPreset.METRIC_MPS
     val settingsImperialUnits = UnitPreset.IMPERIAL
     val settingsAviationUnits = UnitPreset.AVIATION
+    val settingsShowLaunchSites = true
 
     val savedPlace = SavedPlace(
         id = "place:46.5582:7.8354",
@@ -59,6 +62,28 @@ object PreviewData {
 
     val manualFavoriteName = "Brauneck South"
     val manualFavoriteCoordinates = "47.6468, 11.5216"
+
+    val paraglidingLaunchSite = ParaglidingLaunchSite(
+        id = "6176",
+        name = "Saint Hilaire du Touvet",
+        latitude = 45.3069,
+        longitude = 5.88806,
+        altitudeMeters = 906,
+        countryCode = "fr",
+        description = "Large grassy launch near the village and funicular station.",
+        weather = "Be careful with strong south wind.",
+        lastEdit = "2021-04-15",
+        link = "https://www.paraglidingearth.com/?site=6176",
+        orientations = listOf(
+            LaunchSiteOrientation(direction = "N", rating = 1),
+            LaunchSiteOrientation(direction = "E", rating = 2),
+            LaunchSiteOrientation(direction = "S", rating = 1),
+        ),
+        activities = listOf("Paragliding", "Hang gliding", "Thermals", "XC"),
+        landingName = "Lumbin",
+        landingLatitude = 45.302,
+        landingLongitude = 5.90612,
+    )
 
     val dailyForecasts: List<DailyForecast> = List(7) { index ->
         DailyForecast(
@@ -143,6 +168,7 @@ object PreviewData {
     val mapUiState = MapUiState(
         selectedPlace = savedPlace,
         favoritePlaces = favoritePlaces,
+        launchSites = listOf(paraglidingLaunchSite),
     )
 
     private fun dateOffsetByDays(days: Int): String {

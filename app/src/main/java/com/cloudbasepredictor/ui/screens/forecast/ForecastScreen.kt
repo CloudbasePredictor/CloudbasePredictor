@@ -223,7 +223,7 @@ fun ForecastScreen(
         if (showFavoriteDialog) {
             val place = uiState.selectedPlace
             SaveFavoriteDialog(
-                currentName = if (place?.isFavorite == true) place.name else "",
+                currentName = favoriteDialogInitialName(place),
                 isFavorite = place?.isFavorite == true,
                 favoritePlaces = uiState.favoritePlaces,
                 selectedPlaceId = place?.id,
@@ -358,6 +358,17 @@ private fun ForecastReadyContent(
         )
 
     }
+}
+
+internal fun favoriteDialogInitialName(place: SavedPlace?): String {
+    if (place == null) return ""
+    if (place.isFavorite) return place.name
+
+    val coordinateName = SavedPlace.fromCoordinates(
+        latitude = place.latitude,
+        longitude = place.longitude,
+    ).name
+    return place.name.takeUnless { it == coordinateName }.orEmpty()
 }
 
 @Preview(showBackground = true)

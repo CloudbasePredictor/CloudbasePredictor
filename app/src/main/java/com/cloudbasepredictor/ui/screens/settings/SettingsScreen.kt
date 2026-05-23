@@ -26,6 +26,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ fun SettingsRoute(
     val dataSource by viewModel.dataSourcePreference.collectAsStateWithLifecycle()
     val theme by viewModel.themePreference.collectAsStateWithLifecycle()
     val unitPreset by viewModel.unitPreset.collectAsStateWithLifecycle()
+    val showLaunchSites by viewModel.showLaunchSites.collectAsStateWithLifecycle()
 
     SettingsScreen(
         dataSource = dataSource,
@@ -63,6 +65,8 @@ fun SettingsRoute(
         onThemeChanged = viewModel::setTheme,
         unitPreset = unitPreset,
         onUnitPresetChanged = viewModel::setUnitPreset,
+        showLaunchSites = showLaunchSites,
+        onShowLaunchSitesChanged = viewModel::setShowLaunchSites,
         onBack = onBack,
         onOpenAbout = onOpenAbout,
     )
@@ -77,6 +81,8 @@ fun SettingsScreen(
     onThemeChanged: (ThemePreference) -> Unit,
     unitPreset: UnitPreset,
     onUnitPresetChanged: (UnitPreset) -> Unit,
+    showLaunchSites: Boolean,
+    onShowLaunchSitesChanged: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -249,6 +255,28 @@ fun SettingsScreen(
                     }
                 }
 
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_map),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_show_launch_sites),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = showLaunchSites,
+                            onCheckedChange = onShowLaunchSitesChanged,
+                        )
+                    }
+                }
+
                 // About button
                 OutlinedButton(onClick = onOpenAbout) {
                     Icon(
@@ -274,6 +302,8 @@ private fun SettingsScreenPreview() {
             onThemeChanged = {},
             unitPreset = PreviewData.settingsMetricMpsUnits,
             onUnitPresetChanged = {},
+            showLaunchSites = PreviewData.settingsShowLaunchSites,
+            onShowLaunchSitesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )
@@ -291,6 +321,8 @@ private fun SettingsScreenRealPreview() {
             onThemeChanged = {},
             unitPreset = PreviewData.settingsImperialUnits,
             onUnitPresetChanged = {},
+            showLaunchSites = PreviewData.settingsShowLaunchSites,
+            onShowLaunchSitesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )
@@ -311,6 +343,8 @@ private fun SettingsScreenDarkPreview() {
             onThemeChanged = {},
             unitPreset = PreviewData.settingsAviationUnits,
             onUnitPresetChanged = {},
+            showLaunchSites = false,
+            onShowLaunchSitesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )

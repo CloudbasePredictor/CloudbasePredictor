@@ -20,6 +20,8 @@
     <string name="cd_reset_north">Reset north</string>
     <string name="cd_open_map">Open map</string>
     <string name="cd_open_forecast_help">Open forecast help</string>
+    <string name="cd_favorite_marker">Favorite %1$s</string>
+    <string name="cd_launch_site_marker">Launch site %1$s</string>
     <string name="cd_selected">Selected</string>
     <string name="cd_mode_stuve">Stuve</string>
     <string name="cd_mode_wind">Wind</string>
@@ -49,6 +51,8 @@
     <string name="title_settings">Settings</string>
     <string name="settings_data_source">Data source</string>
     <string name="settings_units">Units</string>
+    <string name="settings_map">Map</string>
+    <string name="settings_show_launch_sites">Show launch sites</string>
 
     <!-- About -->
     <string name="title_about">About</string>
@@ -59,6 +63,9 @@
     <string name="about_data_sources">Data sources</string>
     <string name="about_forecast_data_label">Forecast data</string>
     <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">Launch sites</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">Launch site data is provided by ParaglidingEarth and licensed under Creative Commons Attribution-ShareAlike 3.0.</string>
     <string name="about_map_services_label">Map services and imagery</string>
     <string name="about_openfreemap">OpenFreeMap</string>
     <string name="about_opentopomap">OpenTopoMap</string>
@@ -103,10 +110,19 @@
     <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
     <string name="map_attribution_esri_world_imagery_compact">Powered by Esri · Sources</string>
     <string name="map_attribution_esri_world_imagery_full">Sources: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © OpenStreetMap contributors, TomTom, Garmin, FAO, NOAA, and the GIS User Community</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">Launch site data: © ParaglidingEarth contributors, licensed under Creative Commons Attribution-ShareAlike 3.0.</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
     <string name="map_attribution_title">Map attribution</string>
     <string name="map_attribution_full">© OpenFreeMap © OpenMapTiles Data from OpenStreetMap contributors</string>
     <string name="map_waiting_for_location">Waiting for device location…</string>
     <string name="map_location_permission_denied">Location permission is needed to center the map on your position.</string>
+    <string name="map_launch_site_source">ParaglidingEarth launch</string>
+    <string name="map_launch_site_altitude_format">Altitude %1$d m</string>
+    <string name="map_launch_site_wind_format">Wind: %1$s</string>
+    <string name="map_launch_site_activity_format">Suitable for: %1$s</string>
+    <string name="map_launch_site_landing_format">Landing: %1$s</string>
+    <string name="map_launch_site_data_attribution">Data: ParaglidingEarth (CC BY-SA 3.0)</string>
 
     <!-- Help dialog - Thermic -->
     <string name="help_thermic_title">Thermic forecast help</string>

@@ -5,16 +5,23 @@ import java.util.Locale
 data class PlaceLocation(
     val latitude: Double,
     val longitude: Double,
+    val name: String? = null,
 ) {
     fun toRouteValue(): String {
         return String.format(Locale.US, ROUTE_VALUE_FORMAT, latitude, longitude)
     }
 
     fun toSavedPlace(): SavedPlace {
-        return SavedPlace.fromCoordinates(
+        val coordinatePlace = SavedPlace.fromCoordinates(
             latitude = latitude,
             longitude = longitude,
         )
+        val routeName = name?.trim()?.takeIf { it.isNotEmpty() }
+        return if (routeName != null) {
+            coordinatePlace.copy(name = routeName)
+        } else {
+            coordinatePlace
+        }
     }
 
     companion object {

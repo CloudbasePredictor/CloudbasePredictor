@@ -647,6 +647,8 @@ private data class ForecastLoadTarget(
 private const val INCOMPLETE_FORECAST_DATA_ERROR = "Forecast data is incomplete."
 
 private fun PlaceLocation.resolveSavedPlace(favoritePlaces: List<SavedPlace>): SavedPlace {
+    if (!name.isNullOrBlank()) return toSavedPlace()
+
     return favoritePlaces.find { favorite ->
         favorite.isNearby(latitude, longitude)
     } ?: toSavedPlace()
