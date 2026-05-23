@@ -1,7 +1,9 @@
 package com.cloudbasepredictor
 
 import android.app.Application
+import android.os.Build
 import com.cloudbasepredictor.data.forecast.ForecastRepository
+import com.cloudbasepredictor.di.cloudbasePredictorUserAgentInterceptor
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -10,7 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.Dispatcher
+import okhttp3.OkHttpClient
 import org.maplibre.android.MapLibre
+import org.maplibre.android.module.http.HttpRequestUtil
 import timber.log.Timber
 
 @HiltAndroidApp
@@ -27,6 +32,8 @@ class CloudbasePredictorApplication : Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+
+        configureMapLibreHttpClient()
 
         // Enable MapLibre ambient tile cache (200 MB).
         MapLibre.getInstance(this)
@@ -53,6 +60,25 @@ class CloudbasePredictorApplication : Application() {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Forecast cleanup failed")
+            }
+        }
+    }
+
+    private fun configureMapLibreHttpClient() {
+        HttpRequestUtil.setOkHttpClient(
+            OkHttpClient.Builder()
+                .dispatcher(mapLibreDispatcher())
+                .addInterceptor(cloudbasePredictorUserAgentInterceptor())
+                .build()
+        )
+    }
+
+    private fun mapLibreDispatcher(): Dispatcher {
+        return Dispatcher().apply {
+            maxRequestsPerHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                20
+            } else {
+                10
             }
         }
     }

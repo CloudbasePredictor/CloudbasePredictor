@@ -11,7 +11,6 @@ import javax.inject.Singleton
 import javax.inject.Qualifier
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -49,15 +48,8 @@ object NetworkModule {
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient {
-        val userAgentInterceptor = Interceptor { chain ->
-            val suffix = if (BuildConfig.DEBUG) "Android-debug" else "Android"
-            val request = chain.request().newBuilder()
-                .header("User-Agent", "CloudbasePredictor/${BuildConfig.VERSION_NAME} ($suffix)")
-                .build()
-            chain.proceed(request)
-        }
         return OkHttpClient.Builder()
-            .addInterceptor(userAgentInterceptor)
+            .addInterceptor(cloudbasePredictorUserAgentInterceptor())
             .addInterceptor(loggingInterceptor)
             .build()
     }
