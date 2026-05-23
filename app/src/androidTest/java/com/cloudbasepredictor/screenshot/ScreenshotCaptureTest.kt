@@ -22,6 +22,7 @@ import com.cloudbasepredictor.ui.screens.forecast.DEFAULT_TOP_ALTITUDE_KM
 import com.cloudbasepredictor.ui.screens.forecast.ForecastScreen
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.STUVE_CHART_CANVAS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
+import com.cloudbasepredictor.ui.screens.map.MapScreen
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Rule
 import org.junit.Test
@@ -238,6 +239,24 @@ class ScreenshotCaptureTest {
                     ),
                     onDateSelected = {},
                     onOpenMap = {},
+                )
+            }
+        }
+    }
+
+    @Test
+    fun captureMapSelectedPoint() {
+        captureScreen("map_selected_point") {
+            CloudbasePredictorTheme {
+                MapScreen(
+                    uiState = PreviewData.mapUiState,
+                    onMapTapped = { _, _ -> },
+                    onFavoriteTapped = {},
+                    onLaunchSiteTapped = {},
+                    onOpenForecast = {},
+                    onFavoriteClick = {},
+                    onSaveCameraPosition = { _, _, _ -> },
+                    autoOpenFavoritesOnStartup = false,
                 )
             }
         }

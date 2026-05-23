@@ -136,6 +136,11 @@ class MapViewModel @Inject constructor(
         selectedLaunchSiteDraft.value = site
     }
 
+    fun clearSelection() {
+        selectedPlaceDraft.value = null
+        selectedLaunchSiteDraft.value = null
+    }
+
     fun openSelectedForecast() {
         val launchSite = selectedLaunchSiteDraft.value
         if (launchSite != null) {

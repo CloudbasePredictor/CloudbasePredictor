@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +21,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Explore
@@ -36,7 +39,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -170,6 +175,7 @@ fun MapRoute(
         onFavoriteTapped = viewModel::selectFavoritePlace,
         onLaunchSiteTapped = viewModel::selectLaunchSite,
         onOpenForecast = viewModel::openSelectedForecast,
+        onDismissSelection = viewModel::clearSelection,
         onFavoriteClick = viewModel::openForecastForPlace,
         onManualFavoriteSave = viewModel::addManualFavorite,
         onSaveCameraPosition = viewModel::saveCameraPosition,
@@ -187,6 +193,7 @@ fun MapScreen(
     onFavoriteTapped: (SavedPlace) -> Unit,
     onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
     onOpenForecast: () -> Unit,
+    onDismissSelection: () -> Unit = {},
     onFavoriteClick: (SavedPlace) -> Unit,
     onSaveCameraPosition: (Double, Double, Double) -> Unit,
     onManualFavoriteSave: (SavedPlace) -> Unit = {},
@@ -725,12 +732,14 @@ fun MapScreen(
                     LaunchSiteCard(
                         launchSite = selectedLaunchSite,
                         onOpenForecast = onOpenForecast,
+                        onDismiss = onDismissSelection,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else if (selectedPlace != null) {
                     SelectedPointCard(
                         selectedPlace = selectedPlace,
                         onOpenForecast = onOpenForecast,
+                        onDismiss = onDismissSelection,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -1024,6 +1033,7 @@ private fun MapLayerPreference.labelRes(): Int {
 private fun LaunchSiteCard(
     launchSite: ParaglidingLaunchSite,
     onOpenForecast: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -1035,9 +1045,9 @@ private fun LaunchSiteCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = launchSite.name,
-                style = MaterialTheme.typography.titleMedium,
+            SelectionCardHeader(
+                title = launchSite.name,
+                onDismiss = onDismiss,
             )
             Text(
                 text = stringResource(R.string.map_launch_site_source),
@@ -1106,9 +1116,10 @@ private fun LaunchSiteCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Button(onClick = onOpenForecast) {
-                Text(text = stringResource(R.string.action_open))
-            }
+            SelectionCardActions(
+                onDismiss = onDismiss,
+                onOpenForecast = onOpenForecast,
+            )
         }
     }
 }
@@ -1147,6 +1158,7 @@ private fun MapUnavailableCard(
 private fun SelectedPointCard(
     selectedPlace: SavedPlace,
     onOpenForecast: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -1158,9 +1170,9 @@ private fun SelectedPointCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = selectedPlace.name,
-                style = MaterialTheme.typography.titleMedium,
+            SelectionCardHeader(
+                title = selectedPlace.name,
+                onDismiss = onDismiss,
             )
             Text(
                 text = String.format(
@@ -1172,9 +1184,70 @@ private fun SelectedPointCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onOpenForecast) {
-                Text(text = stringResource(R.string.action_open))
-            }
+            SelectionCardActions(
+                onDismiss = onDismiss,
+                onOpenForecast = onOpenForecast,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionCardHeader(
+    title: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f))
+                .testTag(MapTestTags.SELECTION_CARD_DISMISS_ICON),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.action_close),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionCardActions(
+    onDismiss: () -> Unit,
+    onOpenForecast: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedButton(
+            onClick = onDismiss,
+            modifier = Modifier.testTag(MapTestTags.SELECTION_CARD_CLOSE_BUTTON),
+        ) {
+            Text(text = stringResource(R.string.action_close))
+        }
+        Button(
+            onClick = onOpenForecast,
+            modifier = Modifier.testTag(MapTestTags.SELECTION_CARD_OPEN_BUTTON),
+        ) {
+            Text(text = stringResource(R.string.action_open))
         }
     }
 }
@@ -1528,6 +1601,7 @@ private fun SelectedPointCardPreview() {
         SelectedPointCard(
             selectedPlace = PreviewData.mapUiState.selectedPlace ?: PreviewData.savedPlace,
             onOpenForecast = {},
+            onDismiss = {},
         )
     }
 }
@@ -1539,6 +1613,7 @@ private fun LaunchSiteCardPreview() {
         LaunchSiteCard(
             launchSite = PreviewData.paraglidingLaunchSite,
             onOpenForecast = {},
+            onDismiss = {},
         )
     }
 }

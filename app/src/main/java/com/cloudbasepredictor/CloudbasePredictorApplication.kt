@@ -33,10 +33,10 @@ class CloudbasePredictorApplication : Application() {
             Timber.plant(Timber.DebugTree())
         }
 
-        configureMapLibreHttpClient()
-
         // Enable MapLibre ambient tile cache (200 MB).
         MapLibre.getInstance(this)
+        configureMapLibreHttpClient()
+
         org.maplibre.android.offline.OfflineManager.getInstance(this)
             .setMaximumAmbientCacheSize(
                 200L * 1024 * 1024,
