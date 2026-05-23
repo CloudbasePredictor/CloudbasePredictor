@@ -128,15 +128,22 @@ private const val GEOJSON_PROPERTY_NAME = "name"
 private const val GEOJSON_PROPERTY_PLACE_ID = "placeId"
 private const val GEOJSON_PROPERTY_LAUNCH_SITE_ID = "launchSiteId"
 private const val FAVORITE_POINTS_LAYER_ID = "favorite-points"
+private const val SELECTED_FAVORITE_POINT_LAYER_ID = "selected-favorite-point"
 private const val LAUNCH_SITES_LAYER_ID = "paragliding-launch-sites"
+private const val SELECTED_LAUNCH_SITE_LAYER_ID = "selected-paragliding-launch-site"
 private const val USER_LOCATION_LAYER_ID_PREFIX = "user-location"
 private const val DEVICE_LOCATION_MIN_ZOOM = 12.0
 private const val NORTH_BUTTON_VISIBILITY_THRESHOLD_DEGREES = 1.0
 private val LAUNCH_SITE_ICON_SIZE = 22.dp
+private val SELECTED_LAUNCH_SITE_ICON_SIZE = 30.dp
 private val LAUNCH_SITE_TOUCH_TARGET_SIZE = 56.dp
 private val LAUNCH_SITE_HIT_SLOP = 40.dp
+private val FAVORITE_ICON_SIZE = 20.dp
+private val SELECTED_FAVORITE_ICON_SIZE = 30.dp
 private val FAVORITE_TOUCH_TARGET_SIZE = 48.dp
 private val FAVORITE_HIT_SLOP = 24.dp
+private val LAUNCH_SITE_LAYER_IDS = setOf(LAUNCH_SITES_LAYER_ID, SELECTED_LAUNCH_SITE_LAYER_ID)
+private val FAVORITE_POINT_LAYER_IDS = setOf(FAVORITE_POINTS_LAYER_ID, SELECTED_FAVORITE_POINT_LAYER_ID)
 private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_FINE_LOCATION,
     Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -317,10 +324,21 @@ fun MapScreen(
         }
     }
 
-    val markerData = uiState.selectedPlace?.let(::buildMarkerFeatureCollection) ?: emptyFeatureCollection()
-    val favoritesData = buildFavoritesFeatureCollection(uiState.favoritePlaces)
+    val markerLayerData = buildMapMarkerLayerData(uiState)
+    val markerData = markerLayerData.selectedCoordinatePlace
+        ?.let(::buildMarkerFeatureCollection)
+        ?: emptyFeatureCollection()
+    val favoritesData = buildFavoritesFeatureCollection(markerLayerData.unselectedFavoritePlaces)
+    val selectedFavoriteData = markerLayerData.selectedFavoritePlace
+        ?.let { buildFavoritesFeatureCollection(listOf(it)) }
+        ?: emptyFeatureCollection()
     val launchSitesData = if (uiState.showLaunchSites) {
-        buildLaunchSitesFeatureCollection(uiState.launchSites)
+        buildLaunchSitesFeatureCollection(markerLayerData.unselectedLaunchSites)
+    } else {
+        emptyFeatureCollection()
+    }
+    val selectedLaunchSiteData = if (uiState.showLaunchSites && markerLayerData.selectedLaunchSite != null) {
+        buildLaunchSitesFeatureCollection(listOf(markerLayerData.selectedLaunchSite))
     } else {
         emptyFeatureCollection()
     }
@@ -392,20 +410,20 @@ fun MapScreen(
                         val launchSiteFeatures = projection
                             ?.queryRenderedFeatures(
                                 offset = offset,
-                                layerIds = setOf(LAUNCH_SITES_LAYER_ID),
+                                layerIds = LAUNCH_SITE_LAYER_IDS,
                             )
                             .orEmpty()
                         val favoriteFeatures = projection
                             ?.queryRenderedFeatures(
                                 offset = offset,
-                                layerIds = setOf(FAVORITE_POINTS_LAYER_ID),
+                                layerIds = FAVORITE_POINT_LAYER_IDS,
                             )
                             .orEmpty()
                         val favoritePlaceScreenOffsets = projection
-                            ?.favoritePlaceScreenOffsets(uiState.favoritePlaces)
+                            ?.favoritePlaceScreenOffsets(markerLayerData.favoritePlacesForInteraction)
                             .orEmpty()
                         val launchSiteScreenOffsets = projection
-                            ?.launchSiteScreenOffsets(uiState.launchSites)
+                            ?.launchSiteScreenOffsets(markerLayerData.launchSitesForInteraction)
                             .orEmpty()
 
                         val clickTarget = resolveMapClickTarget(
@@ -413,8 +431,8 @@ fun MapScreen(
                             clickOffset = offset,
                             launchSiteFeatures = launchSiteFeatures,
                             favoriteFeatures = favoriteFeatures,
-                            favoritePlaces = uiState.favoritePlaces,
-                            launchSites = uiState.launchSites,
+                            favoritePlaces = markerLayerData.favoritePlacesForInteraction,
+                            launchSites = markerLayerData.launchSitesForInteraction,
                             favoritePlaceScreenOffsets = favoritePlaceScreenOffsets,
                             launchSiteScreenOffsets = launchSiteScreenOffsets,
                         )
@@ -434,6 +452,18 @@ fun MapScreen(
                     val launchSitesSource = rememberGeoJsonSource(
                         data = GeoJsonData.JsonString(launchSitesData),
                     )
+                    val launchSiteLayerClick: (List<Feature<*, JsonObject?>>) -> ClickResult = { features ->
+                        val launchSite = findLaunchSiteForFeatures(
+                            features = features,
+                            launchSites = markerLayerData.launchSitesForInteraction,
+                        )
+                        if (launchSite != null) {
+                            onLaunchSiteTapped(launchSite)
+                            ClickResult.Consume
+                        } else {
+                            ClickResult.Pass
+                        }
+                    }
                     val launchSiteIconPainter = rememberVectorPainter(Icons.Filled.Flag)
                     SymbolLayer(
                         id = LAUNCH_SITES_LAYER_ID,
@@ -449,30 +479,66 @@ fun MapScreen(
                         iconAnchor = const(SymbolAnchor.Bottom),
                         iconAllowOverlap = const(true),
                         iconIgnorePlacement = const(true),
-                        onClick = { features ->
-                            val launchSite = findLaunchSiteForFeatures(
-                                features = features,
-                                launchSites = uiState.launchSites,
-                            )
-                            if (launchSite != null) {
-                                onLaunchSiteTapped(launchSite)
-                                ClickResult.Consume
-                            } else {
-                                ClickResult.Pass
-                            }
-                        },
+                        onClick = launchSiteLayerClick,
                     )
 
                     val favoritesSource = rememberGeoJsonSource(
                         data = GeoJsonData.JsonString(favoritesData),
                     )
-                    CircleLayer(
+                    val favoriteIconPainter = rememberVectorPainter(Icons.Filled.Star)
+                    SymbolLayer(
                         id = FAVORITE_POINTS_LAYER_ID,
                         source = favoritesSource,
-                        color = const(Color(0xFFFFD700)),
-                        radius = const(8.dp),
-                        strokeColor = const(Color.White),
-                        strokeWidth = const(2.dp),
+                        iconImage = image(
+                            value = favoriteIconPainter,
+                            size = DpSize(FAVORITE_ICON_SIZE, FAVORITE_ICON_SIZE),
+                            drawAsSdf = true,
+                        ),
+                        iconColor = const(Color(0xFFFFC107)),
+                        iconHaloColor = const(Color.White),
+                        iconHaloWidth = const(1.5.dp),
+                        iconAnchor = const(SymbolAnchor.Center),
+                        iconAllowOverlap = const(true),
+                        iconIgnorePlacement = const(true),
+                    )
+
+                    val selectedLaunchSiteSource = rememberGeoJsonSource(
+                        data = GeoJsonData.JsonString(selectedLaunchSiteData),
+                    )
+                    SymbolLayer(
+                        id = SELECTED_LAUNCH_SITE_LAYER_ID,
+                        source = selectedLaunchSiteSource,
+                        iconImage = image(
+                            value = launchSiteIconPainter,
+                            size = DpSize(SELECTED_LAUNCH_SITE_ICON_SIZE, SELECTED_LAUNCH_SITE_ICON_SIZE),
+                            drawAsSdf = true,
+                        ),
+                        iconColor = const(Color(0xFFE64A5B)),
+                        iconHaloColor = const(Color.White),
+                        iconHaloWidth = const(2.dp),
+                        iconAnchor = const(SymbolAnchor.Bottom),
+                        iconAllowOverlap = const(true),
+                        iconIgnorePlacement = const(true),
+                        onClick = launchSiteLayerClick,
+                    )
+
+                    val selectedFavoriteSource = rememberGeoJsonSource(
+                        data = GeoJsonData.JsonString(selectedFavoriteData),
+                    )
+                    SymbolLayer(
+                        id = SELECTED_FAVORITE_POINT_LAYER_ID,
+                        source = selectedFavoriteSource,
+                        iconImage = image(
+                            value = favoriteIconPainter,
+                            size = DpSize(SELECTED_FAVORITE_ICON_SIZE, SELECTED_FAVORITE_ICON_SIZE),
+                            drawAsSdf = true,
+                        ),
+                        iconColor = const(Color(0xFFE64A5B)),
+                        iconHaloColor = const(Color.White),
+                        iconHaloWidth = const(2.dp),
+                        iconAnchor = const(SymbolAnchor.Center),
+                        iconAllowOverlap = const(true),
+                        iconIgnorePlacement = const(true),
                     )
 
                     val markerSource = rememberGeoJsonSource(
@@ -498,21 +564,25 @@ fun MapScreen(
             }
 
             MapLaunchSiteTapTargetsOverlay(
-                launchSites = uiState.launchSites,
+                launchSites = markerLayerData.launchSitesForInteraction,
                 cameraState = cameraState,
                 onLaunchSiteTapped = onLaunchSiteTapped,
             )
 
             MapFavoriteTapTargetsOverlay(
-                favoritePlaces = uiState.favoritePlaces,
+                favoritePlaces = markerLayerData.favoritePlacesForInteraction,
                 cameraState = cameraState,
                 onFavoriteTapped = onFavoriteTapped,
             )
 
             MapFavoriteLabelsOverlay(
-                favoritePlaces = uiState.favoritePlaces,
+                favoritePlaces = markerLayerData.favoritePlacesForInteraction,
                 cameraState = cameraState,
-                markerRadius = 8.dp,
+                markerRadius = if (markerLayerData.selectedFavoritePlace == null) {
+                    FAVORITE_ICON_SIZE / 2
+                } else {
+                    SELECTED_FAVORITE_ICON_SIZE / 2
+                },
                 fontSize = 10.sp,
             )
         }
@@ -701,6 +771,80 @@ fun MapScreen(
 }
 
 private const val MIN_FAVORITES_FOR_STARTUP_DIALOG = 2
+
+internal data class MapMarkerLayerData(
+    val selectedCoordinatePlace: SavedPlace?,
+    val unselectedFavoritePlaces: List<SavedPlace>,
+    val selectedFavoritePlace: SavedPlace?,
+    val favoritePlacesForInteraction: List<SavedPlace>,
+    val unselectedLaunchSites: List<ParaglidingLaunchSite>,
+    val selectedLaunchSite: ParaglidingLaunchSite?,
+    val launchSitesForInteraction: List<ParaglidingLaunchSite>,
+)
+
+internal fun buildMapMarkerLayerData(uiState: MapUiState): MapMarkerLayerData {
+    val selectedFavoritePlace = mapSelectedFavoritePlace(
+        selectedPlace = uiState.selectedPlace,
+        favoritePlaces = uiState.favoritePlaces,
+    )
+    val selectedCoordinatePlace = uiState.selectedPlace?.takeIf { selectedPlace ->
+        selectedFavoritePlace?.id != selectedPlace.id
+    }
+    val favoritePlacesForInteraction = favoritePlacesWithSelected(
+        favoritePlaces = uiState.favoritePlaces,
+        selectedFavoritePlace = selectedFavoritePlace,
+    )
+    val unselectedFavoritePlaces = uiState.favoritePlaces.filterNot { place ->
+        selectedFavoritePlace?.id == place.id
+    }
+    val selectedLaunchSite = uiState.selectedLaunchSite
+    val launchSitesForInteraction = launchSitesWithSelected(
+        launchSites = uiState.launchSites,
+        selectedLaunchSite = selectedLaunchSite,
+    )
+    val unselectedLaunchSites = if (selectedLaunchSite == null) {
+        uiState.launchSites
+    } else {
+        uiState.launchSites.filterNot { site -> site.id == selectedLaunchSite.id }
+    }
+
+    return MapMarkerLayerData(
+        selectedCoordinatePlace = selectedCoordinatePlace,
+        unselectedFavoritePlaces = unselectedFavoritePlaces,
+        selectedFavoritePlace = selectedFavoritePlace,
+        favoritePlacesForInteraction = favoritePlacesForInteraction,
+        unselectedLaunchSites = unselectedLaunchSites,
+        selectedLaunchSite = selectedLaunchSite,
+        launchSitesForInteraction = launchSitesForInteraction,
+    )
+}
+
+private fun mapSelectedFavoritePlace(
+    selectedPlace: SavedPlace?,
+    favoritePlaces: List<SavedPlace>,
+): SavedPlace? {
+    return selectedPlace?.takeIf { place ->
+        place.isFavorite || favoritePlaces.any { favorite -> favorite.id == place.id }
+    }
+}
+
+private fun favoritePlacesWithSelected(
+    favoritePlaces: List<SavedPlace>,
+    selectedFavoritePlace: SavedPlace?,
+): List<SavedPlace> {
+    if (selectedFavoritePlace == null) return favoritePlaces
+    if (favoritePlaces.any { place -> place.id == selectedFavoritePlace.id }) return favoritePlaces
+    return favoritePlaces + selectedFavoritePlace
+}
+
+private fun launchSitesWithSelected(
+    launchSites: List<ParaglidingLaunchSite>,
+    selectedLaunchSite: ParaglidingLaunchSite?,
+): List<ParaglidingLaunchSite> {
+    if (selectedLaunchSite == null) return launchSites
+    if (launchSites.any { site -> site.id == selectedLaunchSite.id }) return launchSites
+    return launchSites + selectedLaunchSite
+}
 
 @Composable
 private fun MapFavoriteTapTargetsOverlay(
