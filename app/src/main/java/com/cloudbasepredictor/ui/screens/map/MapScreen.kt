@@ -7,8 +7,6 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -900,7 +899,6 @@ private fun MapFavoriteTapTargetsOverlayContent(
                     anchorOffset = placeOffset.screenOffset,
                     targetSize = FAVORITE_TOUCH_TARGET_SIZE,
                 )
-                val interactionSource = remember(place.id) { MutableInteractionSource() }
                 val contentDescription = stringResource(R.string.cd_favorite_marker, place.name)
 
                 Box(
@@ -910,13 +908,12 @@ private fun MapFavoriteTapTargetsOverlayContent(
                         .align(Alignment.TopStart)
                         .semantics {
                             this.contentDescription = contentDescription
+                            onClick {
+                                onFavoriteTapped(place)
+                                true
+                            }
                         }
-                        .testTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + place.id)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = { onFavoriteTapped(place) },
-                        ),
+                        .testTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + place.id),
                 )
             }
     }
@@ -970,7 +967,6 @@ private fun MapLaunchSiteTapTargetsOverlayContent(
             .forEach { siteOffset ->
                 val site = siteOffset.launchSite
                 val topLeft = launchSiteTapTargetOffset(siteOffset.screenOffset)
-                val interactionSource = remember(site.id) { MutableInteractionSource() }
                 val contentDescription = stringResource(R.string.cd_launch_site_marker, site.name)
 
                 Box(
@@ -980,13 +976,12 @@ private fun MapLaunchSiteTapTargetsOverlayContent(
                         .align(Alignment.TopStart)
                         .semantics {
                             this.contentDescription = contentDescription
+                            onClick {
+                                onLaunchSiteTapped(site)
+                                true
+                            }
                         }
-                        .testTag(MapTestTags.LAUNCH_SITE_TAP_TARGET_PREFIX + site.id)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = { onLaunchSiteTapped(site) },
-                        ),
+                        .testTag(MapTestTags.LAUNCH_SITE_TAP_TARGET_PREFIX + site.id),
                 )
             }
     }
