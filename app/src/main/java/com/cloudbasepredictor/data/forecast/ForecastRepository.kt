@@ -18,6 +18,7 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -171,6 +172,8 @@ class InMemoryForecastRepository @Inject constructor(
             if (deleted > 0) {
                 Timber.d("Cleaned up %d old cached forecasts", deleted)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clean up old forecasts")
             handleDbError(e)
@@ -181,6 +184,8 @@ class InMemoryForecastRepository @Inject constructor(
         cachedForecasts.value = emptyMap()
         try {
             forecastCacheDao.deleteAll()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear forecast cache")
             handleDbError(e)
@@ -211,6 +216,8 @@ class InMemoryForecastRepository @Inject constructor(
                 forecastDays = entity.forecastDays,
                 modelGeneratedAtMillis = estimateModelRunTime(entity.fetchedAtMillis, resolvedModel),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load from DB cache")
             handleDbError(e)
@@ -239,6 +246,8 @@ class InMemoryForecastRepository @Inject constructor(
                 nextExpectedUpdateMillis = fetchedAtMillis + updateInterval,
             )
             forecastCacheDao.upsertForecast(entity)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save to DB cache")
             handleDbError(e)
@@ -246,9 +255,7 @@ class InMemoryForecastRepository @Inject constructor(
     }
 
     private fun handleDbError(e: Exception) {
-        if (e is android.database.sqlite.SQLiteException ||
-            e is IllegalStateException
-        ) {
+        if (isReportableDatabaseError(e)) {
             databaseErrorManager.reportError(e)
         }
     }
@@ -268,6 +275,12 @@ class InMemoryForecastRepository @Inject constructor(
 internal fun estimateModelRunTimeInternal(fetchedAtMillis: Long, model: ForecastModel): Long {
     val interval = model.updateIntervalMillis
     return (fetchedAtMillis / interval) * interval
+}
+
+internal fun isReportableDatabaseError(error: Throwable): Boolean {
+    if (error is CancellationException) return false
+    return error is android.database.sqlite.SQLiteException ||
+        error is IllegalStateException
 }
 
 private fun generateFakeDays(count: Int): List<DailyForecast> {

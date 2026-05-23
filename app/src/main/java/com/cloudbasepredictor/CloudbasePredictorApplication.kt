@@ -4,6 +4,7 @@ import android.app.Application
 import com.cloudbasepredictor.data.forecast.ForecastRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,6 +49,8 @@ class CloudbasePredictorApplication : Application() {
             val oneDayAgo = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
             try {
                 forecastRepository.cleanupOldForecasts(oneDayAgo)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Forecast cleanup failed")
             }
