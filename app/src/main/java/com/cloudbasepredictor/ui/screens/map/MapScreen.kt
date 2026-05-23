@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.tappableElement
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -354,8 +355,8 @@ fun MapScreen(
     var didAutoOpenFavoritesDialog by rememberSaveable { mutableStateOf(false) }
     var showMapLayerMenu by rememberSaveable { mutableStateOf(false) }
     val baseMapAttributionText = stringResource(mapLayerAttributionRes(uiState.mapLayer))
-    val launchSiteAttributionText = stringResource(R.string.map_attribution_paraglidingearth_compact)
     val mapAttributionText = if (uiState.showLaunchSites) {
+        val launchSiteAttributionText = stringResource(R.string.map_attribution_paraglidingearth_compact)
         stringResource(
             R.string.map_attribution_combined_format,
             baseMapAttributionText,
@@ -367,8 +368,8 @@ fun MapScreen(
     val baseMapAttributionDetailText = mapLayerAttributionDetailRes(uiState.mapLayer)?.let { detailRes ->
         stringResource(detailRes)
     }
-    val launchSiteAttributionDetailText = stringResource(R.string.map_attribution_paraglidingearth_full)
     val mapAttributionDetailText = if (uiState.showLaunchSites) {
+        val launchSiteAttributionDetailText = stringResource(R.string.map_attribution_paraglidingearth_full)
         listOfNotNull(
             baseMapAttributionDetailText,
             launchSiteAttributionDetailText,
@@ -751,8 +752,8 @@ fun MapScreen(
             detailText = mapAttributionDetailText,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(end = 8.dp, bottom = 4.dp),
+                .windowInsetsPadding(WindowInsets.tappableElement)
+                .padding(start = 8.dp, end = 8.dp),
         )
     }
 

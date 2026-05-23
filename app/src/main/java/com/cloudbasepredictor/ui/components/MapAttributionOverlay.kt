@@ -2,6 +2,7 @@ package com.cloudbasepredictor.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.R
@@ -38,6 +38,7 @@ fun MapAttributionOverlay(
 
     Surface(
         modifier = modifier
+            .widthIn(max = 360.dp)
             .testTag(MapTestTags.ATTRIBUTION_OVERLAY)
             .then(clickableModifier),
         shape = RoundedCornerShape(4.dp),
@@ -48,8 +49,6 @@ fun MapAttributionOverlay(
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
         )
     }
