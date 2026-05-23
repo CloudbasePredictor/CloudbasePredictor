@@ -28,21 +28,38 @@ interface LaunchSiteRepository {
 class DefaultLaunchSiteRepository @Inject constructor(
     private val api: ParaglidingEarthApi,
     private val launchSiteCacheDao: LaunchSiteCacheDao,
+    private val launchSiteDisplayRepository: LaunchSiteDisplayRepository,
     private val json: Json,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : LaunchSiteRepository {
     override suspend fun getLaunchSites(bounds: LaunchSiteBounds): List<ParaglidingLaunchSite> = withContext(ioDispatcher) {
+        if (launchSitesDisabled()) {
+            return@withContext emptyList()
+        }
+
         val key = bounds.key
         val now = System.currentTimeMillis()
         val cachedBounds = launchSiteCacheDao.getBoundsCache(key)
+        if (launchSitesDisabled()) {
+            return@withContext emptyList()
+        }
+
         val cachedSites = if (cachedBounds != null) {
             loadCachedSitesForBounds(key)
         } else {
             loadCachedSitesInBounds(bounds)
         }
 
+        if (launchSitesDisabled()) {
+            return@withContext emptyList()
+        }
+
         if (cachedBounds?.isFresh(now) == true) {
             return@withContext cachedSites
+        }
+
+        if (launchSitesDisabled()) {
+            return@withContext emptyList()
         }
 
         try {
@@ -78,6 +95,10 @@ class DefaultLaunchSiteRepository @Inject constructor(
                 throw throwable
             }
         }
+    }
+
+    private fun launchSitesDisabled(): Boolean {
+        return !launchSiteDisplayRepository.showLaunchSites.value
     }
 
     private suspend fun loadCachedSitesForBounds(boundsKey: String): List<ParaglidingLaunchSite> {
