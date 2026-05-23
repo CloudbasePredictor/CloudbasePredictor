@@ -41,8 +41,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -177,6 +179,14 @@ class ForecastViewModel @Inject constructor(
     private val _networkErrorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val networkErrorEvent: SharedFlow<String> = _networkErrorEvent
 
+    private val forecastPlace: StateFlow<SavedPlace?> = placeLocation
+        .map { location -> location?.toSavedPlace() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null,
+        )
+
     private val favoritePlaces = placeRepository.observeFavoritePlaces().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -194,16 +204,24 @@ class ForecastViewModel @Inject constructor(
         initialValue = null,
     )
 
-    private val selectedForecast = combine(
-        selectedPlace,
+    private val forecastTarget = combine(
+        forecastPlace,
         forecastModelRepository.selectedModel,
     ) { place, model ->
-        place to model
-    }.flatMapLatest { (place, model) ->
+        ForecastLoadTarget(
+            place = place,
+            model = model,
+        )
+    }.distinctUntilChanged { previous, current ->
+        previous.place?.id == current.place?.id && previous.model == current.model
+    }
+
+    private val selectedForecast = forecastTarget.flatMapLatest { target ->
+        val place = target.place
         if (place == null) {
             flowOf(null)
         } else {
-            forecastRepository.observeForecast(place.id, model)
+            forecastRepository.observeForecast(place.id, target.model)
         }
     }
 
@@ -398,11 +416,10 @@ class ForecastViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(
-                selectedPlace,
-                forecastModelRepository.selectedModel,
-            ) { place, model -> place to model }
-                .collect { (place, model) ->
+            forecastTarget
+                .collect { target ->
+                    val place = target.place
+                    val model = target.model
                     errorMessage.value = null
 
                     if (place == null) {
@@ -439,7 +456,7 @@ class ForecastViewModel @Inject constructor(
 
     fun selectDay(index: Int) {
         selectedDayIndex.value = index
-        val place = selectedPlace.value ?: return
+        val place = forecastPlace.value ?: return
         val model = forecastModelRepository.selectedModel.value
         val requiredForecastDays = requestedForecastDaysForDayIndex(
             dayIndex = index,
@@ -482,7 +499,7 @@ class ForecastViewModel @Inject constructor(
     }
 
     fun saveFavorite(name: String) {
-        val place = uiState.value.selectedPlace ?: return
+        val place = selectedPlace.value ?: return
         viewModelScope.launch {
             placeRepository.saveFavoritePlace(
                 place.copy(
@@ -494,7 +511,7 @@ class ForecastViewModel @Inject constructor(
     }
 
     fun deleteFavorite() {
-        val place = uiState.value.selectedPlace ?: return
+        val place = selectedPlace.value ?: return
         viewModelScope.launch {
             placeRepository.deleteFavorite(place.id)
         }
@@ -509,7 +526,7 @@ class ForecastViewModel @Inject constructor(
     }
 
     fun retryLoad() {
-        val place = selectedPlace.value ?: return
+        val place = forecastPlace.value ?: return
         val model = forecastModelRepository.selectedModel.value
         val requiredForecastDays = requestedForecastDaysForDayIndex(
             dayIndex = selectedDayIndex.value,
@@ -620,6 +637,11 @@ private data class MapAndUnitPreferences(
     val mapLayer: MapLayerPreference,
     val unitPreset: UnitPreset,
     val displayUnits: DisplayUnits,
+)
+
+private data class ForecastLoadTarget(
+    val place: SavedPlace?,
+    val model: ForecastModel,
 )
 
 private const val INCOMPLETE_FORECAST_DATA_ERROR = "Forecast data is incomplete."

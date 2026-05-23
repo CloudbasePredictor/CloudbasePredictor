@@ -24,6 +24,7 @@ import com.cloudbasepredictor.model.SavedPlace
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -96,13 +97,46 @@ class ForecastViewModelTest {
         )
     }
 
-    private fun createForecastViewModel(forecastRepository: ForecastRepository): ForecastViewModel {
+    @Test
+    fun savingFavoriteWhileLoadingDoesNotRestartSameLocationRequest() {
+        val forecastRepository = SameLocationBlockingForecastRepository()
+        val placeRepository = FakePlaceRepository()
+        lateinit var viewModel: ForecastViewModel
+
+        instrumentation.runOnMainSync {
+            viewModel = createForecastViewModel(
+                forecastRepository = forecastRepository,
+                placeRepository = placeRepository,
+            )
+            viewModel.setPlaceLocation(PlaceLocation(47.7181, 12.5497))
+        }
+
+        assertTrue(
+            "Initial forecast request did not start",
+            forecastRepository.initialRequestStarted.await(5, TimeUnit.SECONDS),
+        )
+
+        instrumentation.runOnMainSync {
+            viewModel.saveFavorite("Saved launch")
+        }
+
+        assertFalse(
+            "Saving a favorite should not restart an in-flight request for the same forecast location",
+            forecastRepository.secondRequestStarted.await(300, TimeUnit.MILLISECONDS),
+        )
+        assertEquals(1, forecastRepository.requestCount.get())
+    }
+
+    private fun createForecastViewModel(
+        forecastRepository: ForecastRepository,
+        placeRepository: PlaceRepository = FakePlaceRepository(SavedPlace.fromCoordinates(47.7181, 12.5497)),
+    ): ForecastViewModel {
         val factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: kotlin.reflect.KClass<T>, extras: CreationExtras): T {
                 return ForecastViewModel(
                     forecastRepository = forecastRepository,
-                    placeRepository = FakePlaceRepository(SavedPlace.fromCoordinates(47.7181, 12.5497)),
+                    placeRepository = placeRepository,
                     forecastModeRepository = FakeForecastModeRepository(),
                     forecastModelRepository = FakeForecastModelRepository(ForecastModel.ICON_SEAMLESS),
                     forecastViewportRepository = FakeForecastViewportRepository(),
@@ -158,14 +192,52 @@ private class BlockingForecastRepository : ForecastRepository {
     override suspend fun clearAllCaches() = Unit
 }
 
-private class FakePlaceRepository(initialPlace: SavedPlace) : PlaceRepository {
+private class SameLocationBlockingForecastRepository : ForecastRepository {
+    val initialRequestStarted = CountDownLatch(1)
+    val secondRequestStarted = CountDownLatch(1)
+    val requestCount = AtomicInteger(0)
+
+    override fun observeForecast(placeId: String, model: ForecastModel): Flow<ForecastSnapshot?> {
+        return flowOf(null)
+    }
+
+    override fun isCached(
+        placeId: String,
+        model: ForecastModel,
+        minimumForecastDays: Int,
+    ): Boolean = false
+
+    override fun isFullyCached(placeId: String, model: ForecastModel): Boolean = false
+
+    override suspend fun loadForecast(
+        place: SavedPlace,
+        forceRefresh: Boolean,
+        model: ForecastModel,
+        forecastDays: Int,
+    ) {
+        val startedRequestCount = requestCount.incrementAndGet()
+        if (startedRequestCount == 1) {
+            initialRequestStarted.countDown()
+            suspendCancellableCoroutine<Unit> { }
+        } else {
+            secondRequestStarted.countDown()
+        }
+    }
+
+    override suspend fun cleanupOldForecasts(cutoffMillis: Long) = Unit
+
+    override suspend fun clearAllCaches() = Unit
+}
+
+private class FakePlaceRepository(initialPlace: SavedPlace = SavedPlace.fromCoordinates(47.7181, 12.5497)) : PlaceRepository {
     private val mutableSelectedPlace = MutableStateFlow<SavedPlace?>(initialPlace)
+    private val mutableFavoritePlaces = MutableStateFlow<List<SavedPlace>>(emptyList())
 
     override val selectedPlace: StateFlow<SavedPlace?> = mutableSelectedPlace.asStateFlow()
 
     override fun observeSavedPlaces(): Flow<List<SavedPlace>> = flowOf(emptyList())
 
-    override fun observeFavoritePlaces(): Flow<List<SavedPlace>> = flowOf(emptyList())
+    override fun observeFavoritePlaces(): Flow<List<SavedPlace>> = mutableFavoritePlaces.asStateFlow()
 
     override suspend fun saveAndSelectPlace(place: SavedPlace) {
         mutableSelectedPlace.value = place
@@ -173,7 +245,12 @@ private class FakePlaceRepository(initialPlace: SavedPlace) : PlaceRepository {
 
     override suspend fun saveFavorite(placeId: String, name: String) = Unit
 
-    override suspend fun saveFavoritePlace(place: SavedPlace) = Unit
+    override suspend fun saveFavoritePlace(place: SavedPlace) {
+        mutableFavoritePlaces.value = listOf(place)
+        if (mutableSelectedPlace.value?.id == place.id) {
+            mutableSelectedPlace.value = place
+        }
+    }
 
     override suspend fun deleteFavorite(placeId: String) = Unit
 
