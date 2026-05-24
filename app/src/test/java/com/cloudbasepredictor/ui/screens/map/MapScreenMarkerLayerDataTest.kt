@@ -145,6 +145,25 @@ class MapScreenMarkerLayerDataTest {
     }
 
     @Test
+    fun buildMapMarkerLayerData_whenLaunchSitesUnavailable_keepsSavedLaunchAsRegularFavorite() {
+        val data = buildMapMarkerLayerData(
+            MapUiState(
+                favoritePlaces = listOf(launchSiteFavorite),
+                launchSites = emptyList(),
+                showLaunchSites = false,
+            ),
+        )
+
+        assertEquals(emptyList<FavoriteLaunchSiteMarker>(), data.unselectedFavoriteLaunchSites)
+        assertNull(data.selectedFavoriteLaunchSite)
+        assertEquals(listOf(launchSiteFavorite), data.unselectedFavoritePlaces)
+        assertEquals(listOf(launchSiteFavorite), data.favoritePlacesForInteraction)
+        assertEquals(listOf(launchSiteFavorite), data.favoriteLabelPlaces)
+        assertEquals(emptyList<ParaglidingLaunchSite>(), data.unselectedLaunchSites)
+        assertEquals(emptyList<ParaglidingLaunchSite>(), data.launchSitesForInteraction)
+    }
+
+    @Test
     fun buildMapMarkerLayerData_whenSelectedFavoriteSharesLaunchSite_usesSelectedGoldLaunchSiteLayer() {
         val data = buildMapMarkerLayerData(
             MapUiState(

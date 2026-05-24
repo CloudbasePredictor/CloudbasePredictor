@@ -197,7 +197,7 @@ class ForecastViewModel @Inject constructor(
         placeLocation,
         favoritePlaces,
     ) { location, favorites ->
-        location?.resolveSavedPlace(favorites)
+        location?.resolveForecastPlace(favorites)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
@@ -646,12 +646,13 @@ private data class ForecastLoadTarget(
 
 private const val INCOMPLETE_FORECAST_DATA_ERROR = "Forecast data is incomplete."
 
-private fun PlaceLocation.resolveSavedPlace(favoritePlaces: List<SavedPlace>): SavedPlace {
-    if (!name.isNullOrBlank()) return toSavedPlace()
-
-    return favoritePlaces.find { favorite ->
+internal fun PlaceLocation.resolveForecastPlace(favoritePlaces: List<SavedPlace>): SavedPlace {
+    val routePlace = toSavedPlace()
+    return favoritePlaces.firstOrNull { favorite ->
+        favorite.id == routePlace.id
+    } ?: favoritePlaces.find { favorite ->
         favorite.isNearby(latitude, longitude)
-    } ?: toSavedPlace()
+    } ?: routePlace
 }
 
 private fun HourlyForecastData.hasRequiredForecastInputs(
