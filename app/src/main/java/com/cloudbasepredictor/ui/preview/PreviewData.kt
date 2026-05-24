@@ -33,6 +33,7 @@ object PreviewData {
     val settingsImperialUnits = UnitPreset.IMPERIAL
     val settingsAviationUnits = UnitPreset.AVIATION
     val settingsShowLaunchSites = true
+    val settingsStartWithFavorites = true
 
     val savedPlace = SavedPlace(
         id = "place:46.5582:7.8354",

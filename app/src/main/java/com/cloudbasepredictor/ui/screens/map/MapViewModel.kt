@@ -8,6 +8,7 @@ import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.map.MapLayerRepository
+import com.cloudbasepredictor.data.map.MapStartupRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
@@ -40,6 +41,7 @@ data class MapUiState(
     val favoritePlaces: List<SavedPlace> = emptyList(),
     val launchSites: List<ParaglidingLaunchSite> = emptyList(),
     val showLaunchSites: Boolean = true,
+    val startWithFavorites: Boolean = true,
     val initialCamera: MapCameraData? = null,
     val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
 )
@@ -52,6 +54,7 @@ sealed interface MapEvent {
 class MapViewModel @Inject constructor(
     private val placeRepository: PlaceRepository,
     private val mapLayerRepository: MapLayerRepository,
+    private val mapStartupRepository: MapStartupRepository,
     private val launchSiteRepository: LaunchSiteRepository,
     private val launchSiteDisplayRepository: LaunchSiteDisplayRepository,
     @param:ApplicationContext private val context: Context,
@@ -69,10 +72,12 @@ class MapViewModel @Inject constructor(
     private val mapPreferences = combine(
         mapLayerRepository.selectedLayer,
         launchSiteDisplayRepository.showLaunchSites,
-    ) { mapLayer, showLaunchSites ->
+        mapStartupRepository.startWithFavorites,
+    ) { mapLayer, showLaunchSites, startWithFavorites ->
         MapPreferences(
             mapLayer = mapLayer,
             showLaunchSites = showLaunchSites,
+            startWithFavorites = startWithFavorites,
         )
     }
 
@@ -89,6 +94,7 @@ class MapViewModel @Inject constructor(
             favoritePlaces = favorites,
             launchSites = launchSites.takeIf { preferences.showLaunchSites }.orEmpty(),
             showLaunchSites = preferences.showLaunchSites,
+            startWithFavorites = preferences.startWithFavorites,
             initialCamera = loadCameraPosition(),
             mapLayer = preferences.mapLayer,
         )
@@ -99,6 +105,7 @@ class MapViewModel @Inject constructor(
             initialCamera = loadCameraPosition(),
             mapLayer = mapLayerRepository.selectedLayer.value,
             showLaunchSites = launchSiteDisplayRepository.showLaunchSites.value,
+            startWithFavorites = mapStartupRepository.startWithFavorites.value,
         ),
     )
 
@@ -270,6 +277,7 @@ class MapViewModel @Inject constructor(
 private data class MapPreferences(
     val mapLayer: MapLayerPreference,
     val showLaunchSites: Boolean,
+    val startWithFavorites: Boolean,
 )
 
 internal fun shouldRequestLaunchSites(

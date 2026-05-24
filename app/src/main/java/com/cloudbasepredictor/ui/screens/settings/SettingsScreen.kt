@@ -57,6 +57,7 @@ fun SettingsRoute(
     val theme by viewModel.themePreference.collectAsStateWithLifecycle()
     val unitPreset by viewModel.unitPreset.collectAsStateWithLifecycle()
     val showLaunchSites by viewModel.showLaunchSites.collectAsStateWithLifecycle()
+    val startWithFavorites by viewModel.startWithFavorites.collectAsStateWithLifecycle()
 
     SettingsScreen(
         dataSource = dataSource,
@@ -67,6 +68,8 @@ fun SettingsRoute(
         onUnitPresetChanged = viewModel::setUnitPreset,
         showLaunchSites = showLaunchSites,
         onShowLaunchSitesChanged = viewModel::setShowLaunchSites,
+        startWithFavorites = startWithFavorites,
+        onStartWithFavoritesChanged = viewModel::setStartWithFavorites,
         onBack = onBack,
         onOpenAbout = onOpenAbout,
     )
@@ -83,6 +86,8 @@ fun SettingsScreen(
     onUnitPresetChanged: (UnitPreset) -> Unit,
     showLaunchSites: Boolean,
     onShowLaunchSitesChanged: (Boolean) -> Unit,
+    startWithFavorites: Boolean,
+    onStartWithFavoritesChanged: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -275,6 +280,21 @@ fun SettingsScreen(
                             onCheckedChange = onShowLaunchSitesChanged,
                         )
                     }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_start_with_favorites),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = startWithFavorites,
+                            onCheckedChange = onStartWithFavoritesChanged,
+                        )
+                    }
                 }
 
                 // About button
@@ -304,6 +324,8 @@ private fun SettingsScreenPreview() {
             onUnitPresetChanged = {},
             showLaunchSites = PreviewData.settingsShowLaunchSites,
             onShowLaunchSitesChanged = {},
+            startWithFavorites = PreviewData.settingsStartWithFavorites,
+            onStartWithFavoritesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )
@@ -323,6 +345,8 @@ private fun SettingsScreenRealPreview() {
             onUnitPresetChanged = {},
             showLaunchSites = PreviewData.settingsShowLaunchSites,
             onShowLaunchSitesChanged = {},
+            startWithFavorites = PreviewData.settingsStartWithFavorites,
+            onStartWithFavoritesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )
@@ -345,6 +369,8 @@ private fun SettingsScreenDarkPreview() {
             onUnitPresetChanged = {},
             showLaunchSites = false,
             onShowLaunchSitesChanged = {},
+            startWithFavorites = false,
+            onStartWithFavoritesChanged = {},
             onBack = {},
             onOpenAbout = {},
         )

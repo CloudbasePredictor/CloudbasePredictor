@@ -96,6 +96,7 @@ fun MapRoute(
         onOpenSettings = onOpenSettings,
         onMapLayerSelected = viewModel::selectMapLayer,
         onVisibleBoundsChanged = viewModel::loadLaunchSitesForVisibleBounds,
+        autoOpenFavoritesOnStartup = uiState.startWithFavorites,
     )
 }
 

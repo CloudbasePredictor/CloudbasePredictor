@@ -4,6 +4,7 @@ import com.cloudbasepredictor.data.datasource.DataSourcePreference
 import com.cloudbasepredictor.data.datasource.InMemoryDataSourceRepository
 import com.cloudbasepredictor.data.forecast.ForecastRepository
 import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
+import com.cloudbasepredictor.data.map.MapStartupRepository
 import com.cloudbasepredictor.data.theme.InMemoryThemeRepository
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
@@ -32,6 +33,7 @@ class SettingsViewModelTest {
             InMemoryThemeRepository(),
             FakeUnitSettingsRepository(),
             FakeLaunchSiteDisplayRepository(),
+            FakeMapStartupRepository(),
             forecastRepo,
         )
 
@@ -73,6 +75,7 @@ class SettingsViewModelTest {
             InMemoryThemeRepository(),
             unitRepo,
             FakeLaunchSiteDisplayRepository(),
+            FakeMapStartupRepository(),
             forecastRepo,
         )
 
@@ -91,12 +94,32 @@ class SettingsViewModelTest {
             InMemoryThemeRepository(),
             FakeUnitSettingsRepository(),
             launchSiteDisplayRepo,
+            FakeMapStartupRepository(),
             forecastRepo,
         )
 
         vm.setShowLaunchSites(false)
 
         assertEquals(false, vm.showLaunchSites.value)
+        assertEquals(0, forecastRepo.clearAllCachesCallCount)
+    }
+
+    @Test
+    fun startWithFavorites_updatesWithoutClearingForecastCaches() {
+        val mapStartupRepo = FakeMapStartupRepository()
+        val forecastRepo = FakeForecastRepository()
+        val vm = SettingsViewModel(
+            InMemoryDataSourceRepository(),
+            InMemoryThemeRepository(),
+            FakeUnitSettingsRepository(),
+            FakeLaunchSiteDisplayRepository(),
+            mapStartupRepo,
+            forecastRepo,
+        )
+
+        vm.setStartWithFavorites(false)
+
+        assertEquals(false, vm.startWithFavorites.value)
         assertEquals(0, forecastRepo.clearAllCachesCallCount)
     }
 
@@ -148,6 +171,16 @@ class SettingsViewModelTest {
 
         override fun setShowLaunchSites(showLaunchSites: Boolean) {
             mutableShowLaunchSites.value = showLaunchSites
+        }
+    }
+
+    private class FakeMapStartupRepository : MapStartupRepository {
+        private val mutableStartWithFavorites = MutableStateFlow(true)
+
+        override val startWithFavorites: StateFlow<Boolean> = mutableStartWithFavorites.asStateFlow()
+
+        override fun setStartWithFavorites(startWithFavorites: Boolean) {
+            mutableStartWithFavorites.value = startWithFavorites
         }
     }
 }

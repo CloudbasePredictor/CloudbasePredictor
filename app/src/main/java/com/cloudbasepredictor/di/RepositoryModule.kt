@@ -15,7 +15,9 @@ import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.launch.SharedPrefsLaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.map.MapLayerRepository
+import com.cloudbasepredictor.data.map.MapStartupRepository
 import com.cloudbasepredictor.data.map.SharedPrefsMapLayerRepository
+import com.cloudbasepredictor.data.map.SharedPrefsMapStartupRepository
 import com.cloudbasepredictor.data.place.DefaultPlaceRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
 import com.cloudbasepredictor.data.theme.InMemoryThemeRepository
@@ -84,6 +86,12 @@ abstract class RepositoryModule {
     abstract fun bindMapLayerRepository(
         repository: SharedPrefsMapLayerRepository,
     ): MapLayerRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMapStartupRepository(
+        repository: SharedPrefsMapStartupRepository,
+    ): MapStartupRepository
 
     @Binds
     @Singleton

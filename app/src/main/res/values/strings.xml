@@ -53,6 +53,7 @@
     <string name="settings_units">Units</string>
     <string name="settings_map">Map</string>
     <string name="settings_show_launch_sites">Show launch sites</string>
+    <string name="settings_start_with_favorites">Start with favorites</string>
 
     <!-- About -->
     <string name="title_about">About</string>
