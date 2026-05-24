@@ -7,46 +7,12 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.tappableElement
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,24 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,10 +42,7 @@ import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapAttributionOverlay
-import com.cloudbasepredictor.ui.components.MapFavoriteLabelsOverlay
 import com.cloudbasepredictor.ui.components.MapTestTags
-import com.cloudbasepredictor.ui.map.MapRasterBaseLayer
-import com.cloudbasepredictor.ui.map.mapBaseStyle
 import com.cloudbasepredictor.ui.map.mapLayerAttributionDetailRes
 import com.cloudbasepredictor.ui.map.mapLayerAttributionRes
 import com.cloudbasepredictor.ui.preview.PreviewData
@@ -100,53 +50,18 @@ import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonObject
 import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.CameraState
 import org.maplibre.compose.camera.rememberCameraState
-import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.dsl.image
-import org.maplibre.compose.expressions.value.SymbolAnchor
-import org.maplibre.compose.layers.CircleLayer
-import org.maplibre.compose.layers.SymbolLayer
 import org.maplibre.compose.location.DesiredAccuracy
 import org.maplibre.compose.location.LocationPuck
 import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberNullLocationProvider
 import org.maplibre.compose.location.rememberUserLocationState
-import org.maplibre.compose.map.MapOptions
-import org.maplibre.compose.map.MaplibreMap
-import org.maplibre.compose.map.OrnamentOptions
-import org.maplibre.compose.sources.GeoJsonData
-import org.maplibre.compose.sources.rememberGeoJsonSource
-import org.maplibre.compose.util.ClickResult
-import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.Position
-import kotlin.math.min
 import kotlin.time.Duration.Companion.seconds
 
-private const val FAVORITE_POINTS_LAYER_ID = "favorite-points"
-private const val SELECTED_FAVORITE_POINT_LAYER_ID = "selected-favorite-point"
-private const val LAUNCH_SITES_LAYER_ID = "paragliding-launch-sites"
-private const val SELECTED_LAUNCH_SITE_LAYER_ID = "selected-paragliding-launch-site"
-private const val FAVORITE_LAUNCH_SITES_LAYER_ID = "favorite-paragliding-launch-sites"
-private const val SELECTED_FAVORITE_LAUNCH_SITE_LAYER_ID = "selected-favorite-paragliding-launch-site"
 private const val USER_LOCATION_LAYER_ID_PREFIX = "user-location"
 private const val DEVICE_LOCATION_MIN_ZOOM = 12.0
-private const val NORTH_BUTTON_VISIBILITY_THRESHOLD_DEGREES = 1.0
-private val FAVORITE_MARKER_COLOR = Color(0xFFFFC107)
-private val SELECTED_MARKER_COLOR = Color(0xFFE64A5B)
-private val LAUNCH_SITE_MARKER_COLOR = Color(0xFF00796B)
-private val SELECTED_LAUNCH_SITE_ICON_SIZE = 30.dp
-private val FAVORITE_ICON_SIZE = 20.dp
-private val SELECTED_FAVORITE_ICON_SIZE = 30.dp
-private val LAUNCH_SITE_LAYER_IDS = setOf(
-    LAUNCH_SITES_LAYER_ID,
-    SELECTED_LAUNCH_SITE_LAYER_ID,
-    FAVORITE_LAUNCH_SITES_LAYER_ID,
-    SELECTED_FAVORITE_LAUNCH_SITE_LAYER_ID,
-)
-private val FAVORITE_POINT_LAYER_IDS = setOf(FAVORITE_POINTS_LAYER_ID, SELECTED_FAVORITE_POINT_LAYER_ID)
 private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_FINE_LOCATION,
     Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -244,7 +159,6 @@ fun MapScreen(
         rememberNullLocationProvider()
     }
     val userLocationState = rememberUserLocationState(locationProvider)
-    val normalizedCameraBearing = normalizedBearingDegrees(cameraState.position.bearing)
 
     fun centerMapOnDeviceLocation(position: Position) {
         centerOnNextLocation = false
@@ -330,43 +244,10 @@ fun MapScreen(
     }
 
     val markerLayerData = buildMapMarkerLayerData(uiState)
-    val markerData = markerLayerData.selectedCoordinatePlace
-        ?.let(::buildMarkerFeatureCollection)
-        ?: emptyFeatureCollection()
-    val favoritesData = buildFavoritesFeatureCollection(markerLayerData.unselectedFavoritePlaces)
-    val selectedFavoriteData = markerLayerData.selectedFavoritePlace
-        ?.let { buildFavoritesFeatureCollection(listOf(it)) }
-        ?: emptyFeatureCollection()
-    val launchSitesData = if (uiState.showLaunchSites) {
-        buildLaunchSitesFeatureCollection(markerLayerData.unselectedLaunchSites)
-    } else {
-        emptyFeatureCollection()
-    }
-    val favoriteLaunchSitesData = if (uiState.showLaunchSites) {
-        buildLaunchSitesFeatureCollection(
-            markerLayerData.unselectedFavoriteLaunchSites.map { it.launchSite },
-        )
-    } else {
-        emptyFeatureCollection()
-    }
-    val selectedLaunchSiteData = if (uiState.showLaunchSites && markerLayerData.selectedLaunchSite != null) {
-        buildLaunchSitesFeatureCollection(listOf(markerLayerData.selectedLaunchSite))
-    } else {
-        emptyFeatureCollection()
-    }
-    val selectedFavoriteLaunchSiteData = if (
-        uiState.showLaunchSites &&
-        markerLayerData.selectedFavoriteLaunchSite != null
-    ) {
-        buildLaunchSitesFeatureCollection(listOf(markerLayerData.selectedFavoriteLaunchSite.launchSite))
-    } else {
-        emptyFeatureCollection()
-    }
 
     var showFavoritesDialog by rememberSaveable { mutableStateOf(false) }
     var showManualFavoriteDialog by rememberSaveable { mutableStateOf(false) }
     var didAutoOpenFavoritesDialog by rememberSaveable { mutableStateOf(false) }
-    var showMapLayerMenu by rememberSaveable { mutableStateOf(false) }
     val baseMapAttributionText = stringResource(mapLayerAttributionRes(uiState.mapLayer))
     val mapAttributionText = if (uiState.showLaunchSites) {
         val launchSiteAttributionText = stringResource(R.string.map_attribution_paraglidingearth_compact)
@@ -411,13 +292,11 @@ fun MapScreen(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             key(mapRetryKey, uiState.mapLayer) {
-                MaplibreMap(
-                    modifier = Modifier.fillMaxSize(),
-                    baseStyle = mapBaseStyle(uiState.mapLayer),
+                MapContent(
+                    mapLayer = uiState.mapLayer,
+                    showLaunchSites = uiState.showLaunchSites,
                     cameraState = cameraState,
-                    options = MapOptions(
-                        ornamentOptions = OrnamentOptions.AllDisabled,
-                    ),
+                    markerLayerData = markerLayerData,
                     onMapLoadFailed = { reason ->
                         mapLoadError = reason?.takeIf { it.isNotBlank() } ?: unavailableMessage
                     },
@@ -425,229 +304,20 @@ fun MapScreen(
                         mapLoadError = null
                         requestLaunchSitesForVisibleBounds()
                     },
-                    onMapClick = { position, offset ->
-                        val projection = cameraState.projection
-                        val launchSiteFeatures = projection
-                            ?.queryRenderedFeatures(
-                                offset = offset,
-                                layerIds = LAUNCH_SITE_LAYER_IDS,
-                            )
-                            .orEmpty()
-                        val favoriteFeatures = projection
-                            ?.queryRenderedFeatures(
-                                offset = offset,
-                                layerIds = FAVORITE_POINT_LAYER_IDS,
-                            )
-                            .orEmpty()
-                        val favoritePlaceScreenOffsets = projection
-                            ?.favoritePlaceScreenOffsets(markerLayerData.favoritePlacesForInteraction)
-                            .orEmpty()
-                        val launchSiteScreenOffsets = projection
-                            ?.launchSiteScreenOffsets(markerLayerData.launchSitesForInteraction)
-                            .orEmpty()
-
-                        val clickTarget = resolveMapClickTarget(
-                            position = position,
-                            clickOffset = offset,
-                            launchSiteFeatures = launchSiteFeatures,
-                            favoriteFeatures = favoriteFeatures,
-                            favoritePlaces = markerLayerData.favoritePlacesForInteraction,
-                            launchSites = markerLayerData.launchSitesForInteraction,
-                            favoritePlaceScreenOffsets = favoritePlaceScreenOffsets,
-                            launchSiteScreenOffsets = launchSiteScreenOffsets,
-                        )
-                        when (clickTarget) {
-                            is MapClickTarget.LaunchSite -> onLaunchSiteTapped(clickTarget.launchSite)
-                            is MapClickTarget.FavoritePlace -> onFavoriteTapped(clickTarget.place)
-                            is MapClickTarget.Coordinates -> onMapTapped(
-                                clickTarget.latitude,
-                                clickTarget.longitude,
+                    onMapTapped = onMapTapped,
+                    onFavoriteTapped = onFavoriteTapped,
+                    onLaunchSiteTapped = onLaunchSiteTapped,
+                    locationLayer = {
+                        if (hasLocationPermission && userLocationState.location != null) {
+                            LocationPuck(
+                                idPrefix = USER_LOCATION_LAYER_ID_PREFIX,
+                                locationState = userLocationState,
+                                cameraState = cameraState,
                             )
                         }
-                        ClickResult.Consume
                     },
-                ) {
-                    MapRasterBaseLayer(uiState.mapLayer)
-
-                    val launchSitesSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(launchSitesData),
-                    )
-                    val launchSiteLayerClick: (List<Feature<*, JsonObject?>>) -> ClickResult = { features ->
-                        val launchSite = findLaunchSiteForFeatures(
-                            features = features,
-                            launchSites = markerLayerData.launchSitesForInteraction,
-                        )
-                        if (launchSite != null) {
-                            onLaunchSiteTapped(launchSite)
-                            ClickResult.Consume
-                        } else {
-                            ClickResult.Pass
-                        }
-                    }
-                    val launchSiteIconPainter = rememberVectorPainter(Icons.Filled.Flag)
-                    SymbolLayer(
-                        id = LAUNCH_SITES_LAYER_ID,
-                        source = launchSitesSource,
-                        iconImage = image(
-                            value = launchSiteIconPainter,
-                            size = DpSize(LAUNCH_SITE_ICON_SIZE, LAUNCH_SITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(LAUNCH_SITE_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(1.dp),
-                        iconAnchor = const(SymbolAnchor.Bottom),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                        onClick = launchSiteLayerClick,
-                    )
-
-                    val favoriteLaunchSitesSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(favoriteLaunchSitesData),
-                    )
-                    SymbolLayer(
-                        id = FAVORITE_LAUNCH_SITES_LAYER_ID,
-                        source = favoriteLaunchSitesSource,
-                        iconImage = image(
-                            value = launchSiteIconPainter,
-                            size = DpSize(LAUNCH_SITE_ICON_SIZE, LAUNCH_SITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(FAVORITE_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(1.5.dp),
-                        iconAnchor = const(SymbolAnchor.Bottom),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                        onClick = launchSiteLayerClick,
-                    )
-
-                    val favoritesSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(favoritesData),
-                    )
-                    val favoriteIconPainter = rememberVectorPainter(Icons.Filled.Star)
-                    SymbolLayer(
-                        id = FAVORITE_POINTS_LAYER_ID,
-                        source = favoritesSource,
-                        iconImage = image(
-                            value = favoriteIconPainter,
-                            size = DpSize(FAVORITE_ICON_SIZE, FAVORITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(FAVORITE_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(1.5.dp),
-                        iconAnchor = const(SymbolAnchor.Center),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                    )
-
-                    val selectedLaunchSiteSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(selectedLaunchSiteData),
-                    )
-                    SymbolLayer(
-                        id = SELECTED_LAUNCH_SITE_LAYER_ID,
-                        source = selectedLaunchSiteSource,
-                        iconImage = image(
-                            value = launchSiteIconPainter,
-                            size = DpSize(SELECTED_LAUNCH_SITE_ICON_SIZE, SELECTED_LAUNCH_SITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(SELECTED_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(2.dp),
-                        iconAnchor = const(SymbolAnchor.Bottom),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                        onClick = launchSiteLayerClick,
-                    )
-
-                    val selectedFavoriteLaunchSiteSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(selectedFavoriteLaunchSiteData),
-                    )
-                    SymbolLayer(
-                        id = SELECTED_FAVORITE_LAUNCH_SITE_LAYER_ID,
-                        source = selectedFavoriteLaunchSiteSource,
-                        iconImage = image(
-                            value = launchSiteIconPainter,
-                            size = DpSize(SELECTED_LAUNCH_SITE_ICON_SIZE, SELECTED_LAUNCH_SITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(FAVORITE_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(2.dp),
-                        iconAnchor = const(SymbolAnchor.Bottom),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                        onClick = launchSiteLayerClick,
-                    )
-
-                    val selectedFavoriteSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(selectedFavoriteData),
-                    )
-                    SymbolLayer(
-                        id = SELECTED_FAVORITE_POINT_LAYER_ID,
-                        source = selectedFavoriteSource,
-                        iconImage = image(
-                            value = favoriteIconPainter,
-                            size = DpSize(SELECTED_FAVORITE_ICON_SIZE, SELECTED_FAVORITE_ICON_SIZE),
-                            drawAsSdf = true,
-                        ),
-                        iconColor = const(SELECTED_MARKER_COLOR),
-                        iconHaloColor = const(Color.White),
-                        iconHaloWidth = const(2.dp),
-                        iconAnchor = const(SymbolAnchor.Center),
-                        iconAllowOverlap = const(true),
-                        iconIgnorePlacement = const(true),
-                    )
-
-                    val markerSource = rememberGeoJsonSource(
-                        data = GeoJsonData.JsonString(markerData),
-                    )
-                    CircleLayer(
-                        id = "selected-point",
-                        source = markerSource,
-                        color = const(SELECTED_MARKER_COLOR),
-                        radius = const(9.dp),
-                        strokeColor = const(Color.White),
-                        strokeWidth = const(3.dp),
-                    )
-
-                    if (hasLocationPermission && userLocationState.location != null) {
-                        LocationPuck(
-                            idPrefix = USER_LOCATION_LAYER_ID_PREFIX,
-                            locationState = userLocationState,
-                            cameraState = cameraState,
-                        )
-                    }
-                }
+                )
             }
-
-            MapLaunchSiteTapTargetsOverlay(
-                launchSites = markerLayerData.launchSitesForInteraction,
-                cameraState = cameraState,
-                onLaunchSiteTapped = onLaunchSiteTapped,
-            )
-
-            MapFavoriteTapTargetsOverlay(
-                favoritePlaces = markerLayerData.favoritePlacesForInteraction,
-                cameraState = cameraState,
-                onFavoriteTapped = onFavoriteTapped,
-            )
-
-            MapFavoriteLabelsOverlay(
-                favoritePlaces = markerLayerData.favoriteLabelPlaces,
-                cameraState = cameraState,
-                markerRadius = if (
-                    markerLayerData.selectedFavoritePlace == null &&
-                    markerLayerData.selectedFavoriteLaunchSite == null
-                ) {
-                    FAVORITE_ICON_SIZE / 2
-                } else {
-                    SELECTED_FAVORITE_ICON_SIZE / 2
-                },
-                fontSize = 10.sp,
-            )
         }
 
         if (mapLoadError != null) {
@@ -662,48 +332,18 @@ fun MapScreen(
             )
         }
 
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 12.dp, top = 42.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            MapChromeIconButton(
-                onClick = { showFavoritesDialog = true },
-                imageVector = Icons.Filled.Star,
-                contentDescription = stringResource(R.string.cd_favorites),
-                modifier = Modifier.testTag(MapTestTags.FAVORITES_BUTTON),
-                contentColor = Color(0xFFFFD700),
-            )
-        }
+        MapChrome(
+            mapLayer = uiState.mapLayer,
+            bearing = cameraState.position.bearing,
+            onFavoritesClick = { showFavoritesDialog = true },
+            onSettingsClick = onOpenSettings,
+            onCurrentLocationClick = {
+                val permissionGranted = context.hasAnyLocationPermission()
+                hasLocationPermission = permissionGranted
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(end = 12.dp, top = 42.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.End,
-        ) {
-            MapChromeIconButton(
-                onClick = onOpenSettings,
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = stringResource(R.string.cd_settings),
-                modifier = Modifier.testTag(MapTestTags.SETTINGS_BUTTON),
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            MapChromeIconButton(
-                onClick = {
-                    val permissionGranted = context.hasAnyLocationPermission()
-                    hasLocationPermission = permissionGranted
-
-                    if (!permissionGranted) {
-                        locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
-                        return@MapChromeIconButton
-                    }
-
+                if (!permissionGranted) {
+                    locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
+                } else {
                     val location = userLocationState.location
                     if (location != null) {
                         centerMapOnDeviceLocation(location.position)
@@ -715,102 +355,24 @@ fun MapScreen(
                             Toast.LENGTH_SHORT,
                         ).show()
                     }
-                },
-                imageVector = Icons.Outlined.MyLocation,
-                contentDescription = stringResource(R.string.cd_current_location),
-                modifier = Modifier.testTag(MapTestTags.CURRENT_LOCATION_BUTTON),
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            if (shouldShowNorthButton(cameraState.position.bearing)) {
-                MapChromeIconButton(
-                    onClick = {
-                        scope.launch {
-                            cameraState.animateTo(cameraState.position.copy(bearing = 0.0))
-                        }
-                    },
-                    imageVector = Icons.Outlined.Explore,
-                    contentDescription = stringResource(R.string.cd_reset_north),
-                    modifier = Modifier.testTag(MapTestTags.NORTH_BUTTON),
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    iconModifier = Modifier.rotate(-normalizedCameraBearing.toFloat()),
-                )
-            }
-
-            Box {
-                MapChromeIconButton(
-                    onClick = { showMapLayerMenu = true },
-                    imageVector = Icons.Outlined.Layers,
-                    contentDescription = stringResource(R.string.cd_map_layer),
-                    modifier = Modifier.testTag(MapTestTags.LAYER_BUTTON),
-                    contentColor = if (uiState.mapLayer != MapLayerPreference.OPENFREEMAP) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-
-                DropdownMenu(
-                    expanded = showMapLayerMenu,
-                    onDismissRequest = { showMapLayerMenu = false },
-                ) {
-                    MapLayerPreference.entries.forEach { layer ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(layer.labelRes())) },
-                            leadingIcon = {
-                                RadioButton(
-                                    selected = layer == uiState.mapLayer,
-                                    onClick = null,
-                                )
-                            },
-                            onClick = {
-                                onMapLayerSelected(layer)
-                                showMapLayerMenu = false
-                            },
-                        )
-                    }
                 }
-            }
-        }
-
-        val selectedPlace = uiState.selectedPlace
-        val selectedLaunchSite = uiState.selectedLaunchSite
-        if (selectedLaunchSite != null || selectedPlace != null) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                val selectedFavoriteLaunchSite = markerLayerData.selectedFavoriteLaunchSite
-                if (selectedFavoriteLaunchSite != null) {
-                    LaunchSiteCard(
-                        launchSite = selectedFavoriteLaunchSite.launchSite,
-                        favoritePlace = selectedFavoriteLaunchSite.favoritePlace,
-                        onOpenForecast = onOpenForecast,
-                        onDismiss = onDismissSelection,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else if (selectedLaunchSite != null) {
-                    LaunchSiteCard(
-                        launchSite = selectedLaunchSite,
-                        onOpenForecast = onOpenForecast,
-                        onDismiss = onDismissSelection,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else if (selectedPlace != null) {
-                    SelectedPointCard(
-                        selectedPlace = selectedPlace,
-                        onOpenForecast = onOpenForecast,
-                        onDismiss = onDismissSelection,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+            },
+            onResetNorthClick = {
+                scope.launch {
+                    cameraState.animateTo(cameraState.position.copy(bearing = 0.0))
                 }
-            }
-        }
+            },
+            onMapLayerSelected = onMapLayerSelected,
+        )
+
+        MapSelectionCards(
+            selectedPlace = uiState.selectedPlace,
+            selectedLaunchSite = uiState.selectedLaunchSite,
+            selectedFavoriteLaunchSite = markerLayerData.selectedFavoriteLaunchSite,
+            onOpenForecast = onOpenForecast,
+            onDismissSelection = onDismissSelection,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
 
         MapAttributionOverlay(
             text = mapAttributionText,
@@ -846,464 +408,6 @@ fun MapScreen(
 
 private const val MIN_FAVORITES_FOR_STARTUP_DIALOG = 2
 
-@Composable
-private fun MapFavoriteTapTargetsOverlay(
-    favoritePlaces: List<SavedPlace>,
-    cameraState: CameraState,
-    onFavoriteTapped: (SavedPlace) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val projection = cameraState.projection ?: return
-    val cameraPosition = cameraState.position
-    var mapSize by remember { mutableStateOf(IntSize.Zero) }
-
-    val favoritePlaceOffsets = remember(favoritePlaces, projection, cameraPosition, mapSize) {
-        projection.favoritePlaceScreenOffsets(favoritePlaces)
-    }
-
-    MapFavoriteTapTargetsOverlayContent(
-        favoritePlaceOffsets = favoritePlaceOffsets,
-        mapSize = mapSize,
-        onFavoriteTapped = onFavoriteTapped,
-        modifier = modifier
-            .fillMaxSize()
-            .onSizeChanged { mapSize = it },
-    )
-}
-
-@Composable
-internal fun MapFavoriteTapTargetsOverlayContent(
-    favoritePlaceOffsets: List<FavoritePlaceScreenOffset>,
-    mapSize: IntSize,
-    onFavoriteTapped: (SavedPlace) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val density = LocalDensity.current
-    val mapWidth = with(density) { mapSize.width.toDp() }
-    val mapHeight = with(density) { mapSize.height.toDp() }
-
-    Box(modifier = modifier) {
-        favoritePlaceOffsets
-            .filter { placeOffset ->
-                val topLeft = centeredTapTargetOffset(
-                    anchorOffset = placeOffset.screenOffset,
-                    targetSize = FAVORITE_TOUCH_TARGET_SIZE,
-                )
-                topLeft.x <= mapWidth &&
-                    topLeft.x + FAVORITE_TOUCH_TARGET_SIZE >= 0.dp &&
-                    topLeft.y <= mapHeight &&
-                    topLeft.y + FAVORITE_TOUCH_TARGET_SIZE >= 0.dp
-            }
-            .forEach { placeOffset ->
-                val place = placeOffset.place
-                val topLeft = centeredTapTargetOffset(
-                    anchorOffset = placeOffset.screenOffset,
-                    targetSize = FAVORITE_TOUCH_TARGET_SIZE,
-                )
-                val contentDescription = stringResource(R.string.cd_favorite_marker, place.name)
-
-                key(place.id) {
-                    val interactionSource = remember { MutableInteractionSource() }
-
-                    Box(
-                        modifier = Modifier
-                            .size(FAVORITE_TOUCH_TARGET_SIZE)
-                            .offset(x = topLeft.x, y = topLeft.y)
-                            .align(Alignment.TopStart)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                onClick = { onFavoriteTapped(place) },
-                            )
-                            .semantics {
-                                this.contentDescription = contentDescription
-                            }
-                            .testTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + place.id),
-                    )
-                }
-            }
-    }
-}
-
-@Composable
-private fun MapLaunchSiteTapTargetsOverlay(
-    launchSites: List<ParaglidingLaunchSite>,
-    cameraState: CameraState,
-    onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val projection = cameraState.projection ?: return
-    val cameraPosition = cameraState.position
-    var mapSize by remember { mutableStateOf(IntSize.Zero) }
-
-    val launchSiteOffsets = remember(launchSites, projection, cameraPosition, mapSize) {
-        projection.launchSiteScreenOffsets(launchSites)
-    }
-
-    MapLaunchSiteTapTargetsOverlayContent(
-        launchSiteOffsets = launchSiteOffsets,
-        mapSize = mapSize,
-        onLaunchSiteTapped = onLaunchSiteTapped,
-        modifier = modifier
-            .fillMaxSize()
-            .onSizeChanged { mapSize = it },
-    )
-}
-
-@Composable
-internal fun MapLaunchSiteTapTargetsOverlayContent(
-    launchSiteOffsets: List<LaunchSiteScreenOffset>,
-    mapSize: IntSize,
-    onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val density = LocalDensity.current
-    val mapWidth = with(density) { mapSize.width.toDp() }
-    val mapHeight = with(density) { mapSize.height.toDp() }
-
-    Box(modifier = modifier) {
-        launchSiteOffsets
-            .filter { siteOffset ->
-                val topLeft = launchSiteTapTargetOffset(siteOffset.screenOffset)
-                topLeft.x <= mapWidth &&
-                    topLeft.x + LAUNCH_SITE_TOUCH_TARGET_SIZE >= 0.dp &&
-                    topLeft.y <= mapHeight &&
-                    topLeft.y + LAUNCH_SITE_TOUCH_TARGET_SIZE >= 0.dp
-            }
-            .forEach { siteOffset ->
-                val site = siteOffset.launchSite
-                val topLeft = launchSiteTapTargetOffset(siteOffset.screenOffset)
-                val contentDescription = stringResource(R.string.cd_launch_site_marker, site.name)
-
-                key(site.id) {
-                    val interactionSource = remember { MutableInteractionSource() }
-
-                    Box(
-                        modifier = Modifier
-                            .size(LAUNCH_SITE_TOUCH_TARGET_SIZE)
-                            .offset(x = topLeft.x, y = topLeft.y)
-                            .align(Alignment.TopStart)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                onClick = { onLaunchSiteTapped(site) },
-                            )
-                            .semantics {
-                                this.contentDescription = contentDescription
-                            }
-                            .testTag(MapTestTags.LAUNCH_SITE_TAP_TARGET_PREFIX + site.id),
-                    )
-                }
-            }
-    }
-}
-
-@Composable
-private fun MapChromeIconButton(
-    imageVector: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    iconModifier: Modifier = Modifier,
-) {
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier.size(40.dp),
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-        contentColor = contentColor,
-        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
-    ) {
-        Icon(
-            imageVector = imageVector,
-            contentDescription = contentDescription,
-            modifier = iconModifier,
-        )
-    }
-}
-
-private fun MapLayerPreference.labelRes(): Int {
-    return when (this) {
-        MapLayerPreference.OPENFREEMAP -> R.string.map_layer_openfreemap
-        MapLayerPreference.OPENTOPOMAP -> R.string.map_layer_opentopomap
-        MapLayerPreference.NASA_GIBS -> R.string.map_layer_nasa_gibs
-        MapLayerPreference.ESRI_WORLD_IMAGERY -> R.string.map_layer_esri_world_imagery
-    }
-}
-
-@Composable
-private fun LaunchSiteCard(
-    launchSite: ParaglidingLaunchSite,
-    favoritePlace: SavedPlace? = null,
-    onOpenForecast: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val cardDisplay = launchSiteCardDisplay(
-        launchSite = launchSite,
-        favoritePlace = favoritePlace,
-    )
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            SelectionCardHeader(
-                title = cardDisplay.title,
-                onDismiss = onDismiss,
-            )
-            cardDisplay.originalName?.let { originalName ->
-                Text(
-                    text = stringResource(R.string.map_launch_site_original_name_format, originalName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = stringResource(R.string.map_launch_site_source),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            launchSite.altitudeMeters?.let { altitudeMeters ->
-                Text(
-                    text = stringResource(R.string.map_launch_site_altitude_format, altitudeMeters),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            launchSite.windSummary()?.let { windSummary ->
-                Text(
-                    text = stringResource(R.string.map_launch_site_wind_format, windSummary),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            launchSite.activities.takeIf { it.isNotEmpty() }?.let { activities ->
-                Text(
-                    text = stringResource(
-                        R.string.map_launch_site_activity_format,
-                        activities.joinToString(", "),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            launchSite.landingName?.let { landingName ->
-                Text(
-                    text = stringResource(R.string.map_launch_site_landing_format, landingName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            launchSite.cardDescription()?.let { description ->
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                )
-            }
-
-            Text(
-                text = String.format(
-                    java.util.Locale.US,
-                    stringResource(R.string.coordinates_lat_lon_format),
-                    launchSite.latitude,
-                    launchSite.longitude,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Text(
-                text = stringResource(R.string.map_launch_site_data_attribution),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            SelectionCardActions(
-                onDismiss = onDismiss,
-                onOpenForecast = onOpenForecast,
-            )
-        }
-    }
-}
-
-internal data class LaunchSiteCardDisplay(
-    val title: String,
-    val originalName: String?,
-)
-
-internal fun launchSiteCardDisplay(
-    launchSite: ParaglidingLaunchSite,
-    favoritePlace: SavedPlace?,
-): LaunchSiteCardDisplay {
-    val launchSiteName = launchSite.name.trim()
-    val favoriteName = favoritePlace?.name?.trim()?.takeIf { name -> name.isNotEmpty() }
-    if (favoriteName == null || favoriteName == launchSiteName) {
-        return LaunchSiteCardDisplay(
-            title = launchSite.name,
-            originalName = null,
-        )
-    }
-    return LaunchSiteCardDisplay(
-        title = favoriteName,
-        originalName = launchSite.name,
-    )
-}
-
-@Composable
-private fun MapUnavailableCard(
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.map_unavailable_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = stringResource(R.string.map_unavailable_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Button(onClick = onRetry) {
-                Text(text = stringResource(R.string.action_retry))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SelectedPointCard(
-    selectedPlace: SavedPlace,
-    onOpenForecast: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            SelectionCardHeader(
-                title = selectedPlace.name,
-                onDismiss = onDismiss,
-            )
-            Text(
-                text = String.format(
-                    java.util.Locale.US,
-                    stringResource(R.string.coordinates_lat_lon_format),
-                    selectedPlace.latitude,
-                    selectedPlace.longitude,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SelectionCardActions(
-                onDismiss = onDismiss,
-                onOpenForecast = onOpenForecast,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SelectionCardHeader(
-    title: String,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f))
-                .testTag(MapTestTags.SELECTION_CARD_DISMISS_ICON),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = stringResource(R.string.action_close),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SelectionCardActions(
-    onDismiss: () -> Unit,
-    onOpenForecast: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onDismiss,
-            modifier = Modifier.testTag(MapTestTags.SELECTION_CARD_CLOSE_BUTTON),
-        ) {
-            Text(text = stringResource(R.string.action_close))
-        }
-        Button(
-            onClick = onOpenForecast,
-            modifier = Modifier.testTag(MapTestTags.SELECTION_CARD_OPEN_BUTTON),
-        ) {
-            Text(text = stringResource(R.string.action_open))
-        }
-    }
-}
-
-internal fun normalizedBearingDegrees(bearing: Double): Double {
-    val normalized = bearing % 360.0
-    return if (normalized < 0.0) normalized + 360.0 else normalized
-}
-
-internal fun shouldShowNorthButton(
-    bearing: Double,
-    thresholdDegrees: Double = NORTH_BUTTON_VISIBILITY_THRESHOLD_DEGREES,
-): Boolean {
-    val normalizedBearing = normalizedBearingDegrees(bearing)
-    val distanceToNorth = min(normalizedBearing, 360.0 - normalizedBearing)
-    return distanceToNorth >= thresholdDegrees
-}
-
 private fun cameraPositionForDeviceLocation(
     currentPosition: CameraPosition,
     devicePosition: Position,
@@ -1322,57 +426,6 @@ private fun Context.hasAnyLocationPermission(): Boolean {
 
 private fun Map<String, Boolean>.hasAnyLocationPermissionGrant(): Boolean {
     return LOCATION_PERMISSIONS.any { permission -> this[permission] == true }
-}
-
-private fun ParaglidingLaunchSite.windSummary(): String? {
-    if (orientations.isEmpty()) return null
-    val best = orientations.filter { it.rating >= 2 }.map { it.direction }
-    val possible = orientations.filter { it.rating == 1 }.map { it.direction }
-    return when {
-        best.isNotEmpty() && possible.isNotEmpty() -> {
-            "best ${best.joinToString(", ")}; possible ${possible.joinToString(", ")}"
-        }
-        best.isNotEmpty() -> best.joinToString(", ")
-        possible.isNotEmpty() -> possible.joinToString(", ")
-        else -> null
-    }
-}
-
-private fun ParaglidingLaunchSite.cardDescription(): String? {
-    val text = listOfNotNull(description, weather, flightRules).firstOrNull { it.isNotBlank() } ?: return null
-    return text.shortenForCard(maxLength = 220)
-}
-
-private fun String.shortenForCard(maxLength: Int): String {
-    if (length <= maxLength) return this
-    return take(maxLength)
-        .trimEnd()
-        .trimEnd('.', ',', ';', ':')
-        .plus("...")
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SelectedPointCardPreview() {
-    CloudbasePredictorTheme {
-        SelectedPointCard(
-            selectedPlace = PreviewData.mapUiState.selectedPlace ?: PreviewData.savedPlace,
-            onOpenForecast = {},
-            onDismiss = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LaunchSiteCardPreview() {
-    CloudbasePredictorTheme {
-        LaunchSiteCard(
-            launchSite = PreviewData.paraglidingLaunchSite,
-            onOpenForecast = {},
-            onDismiss = {},
-        )
-    }
 }
 
 @Preview(showBackground = true)
