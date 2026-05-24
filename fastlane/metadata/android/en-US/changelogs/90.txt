@@ -1,0 +1,5 @@
+New in 1.4.0:
+
+- Add ParaglidingEarth launch sites on the map, with launch details and a setting to disable launch-site loading.
+- Add a Start with favorites setting so the Favorites dialog can stop opening automatically.
+- Improve map marker handling, attribution layout, and forecast navigation reliability.

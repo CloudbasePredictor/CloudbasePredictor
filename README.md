@@ -27,9 +27,10 @@ Built with Jetpack Compose, it visualises atmospheric sounding data from [Open-M
 - **Stüve diagram** — classic atmospheric sounding plot with temperature and dew-point profiles
 - **Cloud forecast** — cloud cover at low, mid, and high levels
 - **Multiple models** — ICON Seamless, ICON D2, GFS Seamless, and more via Open-Meteo
-- **Favourite places** — save your flying sites and switch between them instantly
+- **Favourite places** — save your flying sites, switch between them instantly, and choose whether Favorites opens on startup
 - **Interactive map** — pick any location on an OpenStreetMap-based map to get a forecast
-- **Selectable map layers** — switch between OpenFreeMap, NASA GIBS true-colour imagery, and Esri World Imagery
+- **Launch sites** — browse nearby ParaglidingEarth launches and disable launch-site loading when you do not need it
+- **Selectable map layers** — switch between OpenFreeMap, OpenTopoMap, NASA GIBS true-colour imagery, and Esri World Imagery
 - **Pinch-to-zoom** — adjust the visible altitude range on all chart views
 - **Dark theme** — full Material 3 dark-mode support
 
@@ -62,7 +63,7 @@ cd CloudbasePredictor
 ## Data Sources and Maps
 
 - Forecast data is provided by [Open-Meteo](https://open-meteo.com/), including pressure-level forecast profiles from models such as ICON and GFS.
-- Paragliding launch site data is provided by [ParaglidingEarth](https://paragliding.earth/) and licensed under Creative Commons Attribution-ShareAlike 3.0.
+- Paragliding launch site data is provided by [ParaglidingEarth](https://paragliding.earth/) and licensed under Creative Commons Attribution-ShareAlike 3.0. Launch-site loading can be disabled in Settings.
 - Map layers include the [OpenFreeMap](https://openfreemap.org/) Liberty style, [OpenTopoMap](https://opentopomap.org/about), [NASA GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) true-colour imagery, and [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer).
 - OpenFreeMap uses [OpenMapTiles](https://openmaptiles.org/) and data from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). OpenTopoMap uses data from OpenStreetMap contributors and SRTM, with map style by OpenTopoMap (CC-BY-SA).
 - Maps are rendered in the app with [MapLibre Compose](https://maplibre.org/maplibre-compose/) and MapLibre for Android.

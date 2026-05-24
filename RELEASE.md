@@ -79,8 +79,8 @@ For Google Play publishing (optional):
 Edit `app/build.gradle.kts`:
 
 ```kotlin
-versionCode = 2          // increment
-versionName = "0.1.0"    // new version
+versionCode = <nextBaseCode>     // increment
+versionName = "<newVersion>"     // new version, for example "1.4.0"
 ```
 
 ### 2. Update F-Droid metadata
@@ -88,8 +88,8 @@ versionName = "0.1.0"    // new version
 Edit `metadata/com.cloudbasepredictor.yml`:
 
 ```yaml
-CurrentVersion: 0.1.0
-CurrentVersionCode: 24  # highest F-Droid ABI APK code when versionCode = 2
+CurrentVersion: <newVersion>
+CurrentVersionCode: <highestAbiVersionCode>  # highest F-Droid ABI APK code
 ```
 
 Add new build entries under `Builds:` for each F-Droid ABI APK:
@@ -97,6 +97,10 @@ Add new build entries under `Builds:` for each F-Droid ABI APK:
 APK in F-Droid metadata; it is only published with the GitHub release. Use
 F-Droid's `$$VERSION$$` placeholder in `output` paths instead of hardcoding
 `versionName`.
+
+If a fdroiddata merge-request checkout is being maintained separately, mirror
+the same build entries, current version fields, and anti-feature text in that
+checkout's `metadata/com.cloudbasepredictor.yml`.
 
 ### 3. Run tests locally
 
@@ -109,8 +113,8 @@ F-Droid's `$$VERSION$$` placeholder in `output` paths instead of hardcoding
 
 ```bash
 git add -A
-git commit -m "Release v0.1.0"
-git tag v0.1.0
+git commit -m "Release v<newVersion>"
+git tag v<newVersion>
 git push origin master --tags
 ```
 

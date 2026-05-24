@@ -1,5 +1,5 @@
 Cloudbase Predictor helps paragliding, hang-gliding, and sailplane pilots assess flying conditions for a selected location.
 
-It visualises atmospheric forecast soundings from Open-Meteo with thermic forecasts, wind profiles, Stuve diagrams, and cloud-cover charts. You can pick a point on an OpenStreetMap-based map, save favourite flying sites, compare forecast models, and use dark mode in the field.
+It visualises atmospheric forecast soundings from Open-Meteo with thermic forecasts, wind profiles, Stuve diagrams, and cloud-cover charts. You can pick a point on an OpenStreetMap-based map, browse ParaglidingEarth launch sites, save favourite flying sites, choose whether Favorites opens on startup, compare forecast models, and use dark mode in the field.
 
-Forecast data is provided by Open-Meteo. Map layers are provided by OpenFreeMap, OpenTopoMap, NASA GIBS, Esri World Imagery, OpenMapTiles, OpenStreetMap contributors, and SRTM.
+Forecast data is provided by Open-Meteo. Launch site data is provided by ParaglidingEarth and can be disabled in Settings. Map layers are provided by OpenFreeMap, OpenTopoMap, NASA GIBS, Esri World Imagery, OpenMapTiles, OpenStreetMap contributors, and SRTM.
