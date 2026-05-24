@@ -113,27 +113,6 @@ class MapScreenLaunchSitesTest {
     }
 
     @Test
-    fun centeredTapTargetOffset_centersTargetOnFavoriteMarker() {
-        val topLeft = centeredTapTargetOffset(
-            anchorOffset = DpOffset(x = 100.dp, y = 100.dp),
-            targetSize = 48.dp,
-        )
-
-        assertEquals(DpOffset(x = 76.dp, y = 76.dp), topLeft)
-    }
-
-    @Test
-    fun launchSiteTapTargetOffset_centersTargetOnBottomAnchoredFlagIcon() {
-        val topLeft = launchSiteTapTargetOffset(
-            anchorOffset = DpOffset(x = 100.dp, y = 100.dp),
-            targetSize = 56.dp,
-            iconSize = 22.dp,
-        )
-
-        assertEquals(DpOffset(x = 72.dp, y = 61.dp), topLeft)
-    }
-
-    @Test
     fun resolveMapClickTarget_whenClickIsFarFromFlag_returnsCoordinateTarget() {
         val target = resolveMapClickTarget(
             position = Position(longitude = 6.0, latitude = 45.4),

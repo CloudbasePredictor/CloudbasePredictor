@@ -1,5 +1,9 @@
 package com.cloudbasepredictor.ui.screens.map
 
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
+import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -7,11 +11,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,11 +31,12 @@ import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapFavoriteLabelsOverlay
+import com.cloudbasepredictor.ui.components.MapTestTags
 import com.cloudbasepredictor.ui.map.MapRasterBaseLayer
 import com.cloudbasepredictor.ui.map.mapBaseStyle
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
-import kotlinx.serialization.json.JsonObject
+import org.maplibre.android.maps.MapView
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.compose.camera.rememberCameraState
@@ -39,8 +52,9 @@ import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.util.ClickResult
 import org.maplibre.compose.util.MaplibreComposable
-import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.Position
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.hypot
 
 @Composable
 internal fun MapContent(
@@ -67,8 +81,20 @@ internal fun MapContent(
     } else {
         emptyList()
     }
+    // MaplibreMap remembers click callbacks internally, so keep mutable click
+    // inputs behind updated state instead of capturing the initial empty data.
+    val currentMarkerLayerData by rememberUpdatedState(markerLayerData)
+    val currentLaunchSitesForInteraction by rememberUpdatedState(launchSitesForInteraction)
+    val currentOnMapTapped by rememberUpdatedState(onMapTapped)
+    val currentOnFavoriteTapped by rememberUpdatedState(onFavoriteTapped)
+    val currentOnLaunchSiteTapped by rememberUpdatedState(onLaunchSiteTapped)
+    val suppressNextMapClick = remember { AtomicBoolean(false) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag(MapTestTags.MAP_CONTENT),
+    ) {
         MaplibreMap(
             modifier = Modifier.fillMaxSize(),
             baseStyle = mapBaseStyle(mapLayer),
@@ -79,6 +105,10 @@ internal fun MapContent(
             onMapLoadFailed = onMapLoadFailed,
             onMapLoadFinished = onMapLoadFinished,
             onMapClick = { position, offset ->
+                if (suppressNextMapClick.getAndSet(false)) {
+                    return@MaplibreMap ClickResult.Consume
+                }
+
                 val projection = cameraState.projection
                 val launchSiteFeatures = projection
                     ?.queryRenderedFeatures(
@@ -93,10 +123,10 @@ internal fun MapContent(
                     )
                     .orEmpty()
                 val favoritePlaceScreenOffsets = projection
-                    ?.favoritePlaceScreenOffsets(markerLayerData.favoritePlacesForInteraction)
+                    ?.favoritePlaceScreenOffsets(currentMarkerLayerData.favoritePlacesForInteraction)
                     .orEmpty()
                 val launchSiteScreenOffsets = projection
-                    ?.launchSiteScreenOffsets(launchSitesForInteraction)
+                    ?.launchSiteScreenOffsets(currentLaunchSitesForInteraction)
                     .orEmpty()
 
                 when (
@@ -105,15 +135,15 @@ internal fun MapContent(
                         clickOffset = offset,
                         launchSiteFeatures = launchSiteFeatures,
                         favoriteFeatures = favoriteFeatures,
-                        favoritePlaces = markerLayerData.favoritePlacesForInteraction,
-                        launchSites = launchSitesForInteraction,
+                        favoritePlaces = currentMarkerLayerData.favoritePlacesForInteraction,
+                        launchSites = currentLaunchSitesForInteraction,
                         favoritePlaceScreenOffsets = favoritePlaceScreenOffsets,
                         launchSiteScreenOffsets = launchSiteScreenOffsets,
                     )
                 ) {
-                    is MapClickTarget.LaunchSite -> onLaunchSiteTapped(clickTarget.launchSite)
-                    is MapClickTarget.FavoritePlace -> onFavoriteTapped(clickTarget.place)
-                    is MapClickTarget.Coordinates -> onMapTapped(
+                    is MapClickTarget.LaunchSite -> currentOnLaunchSiteTapped(clickTarget.launchSite)
+                    is MapClickTarget.FavoritePlace -> currentOnFavoriteTapped(clickTarget.place)
+                    is MapClickTarget.Coordinates -> currentOnMapTapped(
                         clickTarget.latitude,
                         clickTarget.longitude,
                     )
@@ -124,22 +154,19 @@ internal fun MapContent(
             MapRasterBaseLayer(mapLayer)
             MapMarkerLayers(
                 featureCollections = featureCollections,
-                launchSitesForInteraction = launchSitesForInteraction,
-                onLaunchSiteTapped = onLaunchSiteTapped,
             )
             locationLayer()
         }
 
-        MapLaunchSiteTapTargetsOverlay(
-            launchSites = launchSitesForInteraction,
+        // Observe marker taps without consuming touch events, so drags that start
+        // on marker icons continue into MapLibre's pan gesture.
+        MapMarkerPassThroughTouchHandler(
             cameraState = cameraState,
-            onLaunchSiteTapped = onLaunchSiteTapped,
-        )
-
-        MapFavoriteTapTargetsOverlay(
-            favoritePlaces = markerLayerData.favoritePlacesForInteraction,
-            cameraState = cameraState,
+            markerLayerData = markerLayerData,
+            launchSitesForInteraction = launchSitesForInteraction,
             onFavoriteTapped = onFavoriteTapped,
+            onLaunchSiteTapped = onLaunchSiteTapped,
+            suppressNextMapClick = suppressNextMapClick,
         )
 
         MapFavoriteLabelsOverlay(
@@ -159,27 +186,141 @@ internal fun MapContent(
 }
 
 @Composable
+private fun MapMarkerPassThroughTouchHandler(
+    cameraState: CameraState,
+    markerLayerData: MapMarkerLayerData,
+    launchSitesForInteraction: List<ParaglidingLaunchSite>,
+    onFavoriteTapped: (SavedPlace) -> Unit,
+    onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
+    suppressNextMapClick: AtomicBoolean,
+) {
+    if (LocalInspectionMode.current) return
+
+    val rootView = LocalView.current
+    val density = LocalDensity.current
+    val currentMarkerLayerData by rememberUpdatedState(markerLayerData)
+    val currentLaunchSitesForInteraction by rememberUpdatedState(launchSitesForInteraction)
+    val currentOnFavoriteTapped by rememberUpdatedState(onFavoriteTapped)
+    val currentOnLaunchSiteTapped by rememberUpdatedState(onLaunchSiteTapped)
+
+    DisposableEffect(rootView, cameraState, density) {
+        var installedMapView: MapView? = null
+        var downX = 0f
+        var downY = 0f
+        var movedPastSlop = false
+
+        fun handleTapUp(
+            x: Float,
+            y: Float,
+        ) {
+            val projection = cameraState.projection ?: return
+            val offset = with(density) {
+                DpOffset(x = x.toDp(), y = y.toDp())
+            }
+            val position = runCatching {
+                projection.positionFromScreenLocation(offset)
+            }.getOrNull() ?: return
+            val clickTarget = resolveMapClickTarget(
+                position = position,
+                clickOffset = offset,
+                launchSiteFeatures = projection.queryRenderedFeatures(
+                    offset = offset,
+                    layerIds = LAUNCH_SITE_LAYER_IDS,
+                ),
+                favoriteFeatures = projection.queryRenderedFeatures(
+                    offset = offset,
+                    layerIds = FAVORITE_POINT_LAYER_IDS,
+                ),
+                favoritePlaces = currentMarkerLayerData.favoritePlacesForInteraction,
+                launchSites = currentLaunchSitesForInteraction,
+                favoritePlaceScreenOffsets = projection.favoritePlaceScreenOffsets(
+                    currentMarkerLayerData.favoritePlacesForInteraction,
+                ),
+                launchSiteScreenOffsets = projection.launchSiteScreenOffsets(
+                    currentLaunchSitesForInteraction,
+                ),
+            )
+
+            when (clickTarget) {
+                is MapClickTarget.FavoritePlace -> {
+                    suppressNextMapClick.set(true)
+                    currentOnFavoriteTapped(clickTarget.place)
+                }
+                is MapClickTarget.LaunchSite -> {
+                    suppressNextMapClick.set(true)
+                    currentOnLaunchSiteTapped(clickTarget.launchSite)
+                }
+                is MapClickTarget.Coordinates -> Unit
+            }
+        }
+
+        val installTouchListener = object : Runnable {
+            override fun run() {
+                val mapView = rootView.findMapView()
+                if (mapView == null) {
+                    rootView.postDelayed(this, MAP_VIEW_TOUCH_LISTENER_RETRY_DELAY_MILLIS)
+                    return
+                }
+
+                installedMapView = mapView
+                val touchSlop = ViewConfiguration.get(mapView.context).scaledTouchSlop
+                mapView.setOnTouchListener { _, event ->
+                    when (event.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            downX = event.x
+                            downY = event.y
+                            movedPastSlop = false
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            if (hypot(event.x - downX, event.y - downY) > touchSlop) {
+                                movedPastSlop = true
+                            }
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            if (!movedPastSlop) {
+                                handleTapUp(event.x, event.y)
+                            }
+                        }
+                        MotionEvent.ACTION_CANCEL -> {
+                            movedPastSlop = false
+                        }
+                    }
+
+                    // Return false so MapLibre still receives the complete gesture stream.
+                    false
+                }
+            }
+        }
+
+        rootView.post(installTouchListener)
+
+        onDispose {
+            rootView.removeCallbacks(installTouchListener)
+            installedMapView?.setOnTouchListener(null)
+        }
+    }
+}
+
+private fun View.findMapView(): MapView? {
+    if (this is MapView) return this
+    if (this !is ViewGroup) return null
+
+    for (index in 0 until childCount) {
+        val childMapView = getChildAt(index).findMapView()
+        if (childMapView != null) return childMapView
+    }
+
+    return null
+}
+
+@Composable
 @MaplibreComposable
 private fun MapMarkerLayers(
     featureCollections: MapFeatureCollections,
-    launchSitesForInteraction: List<ParaglidingLaunchSite>,
-    onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
 ) {
     val launchSitesSource = rememberGeoJsonSource(
         data = GeoJsonData.JsonString(featureCollections.launchSites),
     )
-    val launchSiteLayerClick: (List<Feature<*, JsonObject?>>) -> ClickResult = { features ->
-        val launchSite = findLaunchSiteForFeatures(
-            features = features,
-            launchSites = launchSitesForInteraction,
-        )
-        if (launchSite != null) {
-            onLaunchSiteTapped(launchSite)
-            ClickResult.Consume
-        } else {
-            ClickResult.Pass
-        }
-    }
     val launchSiteIconPainter = rememberVectorPainter(Icons.Filled.Flag)
     SymbolLayer(
         id = LAUNCH_SITES_LAYER_ID,
@@ -195,7 +336,6 @@ private fun MapMarkerLayers(
         iconAnchor = const(SymbolAnchor.Bottom),
         iconAllowOverlap = const(true),
         iconIgnorePlacement = const(true),
-        onClick = launchSiteLayerClick,
     )
 
     val favoriteLaunchSitesSource = rememberGeoJsonSource(
@@ -215,7 +355,6 @@ private fun MapMarkerLayers(
         iconAnchor = const(SymbolAnchor.Bottom),
         iconAllowOverlap = const(true),
         iconIgnorePlacement = const(true),
-        onClick = launchSiteLayerClick,
     )
 
     val favoritesSource = rememberGeoJsonSource(
@@ -255,7 +394,6 @@ private fun MapMarkerLayers(
         iconAnchor = const(SymbolAnchor.Bottom),
         iconAllowOverlap = const(true),
         iconIgnorePlacement = const(true),
-        onClick = launchSiteLayerClick,
     )
 
     val selectedFavoriteLaunchSiteSource = rememberGeoJsonSource(
@@ -275,7 +413,6 @@ private fun MapMarkerLayers(
         iconAnchor = const(SymbolAnchor.Bottom),
         iconAllowOverlap = const(true),
         iconIgnorePlacement = const(true),
-        onClick = launchSiteLayerClick,
     )
 
     val selectedFavoriteSource = rememberGeoJsonSource(
@@ -367,6 +504,7 @@ private const val SELECTED_LAUNCH_SITE_LAYER_ID = "selected-paragliding-launch-s
 private const val FAVORITE_LAUNCH_SITES_LAYER_ID = "favorite-paragliding-launch-sites"
 private const val SELECTED_FAVORITE_LAUNCH_SITE_LAYER_ID = "selected-favorite-paragliding-launch-site"
 private const val SELECTED_POINT_LAYER_ID = "selected-point"
+private const val MAP_VIEW_TOUCH_LISTENER_RETRY_DELAY_MILLIS = 16L
 private val LAUNCH_SITE_LAYER_IDS = setOf(
     LAUNCH_SITES_LAYER_ID,
     SELECTED_LAUNCH_SITE_LAYER_ID,

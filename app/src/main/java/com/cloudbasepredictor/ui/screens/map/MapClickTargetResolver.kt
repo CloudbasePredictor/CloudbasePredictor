@@ -98,27 +98,6 @@ internal fun findLaunchSiteNearScreenOffset(
         ?.launchSite
 }
 
-internal fun centeredTapTargetOffset(
-    anchorOffset: DpOffset,
-    targetSize: Dp,
-): DpOffset {
-    return DpOffset(
-        x = anchorOffset.x - targetSize / 2,
-        y = anchorOffset.y - targetSize / 2,
-    )
-}
-
-internal fun launchSiteTapTargetOffset(
-    anchorOffset: DpOffset,
-    targetSize: Dp = LAUNCH_SITE_TOUCH_TARGET_SIZE,
-    iconSize: Dp = LAUNCH_SITE_ICON_SIZE,
-): DpOffset {
-    return DpOffset(
-        x = anchorOffset.x - targetSize / 2,
-        y = anchorOffset.y - (targetSize + iconSize) / 2,
-    )
-}
-
 internal fun CameraProjection.favoritePlaceScreenOffsets(
     favoritePlaces: List<SavedPlace>,
 ): List<FavoritePlaceScreenOffset> {
@@ -161,8 +140,6 @@ private fun DpOffset.distanceTo(other: DpOffset): Dp {
 }
 
 internal val LAUNCH_SITE_ICON_SIZE = 22.dp
-internal val LAUNCH_SITE_TOUCH_TARGET_SIZE = 56.dp
-internal val FAVORITE_TOUCH_TARGET_SIZE = 48.dp
 
 private val LAUNCH_SITE_HIT_SLOP = 40.dp
 private val FAVORITE_HIT_SLOP = 24.dp
