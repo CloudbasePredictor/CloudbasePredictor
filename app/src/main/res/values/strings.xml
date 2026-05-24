@@ -105,13 +105,13 @@
     <string name="map_layer_nasa_gibs">NASA GIBS</string>
     <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
     <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
-    <string name="map_attribution_opentopomap_compact">© OpenTopoMap · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
     <string name="map_attribution_opentopomap_full">Map data: © OpenStreetMap contributors (ODbL), SRTM\nMap style: © OpenTopoMap (CC-BY-SA)</string>
     <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
     <string name="map_attribution_nasa_gibs_full">Imagery: NASA Global Imagery Browse Services (GIBS)</string>
     <string name="map_attribution_esri_world_imagery_compact">Powered by Esri · Sources</string>
     <string name="map_attribution_esri_world_imagery_full">Powered by Esri\nSources: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © OpenStreetMap contributors, TomTom, Garmin, FAO, NOAA, and the GIS User Community</string>
-    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
     <string name="map_attribution_paraglidingearth_full">Launch site data: © ParaglidingEarth contributors, licensed under Creative Commons Attribution-ShareAlike 3.0.</string>
     <string name="map_attribution_combined_format">%1$s · %2$s</string>
     <string name="map_attribution_title">Map attribution</string>

@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,8 +22,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+
+private val MapAttributionMinFontSize = 6.sp
+private val MapAttributionAutoSizeStep = 0.25.sp
 
 @Composable
 fun MapAttributionOverlay(
@@ -47,11 +52,18 @@ fun MapAttributionOverlay(
         contentColor = Color(0xFF202124),
         tonalElevation = 1.dp,
     ) {
+        val textStyle = MaterialTheme.typography.labelSmall
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = textStyle,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = MapAttributionMinFontSize,
+                maxFontSize = textStyle.fontSize,
+                stepSize = MapAttributionAutoSizeStep,
+            ),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Clip,
+            softWrap = false,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
         )
     }
