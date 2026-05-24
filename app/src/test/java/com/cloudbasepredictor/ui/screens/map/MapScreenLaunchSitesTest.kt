@@ -156,4 +156,26 @@ class MapScreenLaunchSitesTest {
             target,
         )
     }
+
+    @Test
+    fun launchSiteCardDisplay_whenFavoriteNameDiffers_usesFavoriteTitleAndOriginalName() {
+        val display = launchSiteCardDisplay(
+            launchSite = launchSite,
+            favoritePlace = favoritePlace,
+        )
+
+        assertEquals("Favorite Saint Hilaire", display.title)
+        assertEquals("Saint Hilaire du Touvet", display.originalName)
+    }
+
+    @Test
+    fun launchSiteCardDisplay_whenFavoriteNameMatches_omitsOriginalName() {
+        val display = launchSiteCardDisplay(
+            launchSite = launchSite,
+            favoritePlace = favoritePlace.copy(name = launchSite.name),
+        )
+
+        assertEquals("Saint Hilaire du Touvet", display.title)
+        assertEquals(null, display.originalName)
+    }
 }

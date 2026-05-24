@@ -118,6 +118,7 @@
     <string name="map_waiting_for_location">Waiting for device location…</string>
     <string name="map_location_permission_denied">Location permission is needed to center the map on your position.</string>
     <string name="map_launch_site_source">ParaglidingEarth launch</string>
+    <string name="map_launch_site_original_name_format">Original name: %1$s</string>
     <string name="map_launch_site_altitude_format">Altitude %1$d m</string>
     <string name="map_launch_site_wind_format">Wind: %1$s</string>
     <string name="map_launch_site_activity_format">Suitable for: %1$s</string>

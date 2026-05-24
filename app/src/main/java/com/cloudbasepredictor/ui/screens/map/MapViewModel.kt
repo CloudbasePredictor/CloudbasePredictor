@@ -142,7 +142,9 @@ class MapViewModel @Inject constructor(
     }
 
     fun openSelectedForecast() {
+        val selectedPlace = selectedPlaceDraft.value
         val launchSite = selectedLaunchSiteDraft.value
+            ?: selectedPlace?.matchingLaunchSite(visibleLaunchSites.value)
         if (launchSite != null) {
             viewModelScope.launch {
                 mutableEvents.emit(MapEvent.OpenForecast(launchSite.toPlaceLocation()))
@@ -150,7 +152,7 @@ class MapViewModel @Inject constructor(
             return
         }
 
-        val place = selectedPlaceDraft.value ?: return
+        val place = selectedPlace ?: return
 
         viewModelScope.launch {
             mutableEvents.emit(MapEvent.OpenForecast(PlaceLocation.fromSavedPlace(place)))
@@ -276,4 +278,19 @@ internal fun shouldRequestLaunchSites(
     lastBoundsKey: String?,
 ): Boolean {
     return showLaunchSites && boundsKey != lastBoundsKey
+}
+
+private const val COLOCATED_SELECTED_LAUNCH_SITE_THRESHOLD_METERS = 30.0
+
+private fun SavedPlace.matchingLaunchSite(
+    launchSites: List<ParaglidingLaunchSite>,
+): ParaglidingLaunchSite? {
+    if (!isFavorite) return null
+    return launchSites.firstOrNull { launchSite ->
+        isNearby(
+            lat = launchSite.latitude,
+            lon = launchSite.longitude,
+            thresholdMeters = COLOCATED_SELECTED_LAUNCH_SITE_THRESHOLD_METERS,
+        )
+    }
 }

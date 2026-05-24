@@ -40,6 +40,13 @@ class MapScreenMarkerLayerDataTest {
         latitude = 45.8401,
         longitude = 6.2182,
     )
+    private val launchSiteFavorite = SavedPlace(
+        id = "favorite-saint-hilaire",
+        name = "Favorite Saint Hilaire",
+        latitude = 45.3069,
+        longitude = 5.88806,
+        isFavorite = true,
+    )
 
     @Test
     fun buildMapMarkerLayerData_whenFavoriteIsSelected_movesItToSelectedFavoriteLayer() {
@@ -114,5 +121,81 @@ class MapScreenMarkerLayerDataTest {
         assertEquals(launchSite, data.selectedLaunchSite)
         assertEquals(listOf(otherLaunchSite), data.unselectedLaunchSites)
         assertEquals(listOf(otherLaunchSite, launchSite), data.launchSitesForInteraction)
+    }
+
+    @Test
+    fun buildMapMarkerLayerData_whenFavoriteSharesLaunchSite_usesGoldLaunchSiteLayerOnly() {
+        val data = buildMapMarkerLayerData(
+            MapUiState(
+                favoritePlaces = listOf(launchSiteFavorite, otherFavoritePlace),
+                launchSites = listOf(launchSite, otherLaunchSite),
+            ),
+        )
+
+        assertNull(data.selectedFavoriteLaunchSite)
+        assertEquals(
+            listOf(FavoriteLaunchSiteMarker(launchSiteFavorite, launchSite)),
+            data.unselectedFavoriteLaunchSites,
+        )
+        assertEquals(listOf(otherFavoritePlace), data.unselectedFavoritePlaces)
+        assertEquals(listOf(otherFavoritePlace), data.favoritePlacesForInteraction)
+        assertEquals(listOf(launchSiteFavorite, otherFavoritePlace), data.favoriteLabelPlaces)
+        assertEquals(listOf(otherLaunchSite), data.unselectedLaunchSites)
+        assertEquals(listOf(launchSite, otherLaunchSite), data.launchSitesForInteraction)
+    }
+
+    @Test
+    fun buildMapMarkerLayerData_whenSelectedFavoriteSharesLaunchSite_usesSelectedGoldLaunchSiteLayer() {
+        val data = buildMapMarkerLayerData(
+            MapUiState(
+                selectedPlace = launchSiteFavorite,
+                favoritePlaces = listOf(launchSiteFavorite, otherFavoritePlace),
+                launchSites = listOf(launchSite, otherLaunchSite),
+            ),
+        )
+
+        assertNull(data.selectedCoordinatePlace)
+        assertNull(data.selectedFavoritePlace)
+        assertEquals(FavoriteLaunchSiteMarker(launchSiteFavorite, launchSite), data.selectedFavoriteLaunchSite)
+        assertEquals(emptyList<FavoriteLaunchSiteMarker>(), data.unselectedFavoriteLaunchSites)
+        assertEquals(listOf(otherFavoritePlace), data.unselectedFavoritePlaces)
+        assertEquals(listOf(otherFavoritePlace), data.favoritePlacesForInteraction)
+        assertEquals(listOf(otherLaunchSite), data.unselectedLaunchSites)
+    }
+
+    @Test
+    fun buildMapMarkerLayerData_whenSelectedLaunchSiteHasFavorite_usesFavoriteLaunchSiteCardData() {
+        val data = buildMapMarkerLayerData(
+            MapUiState(
+                selectedLaunchSite = launchSite,
+                favoritePlaces = listOf(launchSiteFavorite),
+                launchSites = listOf(launchSite, otherLaunchSite),
+            ),
+        )
+
+        assertNull(data.selectedLaunchSite)
+        assertEquals(FavoriteLaunchSiteMarker(launchSiteFavorite, launchSite), data.selectedFavoriteLaunchSite)
+        assertEquals(listOf(otherLaunchSite), data.unselectedLaunchSites)
+        assertEquals(listOf(launchSite, otherLaunchSite), data.launchSitesForInteraction)
+    }
+
+    @Test
+    fun buildMapMarkerLayerData_whenFavoriteIsNearButNotAtLaunchSite_keepsSeparateMarkers() {
+        val nearbyFavorite = launchSiteFavorite.copy(
+            latitude = 45.3073,
+            longitude = 5.88806,
+        )
+
+        val data = buildMapMarkerLayerData(
+            MapUiState(
+                favoritePlaces = listOf(nearbyFavorite),
+                launchSites = listOf(launchSite),
+            ),
+        )
+
+        assertEquals(emptyList<FavoriteLaunchSiteMarker>(), data.unselectedFavoriteLaunchSites)
+        assertEquals(listOf(nearbyFavorite), data.unselectedFavoritePlaces)
+        assertEquals(listOf(nearbyFavorite), data.favoritePlacesForInteraction)
+        assertEquals(listOf(launchSite), data.unselectedLaunchSites)
     }
 }
