@@ -1,12 +1,20 @@
 package com.cloudbasepredictor.ui.screens.map
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapTestTags
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -130,6 +138,38 @@ class MapScreenTest {
 
         composeRule.runOnIdle {
             assertTrue(dismissed)
+        }
+    }
+
+    @Test
+    fun mapFavoriteTapTarget_touchInputSelectsFavorite() {
+        val favorite = favoritePlaces.first()
+        var tappedFavorite: SavedPlace? = null
+
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                MapFavoriteTapTargetsOverlayContent(
+                    favoritePlaceOffsets = listOf(
+                        FavoritePlaceScreenOffset(
+                            place = favorite,
+                            screenOffset = DpOffset(x = 100.dp, y = 100.dp),
+                        ),
+                    ),
+                    mapSize = IntSize(width = 10_000, height = 10_000),
+                    onFavoriteTapped = { tappedFavorite = it },
+                    modifier = Modifier.size(200.dp),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + favorite.id)
+            .assertIsDisplayed()
+            .performTouchInput {
+                click(center)
+            }
+
+        composeRule.runOnIdle {
+            assertEquals(favorite, tappedFavorite)
         }
     }
 

@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,7 +71,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -881,7 +882,7 @@ private fun MapFavoriteTapTargetsOverlay(
 }
 
 @Composable
-private fun MapFavoriteTapTargetsOverlayContent(
+internal fun MapFavoriteTapTargetsOverlayContent(
     favoritePlaceOffsets: List<FavoritePlaceScreenOffset>,
     mapSize: IntSize,
     onFavoriteTapped: (SavedPlace) -> Unit,
@@ -911,20 +912,25 @@ private fun MapFavoriteTapTargetsOverlayContent(
                 )
                 val contentDescription = stringResource(R.string.cd_favorite_marker, place.name)
 
-                Box(
-                    modifier = Modifier
-                        .size(FAVORITE_TOUCH_TARGET_SIZE)
-                        .offset(x = topLeft.x, y = topLeft.y)
-                        .align(Alignment.TopStart)
-                        .semantics {
-                            this.contentDescription = contentDescription
-                            onClick {
-                                onFavoriteTapped(place)
-                                true
+                key(place.id) {
+                    val interactionSource = remember { MutableInteractionSource() }
+
+                    Box(
+                        modifier = Modifier
+                            .size(FAVORITE_TOUCH_TARGET_SIZE)
+                            .offset(x = topLeft.x, y = topLeft.y)
+                            .align(Alignment.TopStart)
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = { onFavoriteTapped(place) },
+                            )
+                            .semantics {
+                                this.contentDescription = contentDescription
                             }
-                        }
-                        .testTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + place.id),
-                )
+                            .testTag(MapTestTags.FAVORITE_TAP_TARGET_PREFIX + place.id),
+                    )
+                }
             }
     }
 }
@@ -955,7 +961,7 @@ private fun MapLaunchSiteTapTargetsOverlay(
 }
 
 @Composable
-private fun MapLaunchSiteTapTargetsOverlayContent(
+internal fun MapLaunchSiteTapTargetsOverlayContent(
     launchSiteOffsets: List<LaunchSiteScreenOffset>,
     mapSize: IntSize,
     onLaunchSiteTapped: (ParaglidingLaunchSite) -> Unit,
@@ -979,20 +985,25 @@ private fun MapLaunchSiteTapTargetsOverlayContent(
                 val topLeft = launchSiteTapTargetOffset(siteOffset.screenOffset)
                 val contentDescription = stringResource(R.string.cd_launch_site_marker, site.name)
 
-                Box(
-                    modifier = Modifier
-                        .size(LAUNCH_SITE_TOUCH_TARGET_SIZE)
-                        .offset(x = topLeft.x, y = topLeft.y)
-                        .align(Alignment.TopStart)
-                        .semantics {
-                            this.contentDescription = contentDescription
-                            onClick {
-                                onLaunchSiteTapped(site)
-                                true
+                key(site.id) {
+                    val interactionSource = remember { MutableInteractionSource() }
+
+                    Box(
+                        modifier = Modifier
+                            .size(LAUNCH_SITE_TOUCH_TARGET_SIZE)
+                            .offset(x = topLeft.x, y = topLeft.y)
+                            .align(Alignment.TopStart)
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = { onLaunchSiteTapped(site) },
+                            )
+                            .semantics {
+                                this.contentDescription = contentDescription
                             }
-                        }
-                        .testTag(MapTestTags.LAUNCH_SITE_TAP_TARGET_PREFIX + site.id),
-                )
+                            .testTag(MapTestTags.LAUNCH_SITE_TAP_TARGET_PREFIX + site.id),
+                    )
+                }
             }
     }
 }
