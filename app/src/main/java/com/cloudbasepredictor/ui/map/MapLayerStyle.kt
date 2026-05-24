@@ -109,9 +109,9 @@ internal fun mapLayerAttributionRes(layer: MapLayerPreference): Int {
 @StringRes
 internal fun mapLayerAttributionDetailRes(layer: MapLayerPreference): Int? {
     return when (layer) {
-        MapLayerPreference.OPENFREEMAP -> null
+        MapLayerPreference.OPENFREEMAP -> R.string.map_attribution_full
         MapLayerPreference.OPENTOPOMAP -> R.string.map_attribution_opentopomap_full
-        MapLayerPreference.NASA_GIBS -> null
+        MapLayerPreference.NASA_GIBS -> R.string.map_attribution_nasa_gibs_full
         MapLayerPreference.ESRI_WORLD_IMAGERY -> R.string.map_attribution_esri_world_imagery_full
     }
 }

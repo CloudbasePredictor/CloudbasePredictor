@@ -46,7 +46,11 @@ class MapLayerStyleTest {
     }
 
     @Test
-    fun mapLayerAttribution_usesExpandableDetailsForAttributionHeavySources() {
+    fun mapLayerAttribution_usesCompactLabelsWithExpandableDetails() {
+        assertEquals(
+            R.string.map_attribution_full,
+            mapLayerAttributionDetailRes(MapLayerPreference.OPENFREEMAP),
+        )
         assertEquals(
             R.string.map_attribution_opentopomap_compact,
             mapLayerAttributionRes(MapLayerPreference.OPENTOPOMAP),
@@ -62,6 +66,10 @@ class MapLayerStyleTest {
         assertEquals(
             R.string.map_attribution_esri_world_imagery_full,
             mapLayerAttributionDetailRes(MapLayerPreference.ESRI_WORLD_IMAGERY),
+        )
+        assertEquals(
+            R.string.map_attribution_nasa_gibs_full,
+            mapLayerAttributionDetailRes(MapLayerPreference.NASA_GIBS),
         )
     }
 
