@@ -2,16 +2,10 @@ package com.cloudbasepredictor
 
 import android.app.Application
 import android.os.Build
-import com.cloudbasepredictor.data.forecast.ForecastRepository
+import com.cloudbasepredictor.data.forecast.ForecastCacheMaintenance
 import com.cloudbasepredictor.di.cloudbasePredictorUserAgentInterceptor
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.maplibre.android.MapLibre
@@ -22,9 +16,7 @@ import timber.log.Timber
 class CloudbasePredictorApplication : Application() {
 
     @Inject
-    lateinit var forecastRepository: ForecastRepository
-
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    lateinit var forecastCacheMaintenance: ForecastCacheMaintenance
 
     override fun onCreate() {
         super.onCreate()
@@ -50,18 +42,7 @@ class CloudbasePredictorApplication : Application() {
                 },
             )
 
-        // Schedule DB cleanup after 10 seconds.
-        appScope.launch {
-            delay(10_000L)
-            val oneDayAgo = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
-            try {
-                forecastRepository.cleanupOldForecasts(oneDayAgo)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Forecast cleanup failed")
-            }
-        }
+        forecastCacheMaintenance.scheduleStartupCleanup()
     }
 
     private fun configureMapLibreHttpClient() {
@@ -69,7 +50,7 @@ class CloudbasePredictorApplication : Application() {
             OkHttpClient.Builder()
                 .dispatcher(mapLibreDispatcher())
                 .addInterceptor(cloudbasePredictorUserAgentInterceptor())
-                .build()
+                .build(),
         )
     }
 

@@ -74,7 +74,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -102,10 +101,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.CameraProjection
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -126,15 +122,9 @@ import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Feature
 import org.maplibre.spatialk.geojson.Position
-import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.seconds
 
-private const val GEOJSON_PROPERTY_NAME = "name"
-private const val GEOJSON_PROPERTY_PLACE_ID = "placeId"
-private const val GEOJSON_PROPERTY_LAUNCH_SITE_ID = "launchSiteId"
 private const val FAVORITE_POINTS_LAYER_ID = "favorite-points"
 private const val SELECTED_FAVORITE_POINT_LAYER_ID = "selected-favorite-point"
 private const val LAUNCH_SITES_LAYER_ID = "paragliding-launch-sites"
@@ -144,19 +134,12 @@ private const val SELECTED_FAVORITE_LAUNCH_SITE_LAYER_ID = "selected-favorite-pa
 private const val USER_LOCATION_LAYER_ID_PREFIX = "user-location"
 private const val DEVICE_LOCATION_MIN_ZOOM = 12.0
 private const val NORTH_BUTTON_VISIBILITY_THRESHOLD_DEGREES = 1.0
-private const val COLOCATED_MARKER_THRESHOLD_METERS = 30.0
-private const val EARTH_RADIUS_M = 6_371_000.0
 private val FAVORITE_MARKER_COLOR = Color(0xFFFFC107)
 private val SELECTED_MARKER_COLOR = Color(0xFFE64A5B)
 private val LAUNCH_SITE_MARKER_COLOR = Color(0xFF00796B)
-private val LAUNCH_SITE_ICON_SIZE = 22.dp
 private val SELECTED_LAUNCH_SITE_ICON_SIZE = 30.dp
-private val LAUNCH_SITE_TOUCH_TARGET_SIZE = 56.dp
-private val LAUNCH_SITE_HIT_SLOP = 40.dp
 private val FAVORITE_ICON_SIZE = 20.dp
 private val SELECTED_FAVORITE_ICON_SIZE = 30.dp
-private val FAVORITE_TOUCH_TARGET_SIZE = 48.dp
-private val FAVORITE_HIT_SLOP = 24.dp
 private val LAUNCH_SITE_LAYER_IDS = setOf(
     LAUNCH_SITES_LAYER_ID,
     SELECTED_LAUNCH_SITE_LAYER_ID,
@@ -863,220 +846,6 @@ fun MapScreen(
 
 private const val MIN_FAVORITES_FOR_STARTUP_DIALOG = 2
 
-internal data class MapMarkerLayerData(
-    val selectedCoordinatePlace: SavedPlace?,
-    val unselectedFavoritePlaces: List<SavedPlace>,
-    val selectedFavoritePlace: SavedPlace?,
-    val unselectedFavoriteLaunchSites: List<FavoriteLaunchSiteMarker>,
-    val selectedFavoriteLaunchSite: FavoriteLaunchSiteMarker?,
-    val favoritePlacesForInteraction: List<SavedPlace>,
-    val favoriteLabelPlaces: List<SavedPlace>,
-    val unselectedLaunchSites: List<ParaglidingLaunchSite>,
-    val selectedLaunchSite: ParaglidingLaunchSite?,
-    val launchSitesForInteraction: List<ParaglidingLaunchSite>,
-)
-
-internal data class FavoriteLaunchSiteMarker(
-    val favoritePlace: SavedPlace,
-    val launchSite: ParaglidingLaunchSite,
-)
-
-internal fun buildMapMarkerLayerData(uiState: MapUiState): MapMarkerLayerData {
-    val favoriteLaunchSiteMarkers = buildFavoriteLaunchSiteMarkers(
-        favoritePlaces = uiState.favoritePlaces,
-        launchSites = uiState.launchSites,
-    )
-    val selectedPlaceFavoriteLaunchSite = uiState.selectedPlace
-        ?.takeIf { selectedPlace -> selectedPlace.isSelectedFavorite(uiState.favoritePlaces) }
-        ?.let { selectedPlace ->
-            favoriteLaunchSiteMarkers.firstOrNull { marker ->
-                marker.favoritePlace.id == selectedPlace.id
-            } ?: favoriteLaunchSiteMarkerForFavorite(
-                favoritePlace = selectedPlace.copy(isFavorite = true),
-                launchSites = uiState.launchSites,
-            )
-        }
-    val selectedLaunchSiteFavoriteMarker = uiState.selectedLaunchSite?.let { selectedLaunchSite ->
-        favoriteLaunchSiteMarkers.firstOrNull { marker ->
-            marker.launchSite.id == selectedLaunchSite.id
-        }
-    }
-    val selectedFavoriteLaunchSite = selectedPlaceFavoriteLaunchSite ?: selectedLaunchSiteFavoriteMarker
-    val selectedFavoritePlace = mapSelectedFavoritePlace(
-        selectedPlace = uiState.selectedPlace,
-        favoritePlaces = uiState.favoritePlaces,
-    ).takeIf { selectedFavoriteLaunchSite == null }
-    val selectedCoordinatePlace = uiState.selectedPlace?.takeIf { selectedPlace ->
-        selectedFavoritePlace?.id != selectedPlace.id &&
-            selectedFavoriteLaunchSite?.favoritePlace?.id != selectedPlace.id
-    }
-    val favoriteLaunchSiteFavoriteIds = favoriteLaunchSiteMarkers.map { marker ->
-        marker.favoritePlace.id
-    }.toSet()
-    val favoritePlacesForInteraction = favoritePlacesWithSelected(
-        favoritePlaces = uiState.favoritePlaces.filterNot { place ->
-            place.id in favoriteLaunchSiteFavoriteIds
-        },
-        selectedFavoritePlace = selectedFavoritePlace,
-    )
-    val favoriteLabelPlaces = favoritePlacesWithSelected(
-        favoritePlaces = uiState.favoritePlaces,
-        selectedFavoritePlace = selectedFavoritePlace ?: selectedFavoriteLaunchSite?.favoritePlace,
-    )
-    val hiddenFavoriteIds = favoriteLaunchSiteFavoriteIds +
-        listOfNotNull(
-            selectedFavoritePlace?.id,
-            selectedFavoriteLaunchSite?.favoritePlace?.id,
-        )
-    val unselectedFavoritePlaces = uiState.favoritePlaces.filterNot { place ->
-        place.id in hiddenFavoriteIds
-    }
-    val selectedLaunchSite = uiState.selectedLaunchSite?.takeIf { site ->
-        selectedFavoriteLaunchSite?.launchSite?.id != site.id
-    }
-    val launchSitesForInteraction = launchSitesWithSelected(
-        launchSites = uiState.launchSites,
-        selectedLaunchSite = uiState.selectedLaunchSite ?: selectedFavoriteLaunchSite?.launchSite,
-    )
-    val favoriteLaunchSiteIds = favoriteLaunchSiteMarkers.map { marker ->
-        marker.launchSite.id
-    }.toSet() + listOfNotNull(selectedFavoriteLaunchSite?.launchSite?.id)
-    val unselectedFavoriteLaunchSites = favoriteLaunchSiteMarkers.filterNot { marker ->
-        marker.launchSite.id == selectedFavoriteLaunchSite?.launchSite?.id
-    }
-    val unselectedLaunchSites = if (selectedLaunchSite == null) {
-        uiState.launchSites.filterNot { site -> site.id in favoriteLaunchSiteIds }
-    } else {
-        uiState.launchSites.filterNot { site ->
-            site.id == selectedLaunchSite.id || site.id in favoriteLaunchSiteIds
-        }
-    }
-
-    return MapMarkerLayerData(
-        selectedCoordinatePlace = selectedCoordinatePlace,
-        unselectedFavoritePlaces = unselectedFavoritePlaces,
-        selectedFavoritePlace = selectedFavoritePlace,
-        unselectedFavoriteLaunchSites = unselectedFavoriteLaunchSites,
-        selectedFavoriteLaunchSite = selectedFavoriteLaunchSite,
-        favoritePlacesForInteraction = favoritePlacesForInteraction,
-        favoriteLabelPlaces = favoriteLabelPlaces,
-        unselectedLaunchSites = unselectedLaunchSites,
-        selectedLaunchSite = selectedLaunchSite,
-        launchSitesForInteraction = launchSitesForInteraction,
-    )
-}
-
-private fun mapSelectedFavoritePlace(
-    selectedPlace: SavedPlace?,
-    favoritePlaces: List<SavedPlace>,
-): SavedPlace? {
-    return selectedPlace?.takeIf { place ->
-        place.isFavorite || favoritePlaces.any { favorite -> favorite.id == place.id }
-    }
-}
-
-private fun SavedPlace.isSelectedFavorite(favoritePlaces: List<SavedPlace>): Boolean {
-    return isFavorite || favoritePlaces.any { favorite -> favorite.id == id }
-}
-
-private fun favoritePlacesWithSelected(
-    favoritePlaces: List<SavedPlace>,
-    selectedFavoritePlace: SavedPlace?,
-): List<SavedPlace> {
-    if (selectedFavoritePlace == null) return favoritePlaces
-    if (favoritePlaces.any { place -> place.id == selectedFavoritePlace.id }) return favoritePlaces
-    return favoritePlaces + selectedFavoritePlace
-}
-
-private fun launchSitesWithSelected(
-    launchSites: List<ParaglidingLaunchSite>,
-    selectedLaunchSite: ParaglidingLaunchSite?,
-): List<ParaglidingLaunchSite> {
-    if (selectedLaunchSite == null) return launchSites
-    if (launchSites.any { site -> site.id == selectedLaunchSite.id }) return launchSites
-    return launchSites + selectedLaunchSite
-}
-
-private data class FavoriteLaunchSiteCandidate(
-    val favoritePlace: SavedPlace,
-    val launchSite: ParaglidingLaunchSite,
-    val distanceMeters: Double,
-) {
-    fun toMarker(): FavoriteLaunchSiteMarker {
-        return FavoriteLaunchSiteMarker(
-            favoritePlace = favoritePlace,
-            launchSite = launchSite,
-        )
-    }
-}
-
-private fun buildFavoriteLaunchSiteMarkers(
-    favoritePlaces: List<SavedPlace>,
-    launchSites: List<ParaglidingLaunchSite>,
-): List<FavoriteLaunchSiteMarker> {
-    val candidates = favoritePlaces
-        .filter { place -> place.isFavorite }
-        .flatMap { favoritePlace ->
-            launchSites.mapNotNull { launchSite ->
-                favoriteLaunchSiteCandidate(
-                    favoritePlace = favoritePlace,
-                    launchSite = launchSite,
-                )
-            }
-        }
-        .sortedWith(favoriteLaunchSiteCandidateComparator())
-
-    val usedFavoriteIds = mutableSetOf<String>()
-    val usedLaunchSiteIds = mutableSetOf<String>()
-    return candidates.mapNotNull { candidate ->
-        if (
-            !usedFavoriteIds.add(candidate.favoritePlace.id) ||
-            !usedLaunchSiteIds.add(candidate.launchSite.id)
-        ) {
-            return@mapNotNull null
-        }
-        candidate.toMarker()
-    }
-}
-
-private fun favoriteLaunchSiteMarkerForFavorite(
-    favoritePlace: SavedPlace,
-    launchSites: List<ParaglidingLaunchSite>,
-): FavoriteLaunchSiteMarker? {
-    if (!favoritePlace.isFavorite) return null
-    return launchSites
-        .mapNotNull { launchSite ->
-            favoriteLaunchSiteCandidate(
-                favoritePlace = favoritePlace,
-                launchSite = launchSite,
-            )
-        }
-        .minWithOrNull(favoriteLaunchSiteCandidateComparator())
-        ?.toMarker()
-}
-
-private fun favoriteLaunchSiteCandidate(
-    favoritePlace: SavedPlace,
-    launchSite: ParaglidingLaunchSite,
-): FavoriteLaunchSiteCandidate? {
-    val distanceMeters = favoritePlace.distanceMetersTo(
-        latitude = launchSite.latitude,
-        longitude = launchSite.longitude,
-    )
-    if (distanceMeters > COLOCATED_MARKER_THRESHOLD_METERS) return null
-    return FavoriteLaunchSiteCandidate(
-        favoritePlace = favoritePlace,
-        launchSite = launchSite,
-        distanceMeters = distanceMeters,
-    )
-}
-
-private fun favoriteLaunchSiteCandidateComparator(): Comparator<FavoriteLaunchSiteCandidate> {
-    return compareBy<FavoriteLaunchSiteCandidate> { candidate -> candidate.distanceMeters }
-        .thenBy { candidate -> candidate.favoritePlace.id }
-        .thenBy { candidate -> candidate.launchSite.id }
-}
-
 @Composable
 private fun MapFavoriteTapTargetsOverlay(
     favoritePlaces: List<SavedPlace>,
@@ -1521,273 +1290,6 @@ private fun SelectionCardActions(
     }
 }
 
-internal fun buildMarkerFeatureCollection(place: SavedPlace): String {
-    return """
-        {
-          "type": "FeatureCollection",
-          "features": [
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [${place.longitude}, ${place.latitude}]
-              },
-              "properties": {
-                "$GEOJSON_PROPERTY_PLACE_ID": "${place.id.escapeJsonString()}",
-                "$GEOJSON_PROPERTY_NAME": "${place.name.escapeJsonString()}"
-              }
-            }
-          ]
-        }
-    """.trimIndent()
-}
-
-internal fun buildFavoritesFeatureCollection(places: List<SavedPlace>): String {
-    if (places.isEmpty()) return emptyFeatureCollection()
-    val features = places.joinToString(",") { place ->
-        """
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [${place.longitude}, ${place.latitude}]
-              },
-              "properties": {
-                "$GEOJSON_PROPERTY_PLACE_ID": "${place.id.escapeJsonString()}",
-                "$GEOJSON_PROPERTY_NAME": "${place.name.escapeJsonString()}"
-              }
-            }
-        """
-    }
-    return """
-        {
-          "type": "FeatureCollection",
-          "features": [$features]
-        }
-    """.trimIndent()
-}
-
-internal fun buildLaunchSitesFeatureCollection(sites: List<ParaglidingLaunchSite>): String {
-    if (sites.isEmpty()) return emptyFeatureCollection()
-    val features = sites.joinToString(",") { site ->
-        """
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [${site.longitude}, ${site.latitude}]
-              },
-              "properties": {
-                "$GEOJSON_PROPERTY_LAUNCH_SITE_ID": "${site.id.escapeJsonString()}",
-                "$GEOJSON_PROPERTY_NAME": "${site.name.escapeJsonString()}"
-              }
-            }
-        """
-    }
-    return """
-        {
-          "type": "FeatureCollection",
-          "features": [$features]
-        }
-    """.trimIndent()
-}
-
-internal fun emptyFeatureCollection(): String {
-    return """
-        {
-          "type": "FeatureCollection",
-          "features": []
-        }
-    """.trimIndent()
-}
-
-internal fun findFavoritePlaceForFeatures(
-    features: List<Feature<*, JsonObject?>>,
-    favoritePlaces: List<SavedPlace>,
-): SavedPlace? {
-    return features.firstNotNullOfOrNull { feature ->
-        val placeId = feature.properties
-            ?.get(GEOJSON_PROPERTY_PLACE_ID)
-            ?.jsonPrimitive
-            ?.contentOrNull
-
-        favoritePlaces.firstOrNull { favorite -> favorite.id == placeId }
-    }
-}
-
-internal fun findLaunchSiteForFeatures(
-    features: List<Feature<*, JsonObject?>>,
-    launchSites: List<ParaglidingLaunchSite>,
-): ParaglidingLaunchSite? {
-    return features.firstNotNullOfOrNull { feature ->
-        val launchSiteId = feature.properties
-            ?.get(GEOJSON_PROPERTY_LAUNCH_SITE_ID)
-            ?.jsonPrimitive
-            ?.contentOrNull
-
-        launchSites.firstOrNull { site -> site.id == launchSiteId }
-    }
-}
-
-internal sealed interface MapClickTarget {
-    data class LaunchSite(val launchSite: ParaglidingLaunchSite) : MapClickTarget
-    data class FavoritePlace(val place: SavedPlace) : MapClickTarget
-    data class Coordinates(
-        val latitude: Double,
-        val longitude: Double,
-    ) : MapClickTarget
-}
-
-internal data class LaunchSiteScreenOffset(
-    val launchSite: ParaglidingLaunchSite,
-    val screenOffset: DpOffset,
-)
-
-internal data class FavoritePlaceScreenOffset(
-    val place: SavedPlace,
-    val screenOffset: DpOffset,
-)
-
-internal fun resolveMapClickTarget(
-    position: Position,
-    clickOffset: DpOffset,
-    launchSiteFeatures: List<Feature<*, JsonObject?>>,
-    favoriteFeatures: List<Feature<*, JsonObject?>>,
-    favoritePlaces: List<SavedPlace>,
-    launchSites: List<ParaglidingLaunchSite>,
-    favoritePlaceScreenOffsets: List<FavoritePlaceScreenOffset>,
-    launchSiteScreenOffsets: List<LaunchSiteScreenOffset>,
-): MapClickTarget {
-    val favoritePlace = findFavoritePlaceForFeatures(
-        features = favoriteFeatures,
-        favoritePlaces = favoritePlaces,
-    ) ?: findFavoritePlaceNearScreenOffset(
-        clickOffset = clickOffset,
-        favoritePlaceScreenOffsets = favoritePlaceScreenOffsets,
-    )
-    if (favoritePlace != null) {
-        return MapClickTarget.FavoritePlace(favoritePlace)
-    }
-
-    val launchSite = findLaunchSiteForFeatures(
-        features = launchSiteFeatures,
-        launchSites = launchSites,
-    ) ?: findLaunchSiteNearScreenOffset(
-        clickOffset = clickOffset,
-        launchSiteScreenOffsets = launchSiteScreenOffsets,
-    )
-    if (launchSite != null) {
-        return MapClickTarget.LaunchSite(launchSite)
-    }
-
-    return MapClickTarget.Coordinates(
-        latitude = position.latitude,
-        longitude = position.longitude,
-    )
-}
-
-internal fun findFavoritePlaceNearScreenOffset(
-    clickOffset: DpOffset,
-    favoritePlaceScreenOffsets: List<FavoritePlaceScreenOffset>,
-    maxDistance: Dp = FAVORITE_HIT_SLOP,
-): SavedPlace? {
-    return favoritePlaceScreenOffsets
-        .map { placeOffset ->
-            placeOffset to placeOffset.screenOffset.distanceTo(clickOffset)
-        }
-        .filter { (_, distance) -> distance <= maxDistance }
-        .minByOrNull { (_, distance) -> distance }
-        ?.first
-        ?.place
-}
-
-internal fun findLaunchSiteNearScreenOffset(
-    clickOffset: DpOffset,
-    launchSiteScreenOffsets: List<LaunchSiteScreenOffset>,
-    maxDistance: Dp = LAUNCH_SITE_HIT_SLOP,
-): ParaglidingLaunchSite? {
-    return launchSiteScreenOffsets
-        .map { siteOffset ->
-            siteOffset to siteOffset.screenOffset.distanceTo(clickOffset)
-        }
-        .filter { (_, distance) -> distance <= maxDistance }
-        .minByOrNull { (_, distance) -> distance }
-        ?.first
-        ?.launchSite
-}
-
-internal fun centeredTapTargetOffset(
-    anchorOffset: DpOffset,
-    targetSize: Dp,
-): DpOffset {
-    return DpOffset(
-        x = anchorOffset.x - targetSize / 2,
-        y = anchorOffset.y - targetSize / 2,
-    )
-}
-
-internal fun launchSiteTapTargetOffset(
-    anchorOffset: DpOffset,
-    targetSize: Dp = LAUNCH_SITE_TOUCH_TARGET_SIZE,
-    iconSize: Dp = LAUNCH_SITE_ICON_SIZE,
-): DpOffset {
-    return DpOffset(
-        x = anchorOffset.x - targetSize / 2,
-        y = anchorOffset.y - (targetSize + iconSize) / 2,
-    )
-}
-
-private fun CameraProjection.favoritePlaceScreenOffsets(
-    favoritePlaces: List<SavedPlace>,
-): List<FavoritePlaceScreenOffset> {
-    return favoritePlaces.mapNotNull { place ->
-        val screenOffset = runCatching {
-            screenLocationFromPosition(
-                Position(longitude = place.longitude, latitude = place.latitude),
-            )
-        }.getOrNull() ?: return@mapNotNull null
-
-        FavoritePlaceScreenOffset(
-            place = place,
-            screenOffset = screenOffset,
-        )
-    }
-}
-
-private fun CameraProjection.launchSiteScreenOffsets(
-    launchSites: List<ParaglidingLaunchSite>,
-): List<LaunchSiteScreenOffset> {
-    return launchSites.mapNotNull { site ->
-        val screenOffset = runCatching {
-            screenLocationFromPosition(
-                Position(longitude = site.longitude, latitude = site.latitude),
-            )
-        }.getOrNull() ?: return@mapNotNull null
-
-        LaunchSiteScreenOffset(
-            launchSite = site,
-            screenOffset = screenOffset,
-        )
-    }
-}
-
-private fun DpOffset.distanceTo(other: DpOffset): Dp {
-    return hypot(
-        (x - other.x).value,
-        (y - other.y).value,
-    ).dp
-}
-
-private fun SavedPlace.distanceMetersTo(
-    latitude: Double,
-    longitude: Double,
-): Double {
-    val dLat = Math.toRadians(this.latitude - latitude)
-    val dLon = Math.toRadians(this.longitude - longitude) *
-        cos(Math.toRadians((this.latitude + latitude) / 2.0))
-    return sqrt(dLat * dLat + dLon * dLon) * EARTH_RADIUS_M
-}
-
 internal fun normalizedBearingDegrees(bearing: Double): Double {
     val normalized = bearing % 360.0
     return if (normalized < 0.0) normalized + 360.0 else normalized
@@ -1847,30 +1349,6 @@ private fun String.shortenForCard(maxLength: Int): String {
         .trimEnd()
         .trimEnd('.', ',', ';', ':')
         .plus("...")
-}
-
-private fun String.escapeJsonString(): String {
-    return buildString(length) {
-        this@escapeJsonString.forEach { char ->
-            when (char) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\b' -> append("\\b")
-                '\u000C' -> append("\\f")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> {
-                    if (char < ' ') {
-                        append("\\u")
-                        append(char.code.toString(16).padStart(4, '0'))
-                    } else {
-                        append(char)
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Preview(showBackground = true)

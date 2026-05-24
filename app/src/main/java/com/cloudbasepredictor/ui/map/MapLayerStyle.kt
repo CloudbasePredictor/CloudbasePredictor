@@ -1,10 +1,19 @@
 package com.cloudbasepredictor.ui.map
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -143,3 +152,18 @@ internal fun nasaGibsTrueColorTileUrl(date: String): String {
 internal fun esriWorldImageryTileUrl(): String = ESRI_WORLD_IMAGERY_TILE_URL
 
 private val UTC: TimeZone = TimeZone.getTimeZone("UTC")
+
+@Preview(showBackground = true)
+@Composable
+private fun MapLayerAttributionPreview() {
+    CloudbasePredictorTheme {
+        Column(modifier = Modifier.padding(16.dp)) {
+            MapLayerPreference.entries.forEach { layer ->
+                Text(
+                    text = stringResource(mapLayerAttributionRes(layer)),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+}
