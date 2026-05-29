@@ -1,5 +1,11 @@
 # Cloudbase Predictor
 
+<p>
+  <a href="https://f-droid.org/packages/com.cloudbasepredictor/">
+    <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80" />
+  </a>
+</p>
+
 Weather forecast app for soaring and free-flight pilots (paragliding, hang-gliding, sailplanes).
 
 Built with Jetpack Compose, it visualises atmospheric sounding data from [Open-Meteo](https://open-meteo.com/) so you can quickly assess thermic conditions, wind profiles, and cloud cover for your flying site.
