@@ -6,8 +6,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas as ComposeGraphicsCanvas
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -19,6 +22,8 @@ import com.cloudbasepredictor.ui.screens.forecast.StuveForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.StuveProfilePoint
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 internal fun DrawScope.drawMoistureCueStrip(
@@ -159,42 +164,170 @@ internal fun DrawScope.drawWindBarb(
     barbSize: Float,
     color: Color,
 ) {
-    val angleRad = (directionDeg - 90f) * PI.toFloat() / 180f
-    val halfSize = barbSize / 2f
+    val geometry = buildWindBarbGeometry(
+        centerX = centerX,
+        centerY = centerY,
+        speedKmh = speedKmh,
+        directionDeg = directionDeg,
+        barbSize = barbSize,
+    )
+    val strokeWidth = 1.5f
 
-    val tipX = centerX + cos(angleRad) * halfSize
-    val tipY = centerY + sin(angleRad) * halfSize
-    val tailX = centerX - cos(angleRad) * halfSize
-    val tailY = centerY - sin(angleRad) * halfSize
+    if (geometry.calmRadius != null) {
+        drawCircle(
+            color = color,
+            radius = geometry.calmRadius,
+            center = Offset(centerX, centerY),
+            style = Stroke(width = strokeWidth),
+        )
+        return
+    }
 
     drawLine(
         color = color,
-        start = Offset(tailX, tailY),
-        end = Offset(tipX, tipY),
-        strokeWidth = 1.5f,
+        start = geometry.shaft.start,
+        end = geometry.shaft.end,
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round,
     )
 
-    val arrowLength = halfSize * 0.4f
-    val arrowAngle = PI.toFloat() / 6f
-    drawLine(
-        color = color,
-        start = Offset(tipX, tipY),
-        end = Offset(
-            tipX - cos(angleRad - arrowAngle) * arrowLength,
-            tipY - sin(angleRad - arrowAngle) * arrowLength,
-        ),
-        strokeWidth = 1.5f,
-    )
-    drawLine(
-        color = color,
-        start = Offset(tipX, tipY),
-        end = Offset(
-            tipX - cos(angleRad + arrowAngle) * arrowLength,
-            tipY - sin(angleRad + arrowAngle) * arrowLength,
-        ),
-        strokeWidth = 1.5f,
+    geometry.flags.forEach { flag ->
+        val path = Path().apply {
+            moveTo(flag.points[0].x, flag.points[0].y)
+            lineTo(flag.points[1].x, flag.points[1].y)
+            lineTo(flag.points[2].x, flag.points[2].y)
+            close()
+        }
+        drawPath(path = path, color = color)
+    }
+
+    geometry.feathers.forEach { feather ->
+        drawLine(
+            color = color,
+            start = feather.start,
+            end = feather.end,
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+internal data class WindBarbSpeedParts(
+    val roundedKnots: Int,
+    val flags: Int,
+    val fullFeathers: Int,
+    val halfFeathers: Int,
+)
+
+internal data class WindBarbLine(
+    val start: Offset,
+    val end: Offset,
+)
+
+internal data class WindBarbFlag(
+    val points: List<Offset>,
+)
+
+internal data class WindBarbGeometry(
+    val shaft: WindBarbLine,
+    val flags: List<WindBarbFlag>,
+    val feathers: List<WindBarbLine>,
+    val calmRadius: Float?,
+)
+
+internal fun windBarbSpeedParts(speedKmh: Float): WindBarbSpeedParts {
+    val roundedKnots = (speedKmh.coerceAtLeast(0f) / KMH_PER_KNOT / 5f)
+        .roundToInt() * 5
+    var remainingKnots = roundedKnots
+    val flags = remainingKnots / 50
+    remainingKnots %= 50
+    val fullFeathers = remainingKnots / 10
+    remainingKnots %= 10
+    val halfFeathers = if (remainingKnots >= 5) 1 else 0
+
+    return WindBarbSpeedParts(
+        roundedKnots = roundedKnots,
+        flags = flags,
+        fullFeathers = fullFeathers,
+        halfFeathers = halfFeathers,
     )
 }
+
+internal fun buildWindBarbGeometry(
+    centerX: Float,
+    centerY: Float,
+    speedKmh: Float,
+    directionDeg: Float,
+    barbSize: Float,
+): WindBarbGeometry {
+    val speedParts = windBarbSpeedParts(speedKmh)
+    val center = Offset(centerX, centerY)
+    if (speedParts.roundedKnots == 0) {
+        return WindBarbGeometry(
+            shaft = WindBarbLine(center, center),
+            flags = emptyList(),
+            feathers = emptyList(),
+            calmRadius = barbSize * 0.18f,
+        )
+    }
+
+    val angleRad = (directionDeg - 90f) * PI.toFloat() / 180f
+    val shaftUnit = Offset(cos(angleRad), sin(angleRad))
+    // Use the conventional northern-hemisphere barb side; this primitive has no latitude input.
+    val featherSideUnit = Offset(-shaftUnit.y, shaftUnit.x)
+    val halfSize = barbSize / 2f
+    val fromEnd = center + shaftUnit * halfSize
+    val toEnd = center - shaftUnit * halfSize
+
+    val symbolCount = speedParts.flags + speedParts.fullFeathers + speedParts.halfFeathers
+    val spacing = if (symbolCount > 0) {
+        min(barbSize * 0.16f, barbSize * 0.78f / symbolCount)
+    } else {
+        barbSize * 0.16f
+    }
+    val featherBack = barbSize * 0.32f
+    val featherOut = barbSize * 0.23f
+    val flagBack = barbSize * 0.28f
+    val flagOut = barbSize * 0.26f
+
+    val flags = mutableListOf<WindBarbFlag>()
+    val feathers = mutableListOf<WindBarbLine>()
+    var offsetAlongShaft = 0f
+
+    repeat(speedParts.flags) {
+        val attach = fromEnd - shaftUnit * offsetAlongShaft
+        val nextAttach = fromEnd - shaftUnit * (offsetAlongShaft + spacing)
+        val outer = attach - shaftUnit * flagBack + featherSideUnit * flagOut
+        flags += WindBarbFlag(listOf(attach, outer, nextAttach))
+        offsetAlongShaft += spacing
+    }
+
+    repeat(speedParts.fullFeathers) {
+        val attach = fromEnd - shaftUnit * offsetAlongShaft
+        feathers += WindBarbLine(
+            start = attach,
+            end = attach - shaftUnit * featherBack + featherSideUnit * featherOut,
+        )
+        offsetAlongShaft += spacing
+    }
+
+    repeat(speedParts.halfFeathers) {
+        val attach = fromEnd - shaftUnit * offsetAlongShaft
+        feathers += WindBarbLine(
+            start = attach,
+            end = attach - shaftUnit * featherBack * 0.68f + featherSideUnit * featherOut * 0.58f,
+        )
+    }
+
+    return WindBarbGeometry(
+        shaft = WindBarbLine(start = toEnd, end = fromEnd),
+        flags = flags,
+        feathers = feathers,
+        calmRadius = null,
+    )
+}
+
+private const val KMH_PER_KNOT = 1.852f
 
 internal fun formatAxisHeight(
     heightMeters: Float,
