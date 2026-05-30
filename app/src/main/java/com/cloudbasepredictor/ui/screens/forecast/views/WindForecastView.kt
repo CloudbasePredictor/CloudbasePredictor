@@ -50,6 +50,7 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastCellUiModel
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
+import com.cloudbasepredictor.ui.screens.forecast.windSpeedColor
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import java.util.Locale
 import kotlin.math.PI
@@ -700,29 +701,6 @@ private fun DrawScope.drawWindArrow(
         strokeWidth = strokeWidth,
         cap = StrokeCap.Round,
     )
-}
-
-private fun windSpeedColor(speedKmh: Float): Color {
-    val normalized = (speedKmh / 60f).coerceIn(0f, 1f)
-    val colorStops = listOf(
-        0f to Color(0xFF1565C0),        // 0 km/h - calm, blue
-        5f / 60f to Color(0xFF00838F),  // 5 km/h - light air, teal
-        10f / 60f to Color(0xFF2E7D32), // 10 km/h - light breeze, green
-        15f / 60f to Color(0xFF9E9D24), // 15 km/h - readable low-mid wind
-        20f / 60f to Color(0xFFF9A825), // 20 km/h - yellow
-        30f / 60f to Color(0xFFFB8C00), // 30 km/h - orange
-        40f / 60f to Color(0xFFE53935), // 40 km/h - red
-        50f / 60f to Color(0xFF8E24AA), // 50 km/h - purple
-        1f to Color(0xFF512DA8),        // 60 km/h - deep purple
-    )
-
-    val lowerStop = colorStops.lastOrNull { it.first <= normalized } ?: colorStops.first()
-    val upperStop = colorStops.firstOrNull { it.first >= normalized } ?: colorStops.last()
-
-    if (lowerStop.first == upperStop.first) return lowerStop.second
-
-    val fraction = (normalized - lowerStop.first) / (upperStop.first - lowerStop.first)
-    return lerp(lowerStop.second, upperStop.second, fraction)
 }
 
 /** Background color for wind cells — same scale as windSpeedColor but with moderate alpha. */

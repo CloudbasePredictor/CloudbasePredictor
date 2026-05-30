@@ -53,6 +53,7 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ThermicForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.ThermicSlotDiagnostics
 import com.cloudbasepredictor.ui.screens.forecast.aggregatedForDisplay
+import com.cloudbasepredictor.ui.screens.forecast.thermicStrengthColor
 import com.cloudbasepredictor.ui.screens.forecast.visibleSegment
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import java.util.Locale
@@ -757,31 +758,6 @@ private fun yToAltitude(
     return minAltitudeKm + normalizedAltitude * (maxAltitudeKm - minAltitudeKm)
 }
 
-private fun thermicStrengthColor(strengthMps: Float): Color {
-    val clampedStrength = strengthMps.coerceIn(0f, MAX_THERMIC_STRENGTH_MPS)
-    val colorStops = listOf(
-        0.0f to Color(0xFFF5E8C8),
-        0.4f to Color(0xFFF8D05D),
-        0.8f to Color(0xFFEFA12F),
-        1.2f to Color(0xFFC9C939),
-        1.6f to Color(0xFF62C956),
-        2.0f to Color(0xFF00BFA5),
-        3.0f to Color(0xFF19C8E0),
-        4.0f to Color(0xFF6A95E6),
-        5.0f to Color(0xFF2015F3),
-    )
-
-    val lowerStop = colorStops.lastOrNull { it.first <= clampedStrength } ?: colorStops.first()
-    val upperStop = colorStops.firstOrNull { it.first >= clampedStrength } ?: colorStops.last()
-
-    if (lowerStop.first == upperStop.first) {
-        return lowerStop.second
-    }
-
-    val fraction = (clampedStrength - lowerStop.first) / (upperStop.first - lowerStop.first)
-    return lerp(lowerStop.second, upperStop.second, fraction)
-}
-
 private fun DrawScope.drawHatchedVerticalBand(
     left: Float,
     top: Float,
@@ -852,7 +828,6 @@ private const val MIN_VISIBLE_ALTITUDE_RANGE_KM = 0.75f
 private const val ALTITUDE_EPSILON = 0.001f
 private const val THERMIC_DATA_ALTITUDE_STEP_KM = 0.05f
 private const val THERMIC_MAJOR_TIME_STEP_MINUTES = 180
-private const val MAX_THERMIC_STRENGTH_MPS = 5f
 private const val MIN_TIME_BUCKET_WIDTH_PX = 28f
 private const val MIN_ALTITUDE_BUCKET_HEIGHT_PX = 20f
 private val THERMIC_AXIS_WIDTH = 60.dp

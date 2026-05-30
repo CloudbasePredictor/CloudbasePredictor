@@ -129,8 +129,8 @@
 
     <!-- Help dialog - Thermic -->
     <string name="help_thermic_title">Thermic forecast help</string>
-    <string name="help_thermic_summary">Color shows estimated air updraft in m/s, not glider net climb.</string>
-    <string name="help_thermic_model_blocks_info">Colored squares are time-altitude bins; bluer solid colors mean stronger updraft.</string>
+    <string name="help_thermic_summary">Color shows estimated air updraft in m/s, not glider net climb. The scale runs from pale blue through green to red.</string>
+    <string name="help_thermic_model_blocks_info">Colored squares are time-altitude bins; red solid colors mark the top edge of the updraft scale.</string>
     <string name="help_thermic_cursor_info">Tap a cell for time, altitude, lift range, cloud layer, confidence, and model diagnostics.</string>
     <string name="help_thermic_dashed_lines_title">Lines, bands and diagnostics:</string>
     <string name="help_thermic_dry_top_line">Orange hatch - thermal-top uncertainty</string>
@@ -155,7 +155,7 @@
 
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Wind forecast help</string>
-    <string name="help_wind_summary">Wind speed legend (km/h):</string>
+    <string name="help_wind_summary">Wind speed colors run from blue through green to red; red marks the scale maximum (km/h):</string>
     <string name="help_wind_moisture_title">Moisture cues:</string>
     <string name="help_wind_ccl_line">Orange CCL line - estimated cumulus base when heating is sufficient.</string>
 
