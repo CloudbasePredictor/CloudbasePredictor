@@ -1,5 +1,8 @@
 package com.cloudbasepredictor.ui.screens.map
 
+import android.view.View
+import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -12,14 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
@@ -42,7 +43,7 @@ import kotlin.math.abs
 
 class MapScreenTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun mapScreen_showsFavoritesButtonWhenNoFavoritesExist() {
@@ -420,6 +421,63 @@ class MapScreenTest {
         }
     }
 
+    private fun mapSwipeRightFromLaunchSiteIconCoordinates(): ShellSwipeCoordinates {
+        return mapSwipeRightCoordinates { mapView ->
+            val launchSiteIconCenterYOffsetPx =
+                (LAUNCH_SITE_ICON_SIZE.value * mapView.resources.displayMetrics.density / 2f).toInt()
+            mapView.height / 2 - launchSiteIconCenterYOffsetPx
+        }
+    }
+
+    private fun mapSwipeRightFromCenterCoordinates(): ShellSwipeCoordinates {
+        return mapSwipeRightCoordinates { mapView ->
+            mapView.height / 2
+        }
+    }
+
+    private fun mapSwipeRightCoordinates(
+        startYInMapView: (MapView) -> Int,
+    ): ShellSwipeCoordinates {
+        val coordinates = AtomicReference<ShellSwipeCoordinates>()
+
+        composeRule.runOnIdle {
+            val contentView = composeRule.activity.findViewById<View>(android.R.id.content)
+            val mapView = requireNotNull(contentView.findMapView()) {
+                "MapView should be present before swiping"
+            }
+            val location = IntArray(2)
+            mapView.getLocationOnScreen(location)
+            val startY = location[1] + startYInMapView(mapView)
+            coordinates.set(
+                ShellSwipeCoordinates(
+                    startX = location[0] + mapView.width / 2,
+                    startY = startY,
+                    endX = location[0] + mapView.width - 8,
+                    endY = startY,
+                ),
+            )
+        }
+
+        return requireNotNull(coordinates.get())
+    }
+
+    private fun performShellSwipe(coordinates: ShellSwipeCoordinates) {
+        InstrumentationRegistry.getInstrumentation()
+            .uiAutomation
+            .executeShellCommand(
+                "input swipe ${coordinates.startX} ${coordinates.startY} " +
+                    "${coordinates.endX} ${coordinates.endY} 500",
+            )
+            .close()
+    }
+
+    private data class ShellSwipeCoordinates(
+        val startX: Int,
+        val startY: Int,
+        val endX: Int,
+        val endY: Int,
+    )
+
     private companion object {
         private const val MAP_INTERACTION_TIMEOUT_MILLIS = 15_000L
         private const val CAMERA_MOVE_EPSILON_DEGREES = 0.00001
@@ -492,68 +550,17 @@ class MapScreenTest {
             return abs(before.target.latitude - after.target.latitude) > CAMERA_MOVE_EPSILON_DEGREES ||
                 abs(before.target.longitude - after.target.longitude) > CAMERA_MOVE_EPSILON_DEGREES
         }
-
-        fun mapSwipeRightFromLaunchSiteIconCoordinates(): ShellSwipeCoordinates {
-            val coordinates = AtomicReference<ShellSwipeCoordinates>()
-
-            onView(isAssignableFrom(MapView::class.java)).check { view, noViewFoundException ->
-                if (noViewFoundException != null) {
-                    throw noViewFoundException
-                }
-                val location = IntArray(2)
-                view.getLocationOnScreen(location)
-                val launchSiteIconCenterYOffsetPx =
-                    (LAUNCH_SITE_ICON_SIZE.value * view.resources.displayMetrics.density / 2f).toInt()
-                coordinates.set(
-                    ShellSwipeCoordinates(
-                        startX = location[0] + view.width / 2,
-                        startY = location[1] + view.height / 2 - launchSiteIconCenterYOffsetPx,
-                        endX = location[0] + view.width - 8,
-                        endY = location[1] + view.height / 2 - launchSiteIconCenterYOffsetPx,
-                    ),
-                )
-            }
-
-            return requireNotNull(coordinates.get())
-        }
-
-        fun mapSwipeRightFromCenterCoordinates(): ShellSwipeCoordinates {
-            val coordinates = AtomicReference<ShellSwipeCoordinates>()
-
-            onView(isAssignableFrom(MapView::class.java)).check { view, noViewFoundException ->
-                if (noViewFoundException != null) {
-                    throw noViewFoundException
-                }
-                val location = IntArray(2)
-                view.getLocationOnScreen(location)
-                coordinates.set(
-                    ShellSwipeCoordinates(
-                        startX = location[0] + view.width / 2,
-                        startY = location[1] + view.height / 2,
-                        endX = location[0] + view.width - 8,
-                        endY = location[1] + view.height / 2,
-                    ),
-                )
-            }
-
-            return requireNotNull(coordinates.get())
-        }
-
-        fun performShellSwipe(coordinates: ShellSwipeCoordinates) {
-            InstrumentationRegistry.getInstrumentation()
-                .uiAutomation
-                .executeShellCommand(
-                    "input swipe ${coordinates.startX} ${coordinates.startY} " +
-                        "${coordinates.endX} ${coordinates.endY} 500",
-                )
-                .close()
-        }
-
-        data class ShellSwipeCoordinates(
-            val startX: Int,
-            val startY: Int,
-            val endX: Int,
-            val endY: Int,
-        )
     }
+}
+
+private fun View.findMapView(): MapView? {
+    if (this is MapView) return this
+    if (this !is ViewGroup) return null
+
+    for (index in 0 until childCount) {
+        val childMapView = getChildAt(index).findMapView()
+        if (childMapView != null) return childMapView
+    }
+
+    return null
 }
