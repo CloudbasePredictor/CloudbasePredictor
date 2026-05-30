@@ -136,17 +136,32 @@ internal fun StuveDiagramCanvas(
 
     // Derived layout (may be zero on first composition before onSizeChanged fires).
     val outerPlotLeft = leftAxisWidthPx
-    val outerPlotRight = (canvasWidth - rightAltitudeWidthPx - rightWindWidthPx).coerceAtLeast(0f)
+    val outerPlotRight = (canvasWidth - rightAltitudeWidthPx - rightWindWidthPx).coerceAtLeast(outerPlotLeft)
     val outerPlotWidth = (outerPlotRight - outerPlotLeft).coerceAtLeast(0f)
-    val outerPlotBottom = (canvasHeight - bottomAxisHeightPx).coerceAtLeast(0f)
+    val outerPlotBottom = (canvasHeight - bottomAxisHeightPx).coerceAtLeast(topPaddingPx)
 
     val outerChartBottomPressure = (chart.surfacePressureHpa + 20f).coerceAtMost(SKEWT_BOTTOM_PRESSURE)
     val outerTopPressure = altitudeKmToApproxPressureHpa(visibleTopAltitudeKm)
         .coerceIn(SKEWT_MIN_TOP_PRESSURE, outerChartBottomPressure - 50f)
-    val outerTempAxisRange = remember(chart, outerTopPressure, outerChartBottomPressure) {
-        buildVisibleTemperatureAxisRange(chart, outerTopPressure, outerChartBottomPressure)
+    val outerProjection = remember(
+        chart,
+        outerTopPressure,
+        outerChartBottomPressure,
+        outerPlotLeft,
+        outerPlotRight,
+        topPaddingPx,
+        outerPlotBottom,
+    ) {
+        buildSkewTProjection(
+            chart = chart,
+            topPressure = outerTopPressure,
+            bottomPressure = outerChartBottomPressure,
+            plotLeft = outerPlotLeft,
+            plotRight = outerPlotRight,
+            plotTop = topPaddingPx,
+            plotBottom = outerPlotBottom,
+        )
     }
-    val outerSkewFactor = outerPlotWidth * SKEWT_SKEW_RATIO
 
     // Default parcel start temperature (first point of the pre-built ascent path).
     val defaultParcelStartTempC = remember(chart.parcelAscentPath, chart.temperatureProfile) {
@@ -165,23 +180,12 @@ internal fun StuveDiagramCanvas(
 
     // Anchor temperature for the active cursor, computed from its X position.
     // Null when no cursor is active or the canvas has not been sized yet.
-    val anchorTemperatureC: Float? = remember(cursorState, outerPlotWidth, outerTempAxisRange) {
+    val anchorTemperatureC: Float? = remember(cursorState, outerProjection) {
         val cursor = cursorState ?: return@remember null
         if (outerPlotWidth <= 0f) return@remember null
-        val pressure = yToPressure(
-            cursor.y, topPaddingPx, outerPlotBottom, outerTopPressure, outerChartBottomPressure,
-        ).coerceIn(outerTopPressure, outerChartBottomPressure)
-        xToSkewTTemperature(
-            x = cursor.x,
-            pressureHpa = pressure,
-            tempMin = outerTempAxisRange.minC,
-            tempMax = outerTempAxisRange.maxC,
-            plotLeft = outerPlotLeft,
-            plotRight = outerPlotRight,
-            skewFactor = outerSkewFactor,
-            topPressure = outerTopPressure,
-            bottomPressure = outerChartBottomPressure,
-        )
+        val pressure = outerProjection.yToPressure(cursor.y)
+            .coerceIn(outerTopPressure, outerChartBottomPressure)
+        outerProjection.xToTemperature(cursor.x, pressure)
     }
 
     // Active parcel guide theta K exposed through semantics so that tests can verify
@@ -203,17 +207,9 @@ internal fun StuveDiagramCanvas(
     // Updated lambdas for gesture callbacks — always capture the latest state.
     val latestIsInHeatingZone = rememberUpdatedState { x: Float, y: Float ->
         if (outerPlotWidth <= 0f) return@rememberUpdatedState false
-        val handleX = skewTToX(
-            temperatureC = defaultParcelStartTempC + heatingDeltaC,
-            pressureHpa = outerChartBottomPressure,
-            tempMin = outerTempAxisRange.minC,
-            tempMax = outerTempAxisRange.maxC,
-            plotLeft = outerPlotLeft,
-            plotRight = outerPlotRight,
-            skewFactor = outerSkewFactor,
-            topPressure = outerTopPressure,
-            bottomPressure = outerChartBottomPressure,
-        ).coerceIn(outerPlotLeft, outerPlotRight)
+        val handleX = outerProjection
+            .temperatureToX(defaultParcelStartTempC + heatingDeltaC, outerChartBottomPressure)
+            .coerceIn(outerPlotLeft, outerPlotRight)
         val handleY = outerPlotBottom
         val touchRadiusPx = with(density) { 28.dp.toPx() }
         val dx = x - handleX
@@ -222,7 +218,7 @@ internal fun StuveDiagramCanvas(
     }
     val latestOnHeatingDragDelta = rememberUpdatedState { deltaX: Float ->
         if (outerPlotWidth > 0f) {
-            val tempSpan = outerTempAxisRange.maxC - outerTempAxisRange.minC
+            val tempSpan = outerProjection.temperatureRange.spanC
             heatingDeltaC = (heatingDeltaC + deltaX / outerPlotWidth * tempSpan)
                 .coerceIn(-20f, 20f)
         }
@@ -264,12 +260,6 @@ internal fun StuveDiagramCanvas(
         val topPressure = altitudeKmToApproxPressureHpa(visibleTopAltitudeKm)
             .coerceIn(SKEWT_MIN_TOP_PRESSURE, chartBottomPressure - 50f)
 
-        val tempAxisRange = buildVisibleTemperatureAxisRange(
-            chart = chart,
-            topPressure = topPressure,
-            bottomPressure = chartBottomPressure,
-        )
-
         val leftAxisWidth = with(density) { 40.dp.toPx() }
         val rightAltitudeWidth = with(density) { 42.dp.toPx() }
         val rightWindWidth = with(density) { 58.dp.toPx() }
@@ -285,33 +275,22 @@ internal fun StuveDiagramCanvas(
 
         if (plotWidth <= 0f || plotHeight <= 0f) return@Canvas
 
-        val skewFactor = plotWidth * SKEWT_SKEW_RATIO
-
-        fun pressureToY(pressureHpa: Float) = pressureToY(
-            pressureHpa = pressureHpa,
-            plotTop = plotTop,
-            plotBottom = plotBottom,
+        val projection = buildSkewTProjection(
+            chart = chart,
             topPressure = topPressure,
             bottomPressure = chartBottomPressure,
-        )
-        fun temperatureToX(temperatureC: Float, pressureHpa: Float) = skewTToX(
-            temperatureC = temperatureC,
-            pressureHpa = pressureHpa,
-            tempMin = tempAxisRange.minC,
-            tempMax = tempAxisRange.maxC,
             plotLeft = plotLeft,
             plotRight = plotRight,
-            skewFactor = skewFactor,
-            topPressure = topPressure,
-            bottomPressure = chartBottomPressure,
-        )
-        fun yToPressure(y: Float) = yToPressure(
-            y = y,
             plotTop = plotTop,
             plotBottom = plotBottom,
-            topPressure = topPressure,
-            bottomPressure = chartBottomPressure,
         )
+        val tempAxisRange = projection.temperatureRange
+        val temperatureAxisLabels = buildTemperatureAxisLabels(tempAxisRange)
+
+        fun pressureToY(pressureHpa: Float) = projection.pressureToY(pressureHpa)
+        fun temperatureToX(temperatureC: Float, pressureHpa: Float) =
+            projection.temperatureToX(temperatureC, pressureHpa)
+        fun yToPressure(y: Float) = projection.yToPressure(y)
 
         val pressureLabels = selectPressureLabels(
             topPressure = topPressure,
@@ -323,17 +302,7 @@ internal fun StuveDiagramCanvas(
         // (inline label drawing) without re-computing it twice.
         val drawAnchorTemperatureC: Float? = cursorState?.let { cursor ->
             val pressure = yToPressure(cursor.y).coerceIn(topPressure, chartBottomPressure)
-            xToSkewTTemperature(
-                x = cursor.x,
-                pressureHpa = pressure,
-                tempMin = tempAxisRange.minC,
-                tempMax = tempAxisRange.maxC,
-                plotLeft = plotLeft,
-                plotRight = plotRight,
-                skewFactor = skewFactor,
-                topPressure = topPressure,
-                bottomPressure = chartBottomPressure,
-            )
+            projection.xToTemperature(cursor.x, pressure)
         }
 
         drawRect(
@@ -352,8 +321,7 @@ internal fun StuveDiagramCanvas(
         )
 
         clipRect(plotLeft, plotTop, plotRight, plotBottom) {
-            var isothermTemp = floorToStep(tempAxisRange.minC, TEMP_STEP)
-            while (isothermTemp <= tempAxisRange.maxC + 0.01f) {
+            temperatureAxisLabels.forEach { isothermTemp ->
                 val alpha = if (isothermTemp.toInt() % 20 == 0) 0.35f else 0.15f
                 drawLine(
                     color = outlineColor.copy(alpha = alpha),
@@ -361,7 +329,6 @@ internal fun StuveDiagramCanvas(
                     end = Offset(temperatureToX(isothermTemp, topPressure), pressureToY(topPressure)),
                     strokeWidth = 1.dp.toPx(),
                 )
-                isothermTemp += TEMP_STEP
             }
 
             pressureLabels.forEach { pressure ->
@@ -592,17 +559,8 @@ internal fun StuveDiagramCanvas(
 
         // ── Heating handle: drawn at plotBottom, outside the clipped area ──────
         val activeParcelStartTempC = defaultParcelStartTempC + heatingDeltaC
-        val handleX = skewTToX(
-            temperatureC = activeParcelStartTempC,
-            pressureHpa = chartBottomPressure,
-            tempMin = tempAxisRange.minC,
-            tempMax = tempAxisRange.maxC,
-            plotLeft = plotLeft,
-            plotRight = plotRight,
-            skewFactor = skewFactor,
-            topPressure = topPressure,
-            bottomPressure = chartBottomPressure,
-        ).coerceIn(plotLeft, plotRight)
+        val handleX = temperatureToX(activeParcelStartTempC, chartBottomPressure)
+            .coerceIn(plotLeft, plotRight)
         val handleColor = Color(0xFF59A36A)
         // Vertical stem from bottom of plot area down to the handle circle.
         drawLine(
@@ -658,7 +616,7 @@ internal fun StuveDiagramCanvas(
                 with(density) { 22.dp.toPx() }
             val temperatureReadoutLabelRight = (plotRight + rightAltitudeWidth + with(density) { 8.dp.toPx() })
                 .coerceAtMost(size.width - with(density) { 4.dp.toPx() })
-            buildTemperatureAxisLabels(tempAxisRange).forEach { tempLabel ->
+            temperatureAxisLabels.forEach { tempLabel ->
                 val x = temperatureToX(tempLabel, chartBottomPressure)
                 if (x in plotLeft..plotRight) {
                     canvas.nativeCanvas.drawText(

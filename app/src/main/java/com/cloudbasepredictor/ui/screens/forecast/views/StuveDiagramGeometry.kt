@@ -19,12 +19,95 @@ import kotlin.math.pow
 internal const val SKEWT_MIN_TOP_PRESSURE = 250f
 internal const val SKEWT_BOTTOM_PRESSURE = 1050f
 internal const val SKEWT_SKEW_RATIO = 0.45f
+private const val SKEWT_REFERENCE_PLOT_ASPECT_RATIO = 0.48f
 
 internal val STUVE_DRY_REFERENCE_PRESSURES = listOf(
     1050f, 1000f, 975f, 950f, 925f, 900f, 875f, 850f, 825f, 800f, 775f, 750f, 725f, 700f,
     675f, 650f, 625f, 600f, 575f, 550f, 525f, 500f, 475f, 450f, 425f, 400f, 375f, 350f,
     325f, 300f, 275f, 250f,
 )
+
+internal data class SkewTProjection(
+    val topPressure: Float,
+    val bottomPressure: Float,
+    val temperatureRange: TempAxisRange,
+    val plotLeft: Float,
+    val plotRight: Float,
+    val plotTop: Float,
+    val plotBottom: Float,
+) {
+    val plotWidth: Float = plotRight - plotLeft
+    val plotHeight: Float = plotBottom - plotTop
+
+    fun pressureToY(pressureHpa: Float): Float = pressureToY(
+        pressureHpa = pressureHpa,
+        plotTop = plotTop,
+        plotBottom = plotBottom,
+        topPressure = topPressure,
+        bottomPressure = bottomPressure,
+    )
+
+    fun yToPressure(y: Float): Float = yToPressure(
+        y = y,
+        plotTop = plotTop,
+        plotBottom = plotBottom,
+        topPressure = topPressure,
+        bottomPressure = bottomPressure,
+    )
+
+    fun temperatureToX(temperatureC: Float, pressureHpa: Float): Float {
+        val temperatureSpan = temperatureRange.spanC
+        if (plotWidth <= 0f || temperatureSpan <= 0f) return plotLeft
+
+        val normalizedTemperature = (temperatureC - temperatureRange.minC) / temperatureSpan
+        val heightFraction = pressureHeightFraction(pressureHpa)
+        return plotLeft + (normalizedTemperature + heightFraction * SKEWT_SKEW_RATIO) * plotWidth
+    }
+
+    fun xToTemperature(x: Float, pressureHpa: Float): Float {
+        val temperatureSpan = temperatureRange.spanC
+        if (plotWidth <= 0f || temperatureSpan <= 0f) return temperatureRange.minC
+
+        val heightFraction = pressureHeightFraction(pressureHpa)
+        val normalizedTemperature = ((x - plotLeft) / plotWidth) - heightFraction * SKEWT_SKEW_RATIO
+        return normalizedTemperature * temperatureSpan + temperatureRange.minC
+    }
+
+    private fun pressureHeightFraction(pressureHpa: Float): Float {
+        val logPressure = ln(pressureHpa)
+        val logBottom = ln(bottomPressure)
+        val logTop = ln(topPressure)
+        val logSpan = logBottom - logTop
+        if (logSpan <= 0f) return 0f
+        return ((logBottom - logPressure) / logSpan).coerceIn(0f, 1f)
+    }
+}
+
+internal fun buildSkewTProjection(
+    chart: StuveForecastChartUiModel,
+    topPressure: Float,
+    bottomPressure: Float,
+    plotLeft: Float,
+    plotRight: Float,
+    plotTop: Float,
+    plotBottom: Float,
+): SkewTProjection {
+    return SkewTProjection(
+        topPressure = topPressure,
+        bottomPressure = bottomPressure,
+        temperatureRange = buildSkewTTemperatureAxisRange(
+            chart = chart,
+            topPressure = topPressure,
+            bottomPressure = bottomPressure,
+            plotWidth = plotRight - plotLeft,
+            plotHeight = plotBottom - plotTop,
+        ),
+        plotLeft = plotLeft,
+        plotRight = plotRight,
+        plotTop = plotTop,
+        plotBottom = plotBottom,
+    )
+}
 
 internal fun pressureToY(
     pressureHpa: Float,
@@ -52,52 +135,6 @@ internal fun yToPressure(
     val fraction = ((y - plotTop) / (plotBottom - plotTop)).coerceIn(0f, 1f)
     val logPressure = logTop + fraction * (logBottom - logTop)
     return kotlin.math.exp(logPressure)
-}
-
-internal fun skewTToX(
-    temperatureC: Float,
-    pressureHpa: Float,
-    tempMin: Float,
-    tempMax: Float,
-    plotLeft: Float,
-    plotRight: Float,
-    skewFactor: Float,
-    topPressure: Float,
-    bottomPressure: Float,
-): Float {
-    val plotWidth = plotRight - plotLeft
-    val normalizedTemperature = (temperatureC - tempMin) / (tempMax - tempMin)
-    val logPressure = ln(pressureHpa)
-    val logBottom = ln(bottomPressure)
-    val logTop = ln(topPressure)
-    val heightFraction = ((logBottom - logPressure) / (logBottom - logTop)).coerceIn(0f, 1f)
-    return plotLeft + normalizedTemperature * plotWidth + heightFraction * skewFactor
-}
-
-/**
- * Inverse of [skewTToX]: converts a canvas X pixel coordinate at a given pressure level back
- * to the temperature in degrees Celsius. The skew factor cancels out because the slope of the
- * temperature mapping is constant across all pressure levels.
- */
-internal fun xToSkewTTemperature(
-    x: Float,
-    pressureHpa: Float,
-    tempMin: Float,
-    tempMax: Float,
-    plotLeft: Float,
-    plotRight: Float,
-    skewFactor: Float,
-    topPressure: Float,
-    bottomPressure: Float,
-): Float {
-    val plotWidth = plotRight - plotLeft
-    if (plotWidth <= 0f) return tempMin
-    val logPressure = ln(pressureHpa)
-    val logBottom = ln(bottomPressure)
-    val logTop = ln(topPressure)
-    val heightFraction = ((logBottom - logPressure) / (logBottom - logTop)).coerceIn(0f, 1f)
-    val normalizedTemperature = (x - plotLeft - heightFraction * skewFactor) / plotWidth
-    return normalizedTemperature * (tempMax - tempMin) + tempMin
 }
 
 internal fun altitudeKmToApproxPressureHpa(altitudeKm: Float): Float {
@@ -152,7 +189,10 @@ internal fun recommendedStuveTopAltitudeKm(chart: StuveForecastChartUiModel): Fl
 internal data class TempAxisRange(
     val minC: Float,
     val maxC: Float,
-)
+) {
+    val spanC: Float get() = maxC - minC
+    val centerC: Float get() = (minC + maxC) / 2f
+}
 
 internal fun buildVisibleTemperatureAxisRange(
     chart: StuveForecastChartUiModel,
@@ -211,6 +251,52 @@ internal fun buildVisibleTemperatureAxisRange(
     )
 }
 
+internal fun buildSkewTTemperatureAxisRange(
+    chart: StuveForecastChartUiModel,
+    topPressure: Float,
+    bottomPressure: Float,
+    plotWidth: Float,
+    plotHeight: Float,
+): TempAxisRange {
+    val focusedRange = buildVisibleTemperatureAxisRange(
+        chart = chart,
+        topPressure = topPressure,
+        bottomPressure = bottomPressure,
+    )
+    val referenceTopPressure = altitudeKmToApproxPressureHpa(recommendedStuveTopAltitudeKm(chart))
+        .coerceIn(SKEWT_MIN_TOP_PRESSURE, bottomPressure - 50f)
+    val referenceRange = buildVisibleTemperatureAxisRange(
+        chart = chart,
+        topPressure = referenceTopPressure,
+        bottomPressure = bottomPressure,
+    )
+    val referenceLogSpan = logPressureSpan(
+        bottomPressure = bottomPressure,
+        topPressure = referenceTopPressure,
+    )
+    val visibleLogSpan = logPressureSpan(
+        bottomPressure = bottomPressure,
+        topPressure = topPressure,
+    )
+    val plotAspect = if (plotWidth > 0f && plotHeight > 0f) {
+        plotWidth / plotHeight
+    } else {
+        SKEWT_REFERENCE_PLOT_ASPECT_RATIO
+    }
+    val aspectScale = (plotAspect / SKEWT_REFERENCE_PLOT_ASPECT_RATIO).coerceAtLeast(0.25f)
+    // Keep the Skew-T x/y scale ratio stable while pinch zoom changes the log-pressure span.
+    val stableSpan = if (referenceLogSpan > 0f) {
+        referenceRange.spanC * (visibleLogSpan / referenceLogSpan) * aspectScale
+    } else {
+        focusedRange.spanC
+    }.coerceAtLeast(TEMP_AXIS_MIN_STABLE_SPAN_C)
+
+    return TempAxisRange(
+        minC = focusedRange.centerC - stableSpan / 2f,
+        maxC = focusedRange.centerC + stableSpan / 2f,
+    )
+}
+
 private fun collectProfileTemperatures(
     profile: List<StuveProfilePoint>,
     topPressure: Float,
@@ -225,12 +311,30 @@ private fun collectProfileTemperatures(
 
 internal fun buildTemperatureAxisLabels(range: TempAxisRange): List<Float> {
     val labels = mutableListOf<Float>()
-    var value = ceilToStep(range.minC, TEMP_STEP)
+    val step = temperatureAxisStep(range.spanC)
+    var value = ceilToStep(range.minC, step)
     while (value <= range.maxC + 0.01f) {
         labels += value
-        value += TEMP_STEP
+        value += step
     }
     return labels.ifEmpty { listOf(range.minC, range.maxC) }
+}
+
+private fun temperatureAxisStep(spanC: Float): Float = when {
+    spanC <= 8f -> 1f
+    spanC <= 18f -> 2f
+    spanC <= 34f -> 5f
+    else -> TEMP_STEP
+}
+
+private fun logPressureSpan(
+    bottomPressure: Float,
+    topPressure: Float,
+): Float {
+    if (bottomPressure <= 0f || topPressure <= 0f || bottomPressure <= topPressure) {
+        return 0f
+    }
+    return ln(bottomPressure) - ln(topPressure)
 }
 
 /**
@@ -328,6 +432,7 @@ private const val TEMP_AXIS_FOCUS_TOP_PRESSURE_HPA = 650f
 private const val TEMP_AXIS_LEFT_PADDING_C = 6f
 private const val TEMP_AXIS_RIGHT_PADDING_C = 10f
 private const val TEMP_AXIS_MIN_SPAN_C = 34f
+private const val TEMP_AXIS_MIN_STABLE_SPAN_C = 6f
 private const val TEMP_AXIS_MAX_SPAN_C = 48f
 private const val TEMP_AXIS_MAX_DEWPOINT_EXTENSION_C = 14f
 private const val STUVE_INITIAL_AUTO_FIT_MAX_KM = 6.5f

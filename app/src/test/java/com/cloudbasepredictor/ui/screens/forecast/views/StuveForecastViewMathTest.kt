@@ -107,6 +107,90 @@ class StuveForecastViewMathTest {
     }
 
     @Test
+    fun buildSkewTProjection_keepsDryAdiabatScreenSlopeStableAcrossZoom() {
+        val chart = sampleChart(
+            temperaturePoints = listOf(
+                point(1000f, 20f, 120f),
+                point(950f, 17f, 560f),
+                point(900f, 14f, 1000f),
+                point(850f, 11f, 1460f),
+                point(700f, 1f, 3010f),
+                point(500f, -13f, 5570f),
+            ),
+            dewpointPoints = listOf(
+                point(1000f, 12f, 120f),
+                point(950f, 9f, 560f),
+                point(900f, 6f, 1000f),
+                point(850f, 3f, 1460f),
+                point(700f, -8f, 3010f),
+                point(500f, -27f, 5570f),
+            ),
+            surfacePressureHpa = 980f,
+        )
+        val bottomPressure = 1000f
+        val fullProjection = buildSkewTProjection(
+            chart = chart,
+            topPressure = 500f,
+            bottomPressure = bottomPressure,
+            plotLeft = 40f,
+            plotRight = 340f,
+            plotTop = 16f,
+            plotBottom = 616f,
+        )
+        val zoomProjection = buildSkewTProjection(
+            chart = chart,
+            topPressure = 800f,
+            bottomPressure = bottomPressure,
+            plotLeft = 40f,
+            plotRight = 340f,
+            plotTop = 16f,
+            plotBottom = 616f,
+        )
+        val dryThetaK = potentialTemperatureK(18f, 980f)
+
+        val fullSlope = dryAdiabatScreenSlope(fullProjection, dryThetaK)
+        val zoomSlope = dryAdiabatScreenSlope(zoomProjection, dryThetaK)
+
+        assertEquals(fullSlope, zoomSlope, 0.01f)
+        assertTrue(zoomProjection.temperatureRange.spanC < fullProjection.temperatureRange.spanC)
+    }
+
+    @Test
+    fun skewTProjection_roundTripsTemperatureAtPressure() {
+        val chart = sampleChart(
+            temperaturePoints = listOf(
+                point(950f, 18f, 500f),
+                point(850f, 12f, 1450f),
+                point(700f, 4f, 3010f),
+                point(500f, -10f, 5570f),
+            ),
+            dewpointPoints = listOf(
+                point(950f, 9f, 500f),
+                point(850f, 5f, 1450f),
+                point(700f, -2f, 3010f),
+                point(500f, -18f, 5570f),
+            ),
+            surfacePressureHpa = 930f,
+        )
+        val projection = buildSkewTProjection(
+            chart = chart,
+            topPressure = 500f,
+            bottomPressure = 950f,
+            plotLeft = 40f,
+            plotRight = 320f,
+            plotTop = 16f,
+            plotBottom = 616f,
+        )
+        val pressure = 700f
+        val temperature = -4.5f
+
+        val x = projection.temperatureToX(temperature, pressure)
+        val roundTrippedTemperature = projection.xToTemperature(x, pressure)
+
+        assertEquals(temperature, roundTrippedTemperature, 0.001f)
+    }
+
+    @Test
     fun buildInteractiveParcelFromPoint_usesDryBelowAnchorAndMoistAboveAnchor() {
         val chart = sampleChart(
             temperaturePoints = listOf(
@@ -252,6 +336,7 @@ class StuveForecastViewMathTest {
     private fun sampleChart(
         temperaturePoints: List<StuveProfilePoint>,
         dewpointPoints: List<StuveProfilePoint>,
+        surfacePressureHpa: Float = 850f,
     ) = StuveForecastChartUiModel(
         pressureLevels = listOf(850f, 800f, 700f, 600f, 500f, 400f, 300f, 250f),
         temperatureProfile = temperaturePoints,
@@ -261,7 +346,7 @@ class StuveForecastViewMathTest {
         cclPressureHpa = 760f,
         tconC = 18f,
         selectedHour = 12,
-        surfacePressureHpa = 850f,
+        surfacePressureHpa = surfacePressureHpa,
     )
 
     private fun point(
@@ -286,4 +371,23 @@ class StuveForecastViewMathTest {
         directionDeg = directionDeg,
         barbSize = 20f,
     )
+
+    private fun dryAdiabatScreenSlope(
+        projection: SkewTProjection,
+        thetaK: Float,
+    ): Float {
+        val bottomPressure = 950f
+        val topPressure = 900f
+        val bottomX = projection.temperatureToX(
+            dryAdiabatTempC(thetaK, bottomPressure),
+            bottomPressure,
+        )
+        val topX = projection.temperatureToX(
+            dryAdiabatTempC(thetaK, topPressure),
+            topPressure,
+        )
+        val bottomY = projection.pressureToY(bottomPressure)
+        val topY = projection.pressureToY(topPressure)
+        return (topX - bottomX) / (topY - bottomY)
+    }
 }
