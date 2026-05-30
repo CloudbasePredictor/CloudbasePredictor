@@ -1,0 +1,5 @@
+New in 1.5.0:
+
+- Render Stuve wind data as meteorological barbs.
+- Stabilize Skew-T projection angles while zooming the Stuve diagram.
+- Update wind and thermic strength colors for clearer forecast reading.
