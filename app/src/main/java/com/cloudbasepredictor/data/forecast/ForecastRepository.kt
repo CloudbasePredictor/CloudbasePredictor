@@ -78,7 +78,12 @@ class InMemoryForecastRepository @Inject constructor(
         minimumForecastDays: Int,
     ): Boolean {
         val snapshot = cachedForecasts.value[cacheKey(placeId, model)] ?: return false
-        return snapshot.forecastDays >= minimumForecastDays
+        return isForecastCacheUsable(
+            snapshot = snapshot,
+            requestedModel = model,
+            minimumForecastDays = minimumForecastDays,
+            nowMillis = System.currentTimeMillis(),
+        )
     }
 
     override fun isFullyCached(placeId: String, model: ForecastModel): Boolean {
@@ -100,7 +105,13 @@ class InMemoryForecastRepository @Inject constructor(
         // 1. Check in-memory cache
         if (!forceRefresh && cachedForecasts.value.containsKey(key)) {
             val existing = cachedForecasts.value[key]
-            if (existing != null && existing.forecastDays >= forecastDays) {
+            if (existing != null && isForecastCacheUsable(
+                    snapshot = existing,
+                    requestedModel = model,
+                    minimumForecastDays = forecastDays,
+                    nowMillis = System.currentTimeMillis(),
+                )
+            ) {
                 return@withContext
             }
         }
@@ -202,13 +213,13 @@ class InMemoryForecastRepository @Inject constructor(
                 ?: return null
 
             val now = System.currentTimeMillis()
-            if (now >= entity.nextExpectedUpdateMillis) return null
             if (entity.forecastDays < minForecastDays) return null
 
             val hourlyData = json.decodeFromString<HourlyForecastData>(entity.hourlyDataJson)
             val resolvedModel = ForecastModel.fromApiName(entity.resolvedModelApiName) ?: model
+            if (now >= entity.nextExpectedUpdateMillis) return null
 
-            ForecastSnapshot(
+            val snapshot = ForecastSnapshot(
                 days = hourlyData.dailyForecasts,
                 updatedAtUtcMillis = entity.fetchedAtMillis,
                 hourlyData = hourlyData,
@@ -216,6 +227,17 @@ class InMemoryForecastRepository @Inject constructor(
                 forecastDays = entity.forecastDays,
                 modelGeneratedAtMillis = estimateModelRunTime(entity.fetchedAtMillis, resolvedModel),
             )
+            if (!isForecastCacheUsable(
+                    snapshot = snapshot,
+                    requestedModel = model,
+                    minimumForecastDays = minForecastDays,
+                    nowMillis = now,
+                )
+            ) {
+                return null
+            }
+
+            snapshot
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -235,7 +257,6 @@ class InMemoryForecastRepository @Inject constructor(
     ) {
         try {
             val hourlyJson = json.encodeToString(HourlyForecastData.serializer(), hourlyData)
-            val updateInterval = resolvedModel.updateIntervalMillis
             val entity = CachedForecastEntity(
                 placeId = placeId,
                 modelApiName = requestedModel.apiName,
@@ -243,7 +264,7 @@ class InMemoryForecastRepository @Inject constructor(
                 forecastDays = forecastDays,
                 hourlyDataJson = hourlyJson,
                 fetchedAtMillis = fetchedAtMillis,
-                nextExpectedUpdateMillis = fetchedAtMillis + updateInterval,
+                nextExpectedUpdateMillis = nextExpectedModelUpdateMillis(fetchedAtMillis, resolvedModel),
             )
             forecastCacheDao.upsertForecast(entity)
         } catch (e: CancellationException) {

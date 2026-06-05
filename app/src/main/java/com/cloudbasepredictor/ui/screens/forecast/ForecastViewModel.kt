@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cloudbasepredictor.data.forecast.ForecastRepository
 import com.cloudbasepredictor.data.forecast.exposedForecastDayCount
+import com.cloudbasepredictor.data.forecast.nextForecastCacheRefreshMillis
 import com.cloudbasepredictor.data.forecast.requestedForecastDaysForDayIndex
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.map.MapLayerRepository
@@ -35,11 +36,13 @@ import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -222,6 +225,16 @@ class ForecastViewModel @Inject constructor(
             flowOf(null)
         } else {
             forecastRepository.observeForecast(place.id, target.model)
+        }
+    }
+
+    private val forecastRefreshTarget = forecastTarget.flatMapLatest { target ->
+        val place = target.place
+        if (place == null) {
+            flowOf(ForecastRefreshTarget(target, snapshot = null))
+        } else {
+            forecastRepository.observeForecast(place.id, target.model)
+                .map { snapshot -> ForecastRefreshTarget(target, snapshot) }
         }
     }
 
@@ -448,6 +461,12 @@ class ForecastViewModel @Inject constructor(
                     )
                 }
         }
+
+        viewModelScope.launch {
+            forecastRefreshTarget.collectLatest { refreshTarget ->
+                scheduleRefreshForSnapshot(refreshTarget)
+            }
+        }
     }
 
     fun setPlaceLocation(location: PlaceLocation) {
@@ -616,6 +635,42 @@ class ForecastViewModel @Inject constructor(
             _networkErrorEvent.tryEmit(msg)
         }
     }
+
+    private suspend fun scheduleRefreshForSnapshot(refreshTarget: ForecastRefreshTarget) {
+        val target = refreshTarget.target
+        val place = target.place ?: return
+        val snapshot = refreshTarget.snapshot ?: return
+        val refreshAtMillis = nextForecastCacheRefreshMillis(
+            snapshot = snapshot,
+            requestedModel = target.model,
+            nowMillis = System.currentTimeMillis(),
+        )
+        val refreshDelayMillis = (refreshAtMillis - System.currentTimeMillis()).coerceAtLeast(0L)
+        if (refreshDelayMillis > 0L) {
+            delay(refreshDelayMillis)
+        }
+        if (isLoading.value) return
+
+        val requiredForecastDays = requestedForecastDaysForDayIndex(
+            dayIndex = selectedDayIndex.value,
+            maxForecastDays = (uiState.value.resolvedModel ?: target.model).visibleForecastDays(),
+        )
+        if (forecastRepository.isCached(
+                placeId = place.id,
+                model = target.model,
+                minimumForecastDays = requiredForecastDays,
+            )
+        ) {
+            return
+        }
+
+        errorMessage.value = null
+        startForecastLoad(
+            place = place,
+            model = target.model,
+            forecastDays = requiredForecastDays,
+        )
+    }
 }
 
 private data class ForecastChartContext(
@@ -642,6 +697,11 @@ private data class MapAndUnitPreferences(
 private data class ForecastLoadTarget(
     val place: SavedPlace?,
     val model: ForecastModel,
+)
+
+private data class ForecastRefreshTarget(
+    val target: ForecastLoadTarget,
+    val snapshot: ForecastSnapshot?,
 )
 
 private const val INCOMPLETE_FORECAST_DATA_ERROR = "Forecast data is incomplete."

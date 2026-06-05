@@ -85,6 +85,8 @@ fun OpenMeteoHourlyForecastResponse.toHourlyForecastData(): HourlyForecastData {
         elevation = elevation,
         hourlyPoints = hourlyPoints,
         dailyForecasts = dailyForecasts,
+        utcOffsetSeconds = utcOffsetSeconds,
+        timezone = timezone,
     )
 }
 
@@ -98,6 +100,8 @@ data class HourlyForecastData(
     val elevation: Double?,
     val hourlyPoints: List<HourlyPoint>,
     val dailyForecasts: List<DailyForecast>,
+    val utcOffsetSeconds: Int = 0,
+    val timezone: String? = null,
 ) {
     /** Group hourly points by their date string (yyyy-MM-dd). */
     fun pointsByDate(): Map<String, List<HourlyPoint>> =

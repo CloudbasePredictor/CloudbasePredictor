@@ -150,6 +150,50 @@ class HourlyForecastConversionTest {
     }
 
     @Test
+    fun toHourlyForecastData_preservesForecastTimezoneMetadata() {
+        val response = OpenMeteoHourlyForecastResponse(
+            latitude = 47.66,
+            longitude = 11.5,
+            elevation = 1523.0,
+            utcOffsetSeconds = 7_200,
+            timezone = "Europe/Berlin",
+            hourly = OpenMeteoHourlyResponse(
+                time = listOf("2026-04-18T12:00"),
+                temperature2m = listOf(10.8),
+                dewPoint2m = listOf(1.8),
+            ),
+        )
+
+        val data = response.toHourlyForecastData()
+
+        assertEquals(7_200, data.utcOffsetSeconds)
+        assertEquals("Europe/Berlin", data.timezone)
+    }
+
+    @Test
+    fun oldCachedHourlyForecastDataWithoutTimezoneMetadataStillDecodes() {
+        val json = Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        }
+
+        val data = json.decodeFromString<HourlyForecastData>(
+            """
+            {
+              "latitude": 47.66,
+              "longitude": 11.5,
+              "elevation": 1523.0,
+              "hourlyPoints": [],
+              "dailyForecasts": []
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(0, data.utcOffsetSeconds)
+        assertNull(data.timezone)
+    }
+
+    @Test
     fun oldCachedJsonWithoutNewFieldsStillDecodes() {
         val json = Json {
             ignoreUnknownKeys = true
