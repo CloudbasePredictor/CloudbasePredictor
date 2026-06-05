@@ -2,10 +2,14 @@ package com.cloudbasepredictor.ui.screens.forecast
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -14,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cloudbasepredictor.R
@@ -35,12 +40,15 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.MODEL_OPTION_
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.MODEL_SELECTOR_BUTTON
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.STUVE_SELECTED_HOUR
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.STUVE_TIME_SLIDER
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_CURSOR_PANEL
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_TIME_AXIS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -236,6 +244,86 @@ class ForecastScreenTest {
         }
 
         composeRule.onNodeWithTag(THERMIC_VIEW).assertIsDisplayed()
+    }
+
+    @Test
+    fun forecastScreen_thermicCursorPanelAvoidsSelectedPointAndRemainsTouchable() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val touchYFraction = 0.72f
+
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                ForecastScreen(
+                    uiState = SimulatedTestData.forecastUiState(context, mode = ForecastMode.THERMIC),
+                    onDateSelected = {},
+                    onOpenMap = {},
+                )
+            }
+        }
+
+        val thermicBoundsBeforeTouch = composeRule.onNodeWithTag(THERMIC_VIEW)
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val touchXInRoot = thermicBoundsBeforeTouch.left + thermicBoundsBeforeTouch.width * 0.55f
+        val touchYInRoot = thermicBoundsBeforeTouch.top + thermicBoundsBeforeTouch.height * touchYFraction
+
+        composeRule.onNodeWithTag(THERMIC_VIEW)
+            .performTouchInput {
+                click(Offset(width * 0.55f, height * touchYFraction))
+            }
+
+        val panelBounds = composeRule.onNodeWithTag(THERMIC_CURSOR_PANEL)
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val chartBounds = composeRule.onNodeWithTag(FORECAST_CHART_AREA)
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val thermicBounds = composeRule.onNodeWithTag(THERMIC_VIEW)
+            .fetchSemanticsNode()
+            .boundsInRoot
+        val avoidRadiusPx = with(composeRule.density) { 28.dp.toPx() }
+
+        assertFalse(
+            "Thermic cursor panel should not overlap the selected point marker",
+            panelOverlapsPoint(
+                panelBounds = panelBounds,
+                pointX = touchXInRoot,
+                pointY = touchYInRoot,
+                radiusPx = avoidRadiusPx,
+            ),
+        )
+        assertTrue(
+            "Thermic view exceeds chart area",
+            thermicBounds.bottom <= chartBounds.bottom + 1f,
+        )
+
+        val firstPanelText = thermicCursorPanelText()
+        val panelCenterX = (panelBounds.left + panelBounds.right) / 2f
+        val panelCenterY = (panelBounds.top + panelBounds.bottom) / 2f
+        composeRule.onNodeWithTag(THERMIC_CURSOR_PANEL)
+            .performTouchInput {
+                click(center)
+            }
+        val secondPanelText = thermicCursorPanelText()
+        val secondPanelBounds = composeRule.onNodeWithTag(THERMIC_CURSOR_PANEL)
+            .fetchSemanticsNode()
+            .boundsInRoot
+
+        assertNotEquals(
+            "Tapping the cursor panel area should update the thermic cursor underneath it",
+            firstPanelText,
+            secondPanelText,
+        )
+        assertFalse(
+            "Thermic cursor panel should move away from the newly selected point marker",
+            panelOverlapsPoint(
+                panelBounds = secondPanelBounds,
+                pointX = panelCenterX,
+                pointY = panelCenterY,
+                radiusPx = avoidRadiusPx,
+            ),
+        )
     }
 
     @Test
@@ -485,5 +573,24 @@ class ForecastScreenTest {
             "Cloud layer and rain rows should touch at minimum height",
             rainBounds.top - layersBounds.bottom <= 1f,
         )
+    }
+
+    private fun thermicCursorPanelText(): String {
+        val text = composeRule.onNodeWithTag(THERMIC_CURSOR_PANEL)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+        return text.joinToString(separator = "\n") { it.text }
+    }
+
+    private fun panelOverlapsPoint(
+        panelBounds: Rect,
+        pointX: Float,
+        pointY: Float,
+        radiusPx: Float,
+    ): Boolean {
+        return panelBounds.left < pointX + radiusPx &&
+            panelBounds.right > pointX - radiusPx &&
+            panelBounds.top < pointY + radiusPx &&
+            panelBounds.bottom > pointY - radiusPx
     }
 }

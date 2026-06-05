@@ -16,6 +16,7 @@ object ForecastTestTags {
     const val CLOUD_MODE_TAB = "forecast_mode_tab_cloud"
 
     const val THERMIC_VIEW = "forecast_view_thermic"
+    const val THERMIC_CURSOR_PANEL = "forecast_thermic_cursor_panel"
     const val STUVE_VIEW = "forecast_view_stuve"
     const val WIND_VIEW = "forecast_view_wind"
     const val CLOUD_VIEW = "forecast_view_cloud"
