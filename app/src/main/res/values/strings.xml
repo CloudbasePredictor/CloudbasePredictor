@@ -54,6 +54,8 @@
     <string name="settings_map">Map</string>
     <string name="settings_show_launch_sites">Show launch sites</string>
     <string name="settings_start_with_favorites">Start with favorites</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
 
     <!-- About -->
     <string name="title_about">About</string>

@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
+import com.cloudbasepredictor.data.language.AppLanguage
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.ui.preview.PreviewData
@@ -64,6 +65,8 @@ fun SettingsRoute(
         onDataSourceChanged = viewModel::setDataSource,
         theme = theme,
         onThemeChanged = viewModel::setTheme,
+        language = AppLanguage.current(),
+        onLanguageChanged = { AppLanguage.apply(it) },
         unitPreset = unitPreset,
         onUnitPresetChanged = viewModel::setUnitPreset,
         showLaunchSites = showLaunchSites,
@@ -82,6 +85,8 @@ fun SettingsScreen(
     onDataSourceChanged: (DataSourcePreference) -> Unit,
     theme: ThemePreference,
     onThemeChanged: (ThemePreference) -> Unit,
+    language: AppLanguage,
+    onLanguageChanged: (AppLanguage) -> Unit,
     unitPreset: UnitPreset,
     onUnitPresetChanged: (UnitPreset) -> Unit,
     showLaunchSites: Boolean,
@@ -217,6 +222,47 @@ fun SettingsScreen(
                     }
                 }
 
+                // Language dropdown
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_language),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    val systemLanguageLabel = stringResource(R.string.settings_language_system)
+                    val languageLabel = { option: AppLanguage ->
+                        option.endonym ?: systemLanguageLabel
+                    }
+                    var languageExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = languageExpanded,
+                        onExpandedChange = { languageExpanded = it },
+                    ) {
+                        OutlinedTextField(
+                            value = languageLabel(language),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded) },
+                            modifier = Modifier
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = languageExpanded,
+                            onDismissRequest = { languageExpanded = false },
+                        ) {
+                            AppLanguage.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(text = languageLabel(option)) },
+                                    onClick = {
+                                        onLanguageChanged(option)
+                                        languageExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Units dropdown
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -320,7 +366,9 @@ private fun SettingsScreenPreview() {
             onDataSourceChanged = {},
             theme = PreviewData.settingsAutoTheme,
             onThemeChanged = {},
-            unitPreset = PreviewData.settingsMetricMpsUnits,
+            language = AppLanguage.SYSTEM,
+            onLanguageChanged = {},
+            unitPreset =PreviewData.settingsMetricMpsUnits,
             onUnitPresetChanged = {},
             showLaunchSites = PreviewData.settingsShowLaunchSites,
             onShowLaunchSitesChanged = {},
@@ -341,7 +389,9 @@ private fun SettingsScreenRealPreview() {
             onDataSourceChanged = {},
             theme = PreviewData.settingsDarkTheme,
             onThemeChanged = {},
-            unitPreset = PreviewData.settingsImperialUnits,
+            language = AppLanguage.SYSTEM,
+            onLanguageChanged = {},
+            unitPreset =PreviewData.settingsImperialUnits,
             onUnitPresetChanged = {},
             showLaunchSites = PreviewData.settingsShowLaunchSites,
             onShowLaunchSitesChanged = {},
@@ -365,7 +415,9 @@ private fun SettingsScreenDarkPreview() {
             onDataSourceChanged = {},
             theme = PreviewData.settingsDarkTheme,
             onThemeChanged = {},
-            unitPreset = PreviewData.settingsAviationUnits,
+            language = AppLanguage.SYSTEM,
+            onLanguageChanged = {},
+            unitPreset =PreviewData.settingsAviationUnits,
             onUnitPresetChanged = {},
             showLaunchSites = false,
             onShowLaunchSitesChanged = {},

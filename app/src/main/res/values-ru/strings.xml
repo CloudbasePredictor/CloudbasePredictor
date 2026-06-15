@@ -54,6 +54,8 @@
     <string name="settings_map">Карта</string>
     <string name="settings_show_launch_sites">Показывать места старта</string>
     <string name="settings_start_with_favorites">Начинать с избранного</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_system">Системный язык</string>
 
     <!-- About -->
     <string name="title_about">О приложении</string>

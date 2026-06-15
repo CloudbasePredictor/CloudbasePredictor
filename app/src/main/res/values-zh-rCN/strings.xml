@@ -54,6 +54,8 @@
     <string name="settings_map">地图</string>
     <string name="settings_show_launch_sites">显示起飞场</string>
     <string name="settings_start_with_favorites">启动时显示收藏</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
 
     <!-- About -->
     <string name="title_about">关于</string>

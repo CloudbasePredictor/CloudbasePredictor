@@ -54,6 +54,8 @@
     <string name="settings_map">Karte</string>
     <string name="settings_show_launch_sites">Startplätze anzeigen</string>
     <string name="settings_start_with_favorites">Mit Favoriten starten</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">Systemstandard</string>
 
     <!-- About -->
     <string name="title_about">Über</string>
