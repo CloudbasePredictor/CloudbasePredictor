@@ -1,0 +1,183 @@
+<resources>
+    <string name="app_name">Cloudbase Predictor</string>
+
+    <!-- Common actions -->
+    <string name="action_save">保存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_close">关闭</string>
+    <string name="action_retry">重试</string>
+    <string name="action_open">打开</string>
+    <string name="action_add_manually">手动添加</string>
+    <string name="action_about">关于应用</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">返回</string>
+    <string name="cd_favorites">收藏</string>
+    <string name="cd_settings">设置</string>
+    <string name="cd_map_layer">地图图层</string>
+    <string name="cd_current_location">当前位置</string>
+    <string name="cd_reset_north">重置正北</string>
+    <string name="cd_open_map">打开地图</string>
+    <string name="cd_open_forecast_help">打开预报帮助</string>
+    <string name="cd_favorite_marker">收藏 %1$s</string>
+    <string name="cd_launch_site_marker">起飞场 %1$s</string>
+    <string name="cd_selected">已选择</string>
+    <string name="cd_mode_stuve">Stuve</string>
+    <string name="cd_mode_wind">风</string>
+    <string name="cd_mode_thermic">热气流</string>
+    <string name="cd_mode_cloud">云</string>
+
+    <!-- SaveFavoriteDialog -->
+    <string name="dialog_title_edit_favorite">编辑收藏</string>
+    <string name="dialog_title_save_favorite">保存收藏</string>
+    <string name="label_name">名称</string>
+
+    <!-- FavoritesListDialog -->
+    <string name="dialog_title_favorites">收藏</string>
+    <string name="favorites_empty_message">还没有收藏。点击预报界面上的星标即可保存地点。</string>
+    <string name="dialog_title_add_manual_favorite">手动添加收藏</string>
+    <string name="label_coordinates">坐标</string>
+    <string name="manual_favorite_coordinates_placeholder">47.3769, 8.5417</string>
+    <string name="manual_favorite_coordinates_help">输入纬度和经度。支持十进制度数以及带 N/S/E/W 的度分秒；负值表示南纬或西经。</string>
+    <string name="manual_favorite_error_blank_name">请输入名称。</string>
+    <string name="manual_favorite_error_name_too_long">请使用更短的名称。</string>
+    <string name="manual_favorite_error_blank_coordinates">请输入坐标。</string>
+    <string name="manual_favorite_error_coordinates_format">请输入两个坐标，例如 47.3769, 8.5417。</string>
+    <string name="manual_favorite_error_latitude_range">纬度必须在 -90 到 90 之间。</string>
+    <string name="manual_favorite_error_longitude_range">经度必须在 -180 到 180 之间。</string>
+
+    <!-- Settings -->
+    <string name="title_settings">设置</string>
+    <string name="settings_data_source">数据源</string>
+    <string name="settings_units">单位</string>
+    <string name="settings_map">地图</string>
+    <string name="settings_show_launch_sites">显示起飞场</string>
+    <string name="settings_start_with_favorites">启动时显示收藏</string>
+
+    <!-- About -->
+    <string name="title_about">关于</string>
+    <string name="about_app_name">Cloudbase Predictor</string>
+    <string name="about_version_format">v%1$s (%2$s)</string>
+    <string name="about_foss_label">是自由开源软件</string>
+    <string name="about_source_code">源代码</string>
+    <string name="about_data_sources">数据来源</string>
+    <string name="about_forecast_data_label">预报数据</string>
+    <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">起飞场</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">起飞场数据由 ParaglidingEarth 提供，依据 Creative Commons Attribution-ShareAlike 3.0 许可。</string>
+    <string name="about_map_services_label">地图服务与影像</string>
+    <string name="about_openfreemap">OpenFreeMap</string>
+    <string name="about_opentopomap">OpenTopoMap</string>
+    <string name="about_opentopomap_detail">地图数据：© OpenStreetMap 贡献者 (ODbL)、SRTM\n地图样式：© OpenTopoMap (CC-BY-SA)</string>
+    <string name="about_openmaptiles_source">OpenMapTiles 源数据</string>
+    <string name="about_openstreetmap">OpenStreetMap 贡献者</string>
+    <string name="about_nasa_gibs">NASA GIBS</string>
+    <string name="about_esri_world_imagery">Esri World Imagery</string>
+    <string name="about_esri_world_imagery_detail">由 Esri 提供技术支持\n来源：Esri、Vantor、GeoEye、Earthstar Geographics、CNES/Airbus DS、USDA、USGS、AeroGRID、IGN、© OpenStreetMap 贡献者、TomTom、Garmin、FAO、NOAA 以及 GIS 用户社区</string>
+    <string name="about_technology">技术</string>
+    <string name="about_map_sdk_label">地图 SDK</string>
+    <string name="about_maplibre">MapLibre</string>
+
+    <!-- Forecast -->
+    <string name="title_forecast">预报</string>
+    <string name="loading_forecast_for_place">正在加载 %1$s 的预报…</string>
+    <string name="loading_forecast">正在加载预报…</string>
+    <string name="forecast_location_restore_failed">无法恢复预报位置。正在返回地图。</string>
+
+    <!-- Forecast information messages -->
+    <string name="forecast_no_thermals">很遗憾，预计没有热气流。</string>
+    <string name="forecast_loading_location">正在加载新位置的预报…</string>
+    <string name="forecast_map_update_too_frequent">预报未更新：请等待 %1$.1f 秒后再移动地图。</string>
+    <string name="forecast_map_update_too_close">预报未更新：请从当前预报点移动至少 %1$d 米。</string>
+
+    <!-- Model selector -->
+    <string name="title_weather_model">天气模型</string>
+    <string name="model_selector_fell_back">已回退到 %1$s</string>
+    <string name="model_selector_attribution">由 open-meteo.com 提供</string>
+
+    <!-- Map -->
+    <string name="map_unavailable_title">地图提供商当前不可用。</string>
+    <string name="map_unavailable_message">无法加载地图。请检查网络连接或重试。</string>
+    <string name="coordinates_lat_lon_format" formatted="false">纬度 %.4f，经度 %.4f</string>
+    <string name="map_layer_openfreemap">OpenFreeMap</string>
+    <string name="map_layer_opentopomap">OpenTopoMap</string>
+    <string name="map_layer_nasa_gibs">NASA GIBS</string>
+    <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
+    <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
+    <string name="map_attribution_opentopomap_full">地图数据：© OpenStreetMap 贡献者 (ODbL)、SRTM\n地图样式：© OpenTopoMap (CC-BY-SA)</string>
+    <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
+    <string name="map_attribution_nasa_gibs_full">影像：NASA Global Imagery Browse Services (GIBS)</string>
+    <string name="map_attribution_esri_world_imagery_compact">由 Esri 提供技术支持 · 来源</string>
+    <string name="map_attribution_esri_world_imagery_full">由 Esri 提供技术支持\n来源：Esri、Vantor、GeoEye、Earthstar Geographics、CNES/Airbus DS、USDA、USGS、AeroGRID、IGN、© OpenStreetMap 贡献者、TomTom、Garmin、FAO、NOAA 以及 GIS 用户社区</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">起飞场数据：© ParaglidingEarth 贡献者，依据 Creative Commons Attribution-ShareAlike 3.0 许可。</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
+    <string name="map_attribution_title">地图归属</string>
+    <string name="map_attribution_full">地图服务：OpenFreeMap\n矢量瓦片：© OpenMapTiles\n地图数据：© OpenStreetMap 贡献者 (ODbL)</string>
+    <string name="map_waiting_for_location">正在等待设备位置…</string>
+    <string name="map_location_permission_denied">需要位置权限才能将地图居中到你的位置。</string>
+    <string name="map_launch_site_source">ParaglidingEarth 起飞场</string>
+    <string name="map_launch_site_original_name_format">原始名称：%1$s</string>
+    <string name="map_launch_site_altitude_format">海拔 %1$d 米</string>
+    <string name="map_launch_site_wind_format">风：%1$s</string>
+    <string name="map_launch_site_activity_format">适合：%1$s</string>
+    <string name="map_launch_site_landing_format">着陆：%1$s</string>
+    <string name="map_launch_site_data_attribution">数据：ParaglidingEarth (CC BY-SA 3.0)</string>
+
+    <!-- Help dialog - Thermic -->
+    <string name="help_thermic_title">热气流预报帮助</string>
+    <string name="help_thermic_summary">颜色表示估算的空气上升速度（m/s），而非滑翔伞的净爬升。色阶从浅蓝经绿色到红色。</string>
+    <string name="help_thermic_model_blocks_info">彩色方块为时间-高度分区；纯红色标记上升色阶的上边界。</string>
+    <string name="help_thermic_cursor_info">点击单元格可查看时间、高度、升力范围、云层、置信度和模型诊断。</string>
+    <string name="help_thermic_dashed_lines_title">线条、色带与诊断：</string>
+    <string name="help_thermic_dry_top_line">橙色斜线 — 热气流顶部的不确定性</string>
+    <string name="help_thermic_cloud_base_line">半透明蓝色区域 — 可能的云层，而非干升力</string>
+    <string name="help_thermic_moist_top_line">紫色 — 湿润/云顶</string>
+    <string name="help_thermic_pressure_levels_line">灰色虚线 — 原始气压层</string>
+
+    <!-- Help dialog - Skew-T -->
+    <string name="help_stuve_title">Skew-T log-P 图</string>
+    <string name="help_stuve_summary">某一预报时刻的垂直探空。越往上海拔越高；气压向上递减。</string>
+    <string name="help_stuve_lines_title">线条：</string>
+    <string name="help_stuve_temperature_line">红色 — 气温</string>
+    <string name="help_stuve_dewpoint_line">蓝色 — 露点</string>
+    <string name="help_stuve_parcel_line">灰色虚线 — 默认气块路径</string>
+    <string name="help_stuve_active_parcel_line">绿色 — 根据你的点击或加热变化得出的气块路径</string>
+    <string name="help_stuve_ccl_line">棕色虚线 — 估算的积云底（CCL）</string>
+    <string name="help_stuve_reference_grid">浅绿色、青色和蓝色网格线分别是干绝热线、湿绝热线和混合比线。右侧条带标记湿润层。</string>
+    <string name="help_stuve_controls_title">操作：</string>
+    <string name="help_stuve_control_hour">时间滑块 — 切换预报时刻。</string>
+    <string name="help_stuve_control_cursor">点击或拖动图表 — 读取某一层的气温、露点、气块、风、气压和海拔。</string>
+    <string name="help_stuve_control_heating_zoom">拖动底部绿色手柄可更改气块起始温度。双指捏合可缩放海拔。</string>
+
+    <!-- Help dialog - Wind -->
+    <string name="help_wind_title">风预报帮助</string>
+    <string name="help_wind_summary">风速颜色从蓝色经绿色到红色；红色标记色阶最大值（km/h）：</string>
+    <string name="help_wind_moisture_title">湿度提示：</string>
+    <string name="help_wind_ccl_line">橙色 CCL 线 — 加热充足时估算的积云底。</string>
+
+    <!-- Help dialog - Cloud -->
+    <string name="help_cloud_title">云预报帮助</string>
+    <string name="help_cloud_summary">云量与地面太阳能。</string>
+    <string name="help_cloud_legend_sun">日照小时 — 到达地面的直接日照。</string>
+    <string name="help_cloud_legend_radiation">W/m² — 地面太阳能；主要的热气流触发因素。</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low — 按层划分的天空覆盖，而非云的厚度。</string>
+    <string name="help_cloud_legend_rain" formatted="false">Rain — 概率和降水量。</string>
+
+    <!-- Help dialog - Status messages -->
+    <string name="help_status_no_place">尚未选择地点。从地图打开一个点，为此界面加载预报上下文。</string>
+
+    <!-- Help dialog - Model info -->
+    <string name="help_model_label">天气模型</string>
+    <string name="help_data_downloaded_label">数据已下载</string>
+    <string name="help_model_generated_label">模型运行</string>
+
+    <!-- Database error dialog -->
+    <string name="db_error_title">数据库错误</string>
+    <string name="db_error_message">本地数据库出现架构错误，无法使用。你可以清除数据库以解决此问题（已保存的地点将丢失），或关闭应用。</string>
+    <string name="db_error_clear">清除数据库</string>
+    <string name="db_error_close_app">关闭应用</string>
+</resources>

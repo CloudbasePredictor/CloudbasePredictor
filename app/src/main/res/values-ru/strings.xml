@@ -1,0 +1,183 @@
+<resources>
+    <string name="app_name">Cloudbase Predictor</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_retry">Повторить</string>
+    <string name="action_open">Открыть</string>
+    <string name="action_add_manually">Добавить вручную</string>
+    <string name="action_about">О приложении</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Назад</string>
+    <string name="cd_favorites">Избранное</string>
+    <string name="cd_settings">Настройки</string>
+    <string name="cd_map_layer">Слой карты</string>
+    <string name="cd_current_location">Текущее местоположение</string>
+    <string name="cd_reset_north">Сбросить на север</string>
+    <string name="cd_open_map">Открыть карту</string>
+    <string name="cd_open_forecast_help">Открыть справку по прогнозу</string>
+    <string name="cd_favorite_marker">Избранное %1$s</string>
+    <string name="cd_launch_site_marker">Место старта %1$s</string>
+    <string name="cd_selected">Выбрано</string>
+    <string name="cd_mode_stuve">Stuve</string>
+    <string name="cd_mode_wind">Ветер</string>
+    <string name="cd_mode_thermic">Термичность</string>
+    <string name="cd_mode_cloud">Облачность</string>
+
+    <!-- SaveFavoriteDialog -->
+    <string name="dialog_title_edit_favorite">Изменить избранное</string>
+    <string name="dialog_title_save_favorite">Сохранить в избранное</string>
+    <string name="label_name">Название</string>
+
+    <!-- FavoritesListDialog -->
+    <string name="dialog_title_favorites">Избранное</string>
+    <string name="favorites_empty_message">Пока нет избранного. Нажмите на звёздочку на экране прогноза, чтобы сохранить место.</string>
+    <string name="dialog_title_add_manual_favorite">Добавить избранное вручную</string>
+    <string name="label_coordinates">Координаты</string>
+    <string name="manual_favorite_coordinates_placeholder">47.3769, 8.5417</string>
+    <string name="manual_favorite_coordinates_help">Введите широту и долготу. Принимаются десятичные градусы и ГМС с N/S/E/W; отрицательные значения означают юг или запад.</string>
+    <string name="manual_favorite_error_blank_name">Введите название.</string>
+    <string name="manual_favorite_error_name_too_long">Используйте более короткое название.</string>
+    <string name="manual_favorite_error_blank_coordinates">Введите координаты.</string>
+    <string name="manual_favorite_error_coordinates_format">Введите две координаты, например 47.3769, 8.5417.</string>
+    <string name="manual_favorite_error_latitude_range">Широта должна быть от -90 до 90.</string>
+    <string name="manual_favorite_error_longitude_range">Долгота должна быть от -180 до 180.</string>
+
+    <!-- Settings -->
+    <string name="title_settings">Настройки</string>
+    <string name="settings_data_source">Источник данных</string>
+    <string name="settings_units">Единицы измерения</string>
+    <string name="settings_map">Карта</string>
+    <string name="settings_show_launch_sites">Показывать места старта</string>
+    <string name="settings_start_with_favorites">Начинать с избранного</string>
+
+    <!-- About -->
+    <string name="title_about">О приложении</string>
+    <string name="about_app_name">Cloudbase Predictor</string>
+    <string name="about_version_format">v%1$s (%2$s)</string>
+    <string name="about_foss_label">— свободное программное обеспечение с открытым исходным кодом</string>
+    <string name="about_source_code">Исходный код</string>
+    <string name="about_data_sources">Источники данных</string>
+    <string name="about_forecast_data_label">Данные прогноза</string>
+    <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">Места старта</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">Данные о местах старта предоставлены ParaglidingEarth и распространяются по лицензии Creative Commons Attribution-ShareAlike 3.0.</string>
+    <string name="about_map_services_label">Картографические сервисы и изображения</string>
+    <string name="about_openfreemap">OpenFreeMap</string>
+    <string name="about_opentopomap">OpenTopoMap</string>
+    <string name="about_opentopomap_detail">Данные карты: © участники OpenStreetMap (ODbL), SRTM\nСтиль карты: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="about_openmaptiles_source">Исходные данные OpenMapTiles</string>
+    <string name="about_openstreetmap">Участники OpenStreetMap</string>
+    <string name="about_nasa_gibs">NASA GIBS</string>
+    <string name="about_esri_world_imagery">Esri World Imagery</string>
+    <string name="about_esri_world_imagery_detail">При поддержке Esri\nИсточники: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © участники OpenStreetMap, TomTom, Garmin, FAO, NOAA и сообщество пользователей ГИС</string>
+    <string name="about_technology">Технологии</string>
+    <string name="about_map_sdk_label">SDK карт</string>
+    <string name="about_maplibre">MapLibre</string>
+
+    <!-- Forecast -->
+    <string name="title_forecast">Прогноз</string>
+    <string name="loading_forecast_for_place">Загрузка прогноза для %1$s…</string>
+    <string name="loading_forecast">Загрузка прогноза…</string>
+    <string name="forecast_location_restore_failed">Не удалось восстановить местоположение прогноза. Возврат к карте.</string>
+
+    <!-- Forecast information messages -->
+    <string name="forecast_no_thermals">К сожалению, термиков не ожидается.</string>
+    <string name="forecast_loading_location">Загрузка прогноза для нового местоположения…</string>
+    <string name="forecast_map_update_too_frequent">Прогноз не обновлён: подождите %1$.1f с, прежде чем снова двигать карту.</string>
+    <string name="forecast_map_update_too_close">Прогноз не обновлён: переместитесь не менее чем на %1$d м от текущей точки прогноза.</string>
+
+    <!-- Model selector -->
+    <string name="title_weather_model">Метеомодель</string>
+    <string name="model_selector_fell_back">Выполнен переход на %1$s</string>
+    <string name="model_selector_attribution">от open-meteo.com</string>
+
+    <!-- Map -->
+    <string name="map_unavailable_title">Поставщик карт сейчас недоступен.</string>
+    <string name="map_unavailable_message">Не удалось загрузить карту. Проверьте доступ к сети или повторите попытку.</string>
+    <string name="coordinates_lat_lon_format" formatted="false">Шир. %.4f, Долг. %.4f</string>
+    <string name="map_layer_openfreemap">OpenFreeMap</string>
+    <string name="map_layer_opentopomap">OpenTopoMap</string>
+    <string name="map_layer_nasa_gibs">NASA GIBS</string>
+    <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
+    <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
+    <string name="map_attribution_opentopomap_full">Данные карты: © участники OpenStreetMap (ODbL), SRTM\nСтиль карты: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
+    <string name="map_attribution_nasa_gibs_full">Изображения: NASA Global Imagery Browse Services (GIBS)</string>
+    <string name="map_attribution_esri_world_imagery_compact">При поддержке Esri · Источники</string>
+    <string name="map_attribution_esri_world_imagery_full">При поддержке Esri\nИсточники: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © участники OpenStreetMap, TomTom, Garmin, FAO, NOAA и сообщество пользователей ГИС</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">Данные о местах старта: © участники ParaglidingEarth, лицензия Creative Commons Attribution-ShareAlike 3.0.</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
+    <string name="map_attribution_title">Атрибуция карты</string>
+    <string name="map_attribution_full">Картографический сервис: OpenFreeMap\nВекторные тайлы: © OpenMapTiles\nДанные карты: © участники OpenStreetMap (ODbL)</string>
+    <string name="map_waiting_for_location">Ожидание местоположения устройства…</string>
+    <string name="map_location_permission_denied">Для центрирования карты по вашему положению нужно разрешение на доступ к местоположению.</string>
+    <string name="map_launch_site_source">Место старта ParaglidingEarth</string>
+    <string name="map_launch_site_original_name_format">Исходное название: %1$s</string>
+    <string name="map_launch_site_altitude_format">Высота %1$d м</string>
+    <string name="map_launch_site_wind_format">Ветер: %1$s</string>
+    <string name="map_launch_site_activity_format">Подходит для: %1$s</string>
+    <string name="map_launch_site_landing_format">Посадка: %1$s</string>
+    <string name="map_launch_site_data_attribution">Данные: ParaglidingEarth (CC BY-SA 3.0)</string>
+
+    <!-- Help dialog - Thermic -->
+    <string name="help_thermic_title">Справка по прогнозу термичности</string>
+    <string name="help_thermic_summary">Цвет показывает оценочный восходящий поток воздуха в м/с, а не чистый набор высоты параплана. Шкала идёт от бледно-голубого через зелёный к красному.</string>
+    <string name="help_thermic_model_blocks_info">Цветные квадраты — это ячейки «время — высота»; сплошной красный цвет отмечает верхнюю границу шкалы потока.</string>
+    <string name="help_thermic_cursor_info">Нажмите на ячейку, чтобы увидеть время, высоту, диапазон подъёма, слой облаков, достоверность и диагностику модели.</string>
+    <string name="help_thermic_dashed_lines_title">Линии, полосы и диагностика:</string>
+    <string name="help_thermic_dry_top_line">Оранжевая штриховка — неопределённость вершины термика</string>
+    <string name="help_thermic_cloud_base_line">Полупрозрачная синяя область — возможный слой облаков, а не сухой поток</string>
+    <string name="help_thermic_moist_top_line">Фиолетовый — влажная/облачная вершина</string>
+    <string name="help_thermic_pressure_levels_line">Серый пунктир — исходные уровни давления</string>
+
+    <!-- Help dialog - Skew-T -->
+    <string name="help_stuve_title">Диаграмма Skew-T log-P</string>
+    <string name="help_stuve_summary">Вертикальное зондирование для одного часа прогноза. Большая высота — вверху; давление уменьшается кверху.</string>
+    <string name="help_stuve_lines_title">Линии:</string>
+    <string name="help_stuve_temperature_line">Красный — температура воздуха</string>
+    <string name="help_stuve_dewpoint_line">Синий — точка росы</string>
+    <string name="help_stuve_parcel_line">Серый пунктир — путь частицы по умолчанию</string>
+    <string name="help_stuve_active_parcel_line">Зелёный — путь частицы по вашему нажатию или изменению нагрева</string>
+    <string name="help_stuve_ccl_line">Коричневый пунктир — оценочная база кучевых облаков (CCL)</string>
+    <string name="help_stuve_reference_grid">Бледно-зелёные, бирюзовые и синие линии сетки — это сухие адиабаты, влажные адиабаты и линии отношения смеси. Правая полоса отмечает влажные слои.</string>
+    <string name="help_stuve_controls_title">Управление:</string>
+    <string name="help_stuve_control_hour">Ползунок времени — переключение часа прогноза.</string>
+    <string name="help_stuve_control_cursor">Нажмите или проведите по графику — узнайте температуру, точку росы, частицу, ветер, давление и высоту на уровне.</string>
+    <string name="help_stuve_control_heating_zoom">Перетащите зелёный нижний маркер, чтобы изменить начальную температуру частицы. Сведите пальцы для масштабирования по высоте.</string>
+
+    <!-- Help dialog - Wind -->
+    <string name="help_wind_title">Справка по прогнозу ветра</string>
+    <string name="help_wind_summary">Цвета скорости ветра идут от синего через зелёный к красному; красный отмечает максимум шкалы (км/ч):</string>
+    <string name="help_wind_moisture_title">Признаки влажности:</string>
+    <string name="help_wind_ccl_line">Оранжевая линия CCL — оценочная база кучевых облаков при достаточном прогреве.</string>
+
+    <!-- Help dialog - Cloud -->
+    <string name="help_cloud_title">Справка по прогнозу облачности</string>
+    <string name="help_cloud_summary">Облачность и солнечная энергия у земли.</string>
+    <string name="help_cloud_legend_sun">Часы солнца — прямой солнечный свет, достигающий земли.</string>
+    <string name="help_cloud_legend_radiation">W/m² — солнечная энергия у земли; основной триггер термиков.</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low — покрытие неба по слоям, а не толщина облаков.</string>
+    <string name="help_cloud_legend_rain" formatted="false">Rain — вероятность и количество.</string>
+
+    <!-- Help dialog - Status messages -->
+    <string name="help_status_no_place">Место ещё не выбрано. Откройте точку на карте, чтобы загрузить контекст прогноза для этого экрана.</string>
+
+    <!-- Help dialog - Model info -->
+    <string name="help_model_label">Метеомодель</string>
+    <string name="help_data_downloaded_label">Данные загружены</string>
+    <string name="help_model_generated_label">Прогон модели</string>
+
+    <!-- Database error dialog -->
+    <string name="db_error_title">Ошибка базы данных</string>
+    <string name="db_error_message">В локальной базе данных обнаружена ошибка схемы, и её нельзя использовать. Вы можете очистить базу данных, чтобы устранить проблему (сохранённые места будут потеряны), или закрыть приложение.</string>
+    <string name="db_error_clear">Очистить базу данных</string>
+    <string name="db_error_close_app">Закрыть приложение</string>
+</resources>
