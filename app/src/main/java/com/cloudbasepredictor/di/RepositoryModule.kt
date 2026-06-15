@@ -20,7 +20,7 @@ import com.cloudbasepredictor.data.map.SharedPrefsMapLayerRepository
 import com.cloudbasepredictor.data.map.SharedPrefsMapStartupRepository
 import com.cloudbasepredictor.data.place.DefaultPlaceRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
-import com.cloudbasepredictor.data.theme.InMemoryThemeRepository
+import com.cloudbasepredictor.data.theme.SharedPrefsThemeRepository
 import com.cloudbasepredictor.data.theme.ThemeRepository
 import com.cloudbasepredictor.data.units.SharedPrefsUnitSettingsRepository
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
@@ -66,7 +66,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindThemeRepository(
-        repository: InMemoryThemeRepository,
+        repository: SharedPrefsThemeRepository,
     ): ThemeRepository
 
     @Binds

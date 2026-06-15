@@ -2,6 +2,7 @@ package com.cloudbasepredictor.data.place
 
 import android.content.SharedPreferences
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.model.SavedPlace
 import kotlinx.serialization.json.Json
@@ -38,7 +39,7 @@ class FavoritePlacesBackupStoreTest {
         )
 
         val payload = prefs.getString("payload", null).orEmpty()
-        assertTrue(payload.contains("\"schemaVersion\":3"))
+        assertTrue(payload.contains("\"schemaVersion\":4"))
         assertTrue(payload.contains("\"name\":\"Interlaken\""))
         assertTrue(payload.contains("\"latitude\":46.6863"))
         assertTrue(payload.contains("\"longitude\":7.8632"))
@@ -307,6 +308,53 @@ class FavoritePlacesBackupStoreTest {
         assertBackupRulesReferenceStableFileName("src/main/res/xml/backup_rules.xml")
         assertBackupRulesReferenceStableFileName("src/main/res/xml-v28/backup_rules.xml")
         assertBackupRulesReferenceStableFileName("src/main/res/xml/data_extraction_rules.xml")
+    }
+
+    @Test
+    fun saveThemePreference_storesExplicitOverride() {
+        store.saveThemePreference(ThemePreference.DARK)
+
+        assertEquals(ThemePreference.DARK, store.readThemePreference())
+        assertTrue(prefs.getString("payload", null).orEmpty().contains("\"themePreference\":\"DARK\""))
+    }
+
+    @Test
+    fun saveThemePreference_auto_isNotBackedUp() {
+        store.saveThemePreference(ThemePreference.LIGHT)
+        store.saveThemePreference(ThemePreference.AUTO)
+
+        assertEquals(null, store.readThemePreference())
+        assertFalse(prefs.getString("payload", null).orEmpty().contains("themePreference"))
+    }
+
+    @Test
+    fun saveStartWithFavorites_roundTrips() {
+        store.saveStartWithFavorites(false)
+
+        assertEquals(false, store.readStartWithFavorites())
+        assertTrue(prefs.getString("payload", null).orEmpty().contains("\"startWithFavorites\":false"))
+    }
+
+    @Test
+    fun saveFavoritePlaces_preservesThemeAndStartWithFavorites() {
+        store.saveThemePreference(ThemePreference.DARK)
+        store.saveStartWithFavorites(false)
+
+        store.saveFavoritePlaces(
+            listOf(
+                SavedPlace(
+                    id = "custom-id",
+                    name = "Interlaken",
+                    latitude = 46.6863,
+                    longitude = 7.8632,
+                    isFavorite = true,
+                ),
+            ),
+        )
+
+        assertEquals(ThemePreference.DARK, store.readThemePreference())
+        assertEquals(false, store.readStartWithFavorites())
+        assertEquals("Interlaken", store.readFavoritePlaces().single().name)
     }
 
     @Test

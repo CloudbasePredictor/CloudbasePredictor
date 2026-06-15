@@ -2,6 +2,7 @@ package com.cloudbasepredictor.data.place
 
 import android.content.SharedPreferences
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.di.FavoritePlacesBackupPreferences
 import com.cloudbasepredictor.model.SavedPlace
@@ -15,6 +16,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 
 object FavoritePlacesBackupContract {
@@ -46,22 +48,20 @@ class FavoritePlacesBackupStore @Inject constructor(
     }
 
     fun saveFavoritePlaces(places: List<SavedPlace>) {
-        val existingPayload = readPayload()
-        val payload = FavoritePlacesBackupPayload(
-            places = places
-                .filter(SavedPlace::isFavorite)
-                .distinctBy(SavedPlace::id)
-                .map { place ->
-                    FavoritePlaceBackupEntry(
-                        name = place.name,
-                        latitude = place.latitude,
-                        longitude = place.longitude,
-                    )
-                },
-            unitPreset = existingPayload?.unitPreset,
-            mapLayer = existingPayload?.mapLayer,
+        savePayload(
+            currentPayload().copy(
+                places = places
+                    .filter(SavedPlace::isFavorite)
+                    .distinctBy(SavedPlace::id)
+                    .map { place ->
+                        FavoritePlaceBackupEntry(
+                            name = place.name,
+                            latitude = place.latitude,
+                            longitude = place.longitude,
+                        )
+                    },
+            ),
         )
-        savePayload(payload)
     }
 
     fun readUnitPreset(): UnitPreset? {
@@ -70,14 +70,7 @@ class FavoritePlacesBackupStore @Inject constructor(
     }
 
     fun saveUnitPreset(unitPreset: UnitPreset) {
-        val existingPayload = readPayload()
-        savePayload(
-            FavoritePlacesBackupPayload(
-                places = existingPayload?.places.orEmpty(),
-                unitPreset = JsonPrimitive(unitPreset.name),
-                mapLayer = existingPayload?.mapLayer,
-            ),
-        )
+        savePayload(currentPayload().copy(unitPreset = JsonPrimitive(unitPreset.name)))
     }
 
     fun readMapLayer(): MapLayerPreference? {
@@ -86,15 +79,35 @@ class FavoritePlacesBackupStore @Inject constructor(
     }
 
     fun saveMapLayer(mapLayer: MapLayerPreference) {
-        val existingPayload = readPayload()
-        savePayload(
-            FavoritePlacesBackupPayload(
-                places = existingPayload?.places.orEmpty(),
-                unitPreset = existingPayload?.unitPreset,
-                mapLayer = JsonPrimitive(mapLayer.name),
-            ),
-        )
+        savePayload(currentPayload().copy(mapLayer = JsonPrimitive(mapLayer.name)))
     }
+
+    fun readThemePreference(): ThemePreference? {
+        val themeName = (readPayload()?.themePreference as? JsonPrimitive)?.contentOrNull ?: return null
+        return runCatching { ThemePreference.valueOf(themeName) }.getOrNull()
+    }
+
+    /**
+     * Mirrors the theme into the backup payload. [ThemePreference.AUTO] follows the
+     * system, so it is cleared rather than stored: a restore then falls back to AUTO.
+     */
+    fun saveThemePreference(themePreference: ThemePreference) {
+        val stored = themePreference
+            .takeUnless { it == ThemePreference.AUTO }
+            ?.let { JsonPrimitive(it.name) }
+        savePayload(currentPayload().copy(themePreference = stored))
+    }
+
+    fun readStartWithFavorites(): Boolean? {
+        return (readPayload()?.startWithFavorites as? JsonPrimitive)?.booleanOrNull
+    }
+
+    fun saveStartWithFavorites(startWithFavorites: Boolean) {
+        savePayload(currentPayload().copy(startWithFavorites = JsonPrimitive(startWithFavorites)))
+    }
+
+    private fun currentPayload(): FavoritePlacesBackupPayload =
+        readPayload() ?: FavoritePlacesBackupPayload()
 
     private fun readPayload(): FavoritePlacesBackupPayload? {
         val payload = prefs.getString(KEY_PAYLOAD, null) ?: return null
@@ -109,7 +122,7 @@ class FavoritePlacesBackupStore @Inject constructor(
 
     private fun savePayload(payload: FavoritePlacesBackupPayload) {
         prefs.edit()
-            .putString(KEY_PAYLOAD, json.encodeToString(payload))
+            .putString(KEY_PAYLOAD, json.encodeToString(payload.copy(schemaVersion = BACKUP_SCHEMA_VERSION)))
             .apply()
     }
 
@@ -118,14 +131,18 @@ class FavoritePlacesBackupStore @Inject constructor(
     }
 }
 
+private const val BACKUP_SCHEMA_VERSION = 4
+
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
 private data class FavoritePlacesBackupPayload(
     @EncodeDefault
-    val schemaVersion: Int = 3,
+    val schemaVersion: Int = BACKUP_SCHEMA_VERSION,
     val places: List<FavoritePlaceBackupEntry> = emptyList(),
     val unitPreset: JsonElement? = null,
     val mapLayer: JsonElement? = null,
+    val themePreference: JsonElement? = null,
+    val startWithFavorites: JsonElement? = null,
 )
 
 @Serializable

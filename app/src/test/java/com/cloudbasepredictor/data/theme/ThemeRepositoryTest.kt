@@ -1,4 +1,4 @@
-package com.cloudbasepredictor.data.map
+package com.cloudbasepredictor.data.theme
 
 import android.content.SharedPreferences
 import com.cloudbasepredictor.data.place.FavoritePlacesBackupStore
@@ -6,7 +6,7 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class MapStartupRepositoryTest {
+class ThemeRepositoryTest {
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
@@ -16,69 +16,58 @@ class MapStartupRepositoryTest {
         FavoritePlacesBackupStore(prefs, json)
 
     @Test
-    fun defaultStartsWithFavorites() {
-        val repository = SharedPrefsMapStartupRepository(FakeSharedPreferences(), backupStore())
+    fun defaultIsAuto() {
+        val repo = SharedPrefsThemeRepository(FakeSharedPreferences(), backupStore())
 
-        assertEquals(true, repository.startWithFavorites.value)
+        assertEquals(ThemePreference.AUTO, repo.preference.value)
     }
 
     @Test
-    fun setStartWithFavorites_persistsToPreferencesAndBackup() {
-        val prefs = FakeSharedPreferences()
-        val backupStore = backupStore()
-        val repository = SharedPrefsMapStartupRepository(prefs, backupStore)
-
-        repository.setStartWithFavorites(false)
-
-        assertEquals(false, repository.startWithFavorites.value)
-        assertEquals(false, prefs.getBoolean("start_with_favorites", true))
-        assertEquals(false, backupStore.readStartWithFavorites())
-    }
-
-    @Test
-    fun persistedPreferenceRestores() {
+    fun validLocalPreferenceLoadsBeforeBackup() {
         val prefs = FakeSharedPreferences().apply {
-            edit().putBoolean("start_with_favorites", false).apply()
+            edit().putString("theme_preference", ThemePreference.LIGHT.name).apply()
         }
+        val backupStore = backupStore().apply { saveThemePreference(ThemePreference.DARK) }
 
-        val repository = SharedPrefsMapStartupRepository(prefs, backupStore())
+        val repo = SharedPrefsThemeRepository(prefs, backupStore)
 
-        assertEquals(false, repository.startWithFavorites.value)
+        assertEquals(ThemePreference.LIGHT, repo.preference.value)
     }
 
     @Test
     fun backupPreferenceRestoresWhenLocalPreferenceIsMissing() {
         val prefs = FakeSharedPreferences()
-        val backupStore = backupStore().apply { saveStartWithFavorites(false) }
+        val backupStore = backupStore().apply { saveThemePreference(ThemePreference.DARK) }
 
-        val repository = SharedPrefsMapStartupRepository(prefs, backupStore)
+        val repo = SharedPrefsThemeRepository(prefs, backupStore)
 
-        assertEquals(false, repository.startWithFavorites.value)
-        assertEquals(false, prefs.getBoolean("start_with_favorites", true))
+        assertEquals(ThemePreference.DARK, repo.preference.value)
+        assertEquals("DARK", prefs.getString("theme_preference", null))
     }
 
     @Test
-    fun oldBackupWithoutStartWithFavoritesKeepsDefault() {
-        val backupPrefs = FakeSharedPreferences().apply {
-            edit()
-                .putString(
-                    "payload",
-                    """
-                        {
-                          "schemaVersion": 3,
-                          "places": []
-                        }
-                    """.trimIndent(),
-                )
-                .apply()
-        }
+    fun setPreference_persistsToLocalPrefsAndBackup() {
+        val prefs = FakeSharedPreferences()
+        val backupStore = backupStore()
+        val repo = SharedPrefsThemeRepository(prefs, backupStore)
 
-        val repository = SharedPrefsMapStartupRepository(
-            FakeSharedPreferences(),
-            backupStore(backupPrefs),
-        )
+        repo.setPreference(ThemePreference.DARK)
 
-        assertEquals(true, repository.startWithFavorites.value)
+        assertEquals(ThemePreference.DARK, repo.preference.value)
+        assertEquals("DARK", prefs.getString("theme_preference", null))
+        assertEquals(ThemePreference.DARK, backupStore.readThemePreference())
+    }
+
+    @Test
+    fun setPreference_auto_persistsLocallyButIsNotBackedUp() {
+        val prefs = FakeSharedPreferences()
+        val backupStore = backupStore().apply { saveThemePreference(ThemePreference.DARK) }
+        val repo = SharedPrefsThemeRepository(prefs, backupStore)
+
+        repo.setPreference(ThemePreference.AUTO)
+
+        assertEquals("AUTO", prefs.getString("theme_preference", null))
+        assertEquals(null, backupStore.readThemePreference())
     }
 
     private class FakeSharedPreferences : SharedPreferences {
@@ -149,11 +138,15 @@ class MapStartupRepositoryTest {
             }
 
             override fun commit(): Boolean {
-                apply()
+                flush()
                 return true
             }
 
             override fun apply() {
+                flush()
+            }
+
+            private fun flush() {
                 if (clear) data.clear()
                 pending.forEach { (key, value) ->
                     if (value == null) {

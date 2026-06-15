@@ -5,7 +5,8 @@ import com.cloudbasepredictor.data.datasource.InMemoryDataSourceRepository
 import com.cloudbasepredictor.data.forecast.ForecastRepository
 import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.map.MapStartupRepository
-import com.cloudbasepredictor.data.theme.InMemoryThemeRepository
+import com.cloudbasepredictor.data.theme.ThemePreference
+import com.cloudbasepredictor.data.theme.ThemeRepository
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
@@ -30,7 +31,7 @@ class SettingsViewModelTest {
         val forecastRepo = FakeForecastRepository()
         val vm = SettingsViewModel(
             dataSourceRepo,
-            InMemoryThemeRepository(),
+            FakeThemeRepository(),
             FakeUnitSettingsRepository(),
             FakeLaunchSiteDisplayRepository(),
             FakeMapStartupRepository(),
@@ -72,7 +73,7 @@ class SettingsViewModelTest {
         val forecastRepo = FakeForecastRepository()
         val vm = SettingsViewModel(
             InMemoryDataSourceRepository(),
-            InMemoryThemeRepository(),
+            FakeThemeRepository(),
             unitRepo,
             FakeLaunchSiteDisplayRepository(),
             FakeMapStartupRepository(),
@@ -91,7 +92,7 @@ class SettingsViewModelTest {
         val forecastRepo = FakeForecastRepository()
         val vm = SettingsViewModel(
             InMemoryDataSourceRepository(),
-            InMemoryThemeRepository(),
+            FakeThemeRepository(),
             FakeUnitSettingsRepository(),
             launchSiteDisplayRepo,
             FakeMapStartupRepository(),
@@ -110,7 +111,7 @@ class SettingsViewModelTest {
         val forecastRepo = FakeForecastRepository()
         val vm = SettingsViewModel(
             InMemoryDataSourceRepository(),
-            InMemoryThemeRepository(),
+            FakeThemeRepository(),
             FakeUnitSettingsRepository(),
             FakeLaunchSiteDisplayRepository(),
             mapStartupRepo,
@@ -181,6 +182,16 @@ class SettingsViewModelTest {
 
         override fun setStartWithFavorites(startWithFavorites: Boolean) {
             mutableStartWithFavorites.value = startWithFavorites
+        }
+    }
+
+    private class FakeThemeRepository : ThemeRepository {
+        private val mutablePreference = MutableStateFlow(ThemePreference.AUTO)
+
+        override val preference: StateFlow<ThemePreference> = mutablePreference.asStateFlow()
+
+        override fun setPreference(preference: ThemePreference) {
+            mutablePreference.value = preference
         }
     }
 }

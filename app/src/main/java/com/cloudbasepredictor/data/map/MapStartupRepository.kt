@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.data.map
 
 import android.content.SharedPreferences
+import com.cloudbasepredictor.data.place.FavoritePlacesBackupStore
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,10 +17,9 @@ interface MapStartupRepository {
 @Singleton
 class SharedPrefsMapStartupRepository @Inject constructor(
     private val prefs: SharedPreferences,
+    private val backupStore: FavoritePlacesBackupStore,
 ) : MapStartupRepository {
-    private val mutableStartWithFavorites = MutableStateFlow(
-        prefs.getBoolean(KEY_START_WITH_FAVORITES, DEFAULT_START_WITH_FAVORITES),
-    )
+    private val mutableStartWithFavorites = MutableStateFlow(loadStartWithFavorites())
 
     override val startWithFavorites: StateFlow<Boolean> = mutableStartWithFavorites.asStateFlow()
 
@@ -28,6 +28,20 @@ class SharedPrefsMapStartupRepository @Inject constructor(
         prefs.edit()
             .putBoolean(KEY_START_WITH_FAVORITES, startWithFavorites)
             .apply()
+        backupStore.saveStartWithFavorites(startWithFavorites)
+    }
+
+    private fun loadStartWithFavorites(): Boolean {
+        if (prefs.contains(KEY_START_WITH_FAVORITES)) {
+            return prefs.getBoolean(KEY_START_WITH_FAVORITES, DEFAULT_START_WITH_FAVORITES)
+        }
+
+        backupStore.readStartWithFavorites()?.let { restored ->
+            prefs.edit().putBoolean(KEY_START_WITH_FAVORITES, restored).apply()
+            return restored
+        }
+
+        return DEFAULT_START_WITH_FAVORITES
     }
 
     private companion object {
