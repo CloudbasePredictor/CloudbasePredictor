@@ -68,10 +68,15 @@ android {
                 testInstrumentationRunnerArguments["class"] =
                     "com.cloudbasepredictor.screenshot.ScreenshotCaptureTest"
 
+            requestedTasks.any { it.endsWith("connectedDesignSystemScreenshotTest") } ->
+                testInstrumentationRunnerArguments["class"] =
+                    "com.cloudbasepredictor.screenshot.DesignSystemScreenshotCaptureTest"
+
             else ->
                 testInstrumentationRunnerArguments["notClass"] = listOf(
                     "com.cloudbasepredictor.e2e.ForecastModelE2eTest",
                     "com.cloudbasepredictor.screenshot.ScreenshotCaptureTest",
+                    "com.cloudbasepredictor.screenshot.DesignSystemScreenshotCaptureTest",
                 ).joinToString(",")
         }
     }
@@ -254,6 +259,12 @@ tasks.register("connectedE2eTest") {
 
 tasks.register("connectedScreenshotTest") {
     description = "Run screenshot capture tests (requires emulator/device)"
+    group = "verification"
+    dependsOn("connectedDebugAndroidTest")
+}
+
+tasks.register("connectedDesignSystemScreenshotTest") {
+    description = "Run broad design-system screenshot capture tests (requires emulator/device)"
     group = "verification"
     dependsOn("connectedDebugAndroidTest")
 }
