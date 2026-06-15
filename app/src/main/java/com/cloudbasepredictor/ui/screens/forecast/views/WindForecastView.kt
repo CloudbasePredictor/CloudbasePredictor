@@ -211,17 +211,9 @@ private fun WindChartCanvas(
         val visibleBands = chart.altitudeBands.filter {
             it.topKm > minAltitudeKm && it.bottomKm < effectiveTopAltitudeKm
         }
-        val visibleAltitudes = visibleBands.map { it.centerKm }
-        if (visibleAltitudes.isEmpty()) return@Canvas
+        if (visibleBands.isEmpty()) return@Canvas
 
-        // Average band height for arrow clustering
-        val avgBandHeightKm = if (visibleBands.size > 1) {
-            (visibleBands.last().topKm - visibleBands.first().bottomKm) / visibleBands.size
-        } else 0.25f
-        val bandHeightPx = plotHeight * avgBandHeightKm / (effectiveTopAltitudeKm - minAltitudeKm)
-
-        // Clustering: skip arrows if cells are too small
-        val altCluster = max(1, ceil(arrowSizePx * 1.1f / bandHeightPx).toInt())
+        // Horizontal clustering: skip arrow columns if cells are too narrow.
         val hourCluster = max(1, ceil(arrowSizePx * 1.1f / columnWidth).toInt())
 
         // Build a fast cell lookup: (hour, altitudeKm) → cell
@@ -352,47 +344,45 @@ private fun WindChartCanvas(
             }
         }
 
-        // Draw wind arrows and speed labels with clustering
+        // Wind arrows: thin columns by hour (as before), but stack rows from the
+        // bottom up — the lowest level is always drawn, and higher levels appear
+        // only when zoom leaves vertical room for them. Each arrow shows its own
+        // level (no averaging across bands).
         val clusteredHours = chart.hours.filterIndexed { i, _ -> i % hourCluster == 0 }
-        val clusteredAltitudes = visibleAltitudes.filterIndexed { i, _ -> i % altCluster == 0 }
+        val minArrowSpacingPx = arrowSizePx * 1.1f
+        val drawnBands = buildList {
+            var lastY = Float.NaN
+            visibleBands.forEach { band ->
+                val centerY = altitudeToY(
+                    band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+                )
+                if (centerY !in plotTop..plotBottom) return@forEach
+                if (lastY.isNaN() || lastY - centerY >= minArrowSpacingPx) {
+                    add(band)
+                    lastY = centerY
+                }
+            }
+        }
+        val arrowDrawSize = min(arrowSizePx, columnWidth * hourCluster * 0.8f)
 
         clusteredHours.forEach { hour ->
             val hourIndex = chart.hours.indexOf(hour)
             val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
 
-            clusteredAltitudes.forEach clusteredAlt@{ altKm ->
-                // Collect cells in the altitude cluster range for averaging
-                val altIdx = visibleAltitudes.indexOf(altKm)
-                val clusterAlts = visibleAltitudes.subList(
-                    altIdx, (altIdx + altCluster).coerceAtMost(visibleAltitudes.size),
-                )
-                val clusterCells = clusterAlts.mapNotNull { a ->
-                    val k = hour.toLong().shl(32) or a.toBits().toLong()
-                    cellLookup[k]
-                }
-                if (clusterCells.isEmpty()) return@clusteredAlt
-
-                val avgSpeed = clusterCells.map { it.speedKmh }.average().toFloat()
-                val avgDir = averageWindDirection(clusterCells.map { it.directionDeg })
-                val clusterBandBottom = visibleBands.find { it.centerKm == clusterAlts.first() }?.bottomKm ?: altKm
-                val clusterBandTop = visibleBands.find { it.centerKm == clusterAlts.last() }?.topKm ?: altKm
+            drawnBands.forEach drawnBand@{ band ->
+                val key = hour.toLong().shl(32) or band.centerKm.toBits().toLong()
+                val cell = cellLookup[key] ?: return@drawnBand
                 val cellCenterY = altitudeToY(
-                    (clusterBandBottom + clusterBandTop) / 2f,
-                    minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+                    band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
                 )
-                if (cellCenterY !in plotTop..plotBottom) return@clusteredAlt
 
                 // Draw arrow — black in light theme (onSurface)
-                val arrowDrawSize = min(
-                    arrowSizePx,
-                    min(columnWidth * hourCluster * 0.8f, bandHeightPx * altCluster * 0.8f),
-                )
                 drawWindArrow(
                     centerX = cellCenterX,
                     centerY = cellCenterY,
-                    directionDeg = avgDir,
+                    directionDeg = cell.directionDeg,
                     arrowSize = arrowDrawSize,
-                    speedKmh = avgSpeed,
+                    speedKmh = cell.speedKmh,
                     color = onSurfaceColor,
                 )
             }
@@ -471,40 +461,23 @@ private fun WindChartCanvas(
                 )
             }
 
-            // Speed labels at center of each clustered cell
+            // Speed labels below each drawn arrow
             clusteredHours.forEach { hour ->
                 val hourIndex = chart.hours.indexOf(hour)
                 val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
 
-                clusteredAltitudes.forEach clusteredAltLabel@{ altKm ->
-                    val altIdx = visibleAltitudes.indexOf(altKm)
-                    val clusterAlts = visibleAltitudes.subList(
-                        altIdx, (altIdx + altCluster).coerceAtMost(visibleAltitudes.size),
-                    )
-                    val clusterCells = clusterAlts.mapNotNull { a ->
-                        val k = hour.toLong().shl(32) or a.toBits().toLong()
-                        cellLookup[k]
-                    }
-                    if (clusterCells.isEmpty()) return@clusteredAltLabel
-
-                    val avgSpeed = clusterCells.map { it.speedKmh }.average().toFloat()
-                    val clusterBandBottom = visibleBands.find { it.centerKm == clusterAlts.first() }?.bottomKm ?: altKm
-                    val clusterBandTop = visibleBands.find { it.centerKm == clusterAlts.last() }?.topKm ?: altKm
+                drawnBands.forEach drawnBandLabel@{ band ->
+                    val key = hour.toLong().shl(32) or band.centerKm.toBits().toLong()
+                    val cell = cellLookup[key] ?: return@drawnBandLabel
                     val cellCenterY = altitudeToY(
-                        (clusterBandBottom + clusterBandTop) / 2f,
-                        minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+                        band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
                     )
-                    if (cellCenterY !in plotTop..plotBottom) return@clusteredAltLabel
 
                     // Speed text below the arrow
-                    val arrowDrawSize = min(
-                        arrowSizePx,
-                        min(columnWidth * hourCluster * 0.8f, bandHeightPx * altCluster * 0.8f),
-                    )
                     val labelBaseline = cellCenterY + arrowDrawSize / 2f + speedLabelPaint.textSize + 1.dp.toPx()
-                    if (labelBaseline > plotBottom - 2.dp.toPx()) return@clusteredAltLabel
+                    if (labelBaseline > plotBottom - 2.dp.toPx()) return@drawnBandLabel
                     canvas.nativeCanvas.drawText(
-                        formatWindSpeed(avgSpeed, displayUnits, withUnit = false),
+                        formatWindSpeed(cell.speedKmh, displayUnits, withUnit = false),
                         cellCenterX,
                         labelBaseline,
                         speedLabelPaint,
@@ -749,20 +722,6 @@ private const val WIND_MIN_VISIBLE_ALTITUDE_RANGE_KM = 0.75f
 private val WIND_AXIS_WIDTH = 60.dp
 private val WIND_BOTTOM_AXIS_HEIGHT = 48.dp
 private val WIND_TIME_AXIS_HEIGHT = 16.dp
-
-/** Average wind directions by decomposing into unit vectors and recombining. */
-private fun averageWindDirection(directions: List<Float>): Float {
-    if (directions.isEmpty()) return 0f
-    var sinSum = 0f
-    var cosSum = 0f
-    directions.forEach { deg ->
-        val rad = deg * PI.toFloat() / 180f
-        sinSum += sin(rad)
-        cosSum += cos(rad)
-    }
-    val avgRad = kotlin.math.atan2(sinSum, cosSum)
-    return ((avgRad * 180f / PI.toFloat()) + 360f) % 360f
-}
 
 @Preview(name = "Wind Default", showBackground = true, widthDp = 420, heightDp = 720)
 @Composable
