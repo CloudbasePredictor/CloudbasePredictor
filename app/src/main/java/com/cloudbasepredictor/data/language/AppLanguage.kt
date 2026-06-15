@@ -28,6 +28,10 @@ enum class AppLanguage(
     GERMAN("de", "Deutsch"),
     RUSSIAN("ru", "Русский"),
     CHINESE_SIMPLIFIED("zh-CN", "中文（简体）"),
+    FRENCH("fr", "Français"),
+    PORTUGUESE("pt", "Português"),
+    THAI("th", "ไทย"),
+    GEORGIAN("ka", "ქართული"),
     ;
 
     companion object {

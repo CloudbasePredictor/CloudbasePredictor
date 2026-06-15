@@ -54,6 +54,8 @@
     <string name="settings_map">Mapa</string>
     <string name="settings_show_launch_sites">Mostrar sitios de despegue</string>
     <string name="settings_start_with_favorites">Iniciar con favoritos</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Predeterminado del sistema</string>
 
     <!-- About -->
     <string name="title_about">Acerca de</string>

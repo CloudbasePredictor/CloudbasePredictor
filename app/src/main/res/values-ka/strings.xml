@@ -1,0 +1,185 @@
+<resources>
+    <string name="app_name">Cloudbase Predictor</string>
+
+    <!-- Common actions -->
+    <string name="action_save">შენახვა</string>
+    <string name="action_cancel">გაუქმება</string>
+    <string name="action_delete">წაშლა</string>
+    <string name="action_close">დახურვა</string>
+    <string name="action_retry">ხელახლა ცდა</string>
+    <string name="action_open">გახსნა</string>
+    <string name="action_add_manually">ხელით დამატება</string>
+    <string name="action_about">აპის შესახებ</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">უკან</string>
+    <string name="cd_favorites">რჩეულები</string>
+    <string name="cd_settings">პარამეტრები</string>
+    <string name="cd_map_layer">რუკის შრე</string>
+    <string name="cd_current_location">მიმდინარე მდებარეობა</string>
+    <string name="cd_reset_north">ჩრდილოეთის გადატვირთვა</string>
+    <string name="cd_open_map">რუკის გახსნა</string>
+    <string name="cd_open_forecast_help">პროგნოზის დახმარების გახსნა</string>
+    <string name="cd_favorite_marker">რჩეული %1$s</string>
+    <string name="cd_launch_site_marker">ასაფრენი ადგილი %1$s</string>
+    <string name="cd_selected">არჩეული</string>
+    <string name="cd_mode_stuve">Stuve</string>
+    <string name="cd_mode_wind">ქარი</string>
+    <string name="cd_mode_thermic">თერმიკა</string>
+    <string name="cd_mode_cloud">ღრუბლები</string>
+
+    <!-- SaveFavoriteDialog -->
+    <string name="dialog_title_edit_favorite">რჩეულის რედაქტირება</string>
+    <string name="dialog_title_save_favorite">რჩეულის შენახვა</string>
+    <string name="label_name">სახელი</string>
+
+    <!-- FavoritesListDialog -->
+    <string name="dialog_title_favorites">რჩეულები</string>
+    <string name="favorites_empty_message">რჩეულები ჯერ არ არის. შესანახად შეეხეთ ვარსკვლავს პროგნოზის ეკრანზე.</string>
+    <string name="dialog_title_add_manual_favorite">რჩეულის ხელით დამატება</string>
+    <string name="label_coordinates">კოორდინატები</string>
+    <string name="manual_favorite_coordinates_placeholder">47.3769, 8.5417</string>
+    <string name="manual_favorite_coordinates_help">შეიყვანეთ განედი, გრძედი. მიიღება ათობითი გრადუსები და DMS N/S/E/W-ით; უარყოფითი მნიშვნელობები ნიშნავს სამხრეთს ან დასავლეთს.</string>
+    <string name="manual_favorite_error_blank_name">შეიყვანეთ სახელი.</string>
+    <string name="manual_favorite_error_name_too_long">გამოიყენეთ უფრო მოკლე სახელი.</string>
+    <string name="manual_favorite_error_blank_coordinates">შეიყვანეთ კოორდინატები.</string>
+    <string name="manual_favorite_error_coordinates_format">შეიყვანეთ ორი კოორდინატი, მაგალითად, 47.3769, 8.5417.</string>
+    <string name="manual_favorite_error_latitude_range">განედი უნდა იყოს -90-სა და 90-ს შორის.</string>
+    <string name="manual_favorite_error_longitude_range">გრძედი უნდა იყოს -180-სა და 180-ს შორის.</string>
+
+    <!-- Settings -->
+    <string name="title_settings">პარამეტრები</string>
+    <string name="settings_data_source">მონაცემთა წყარო</string>
+    <string name="settings_units">ერთეულები</string>
+    <string name="settings_map">რუკა</string>
+    <string name="settings_show_launch_sites">ასაფრენი ადგილების ჩვენება</string>
+    <string name="settings_start_with_favorites">რჩეულებით დაწყება</string>
+    <string name="settings_language">ენა</string>
+    <string name="settings_language_system">სისტემის ნაგულისხმევი</string>
+
+    <!-- About -->
+    <string name="title_about">შესახებ</string>
+    <string name="about_app_name">Cloudbase Predictor</string>
+    <string name="about_version_format">v%1$s (%2$s)</string>
+    <string name="about_foss_label">არის თავისუფალი და ღია წყაროს პროგრამა</string>
+    <string name="about_source_code">საწყისი კოდი</string>
+    <string name="about_data_sources">მონაცემთა წყაროები</string>
+    <string name="about_forecast_data_label">პროგნოზის მონაცემები</string>
+    <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">ასაფრენი ადგილები</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">ასაფრენი ადგილების მონაცემებს გთავაზობთ ParaglidingEarth და ლიცენზირებულია Creative Commons Attribution-ShareAlike 3.0-ით.</string>
+    <string name="about_map_services_label">რუკის სერვისები და გამოსახულებები</string>
+    <string name="about_openfreemap">OpenFreeMap</string>
+    <string name="about_opentopomap">OpenTopoMap</string>
+    <string name="about_opentopomap_detail">რუკის მონაცემები: © OpenStreetMap-ის მონაწილეები (ODbL), SRTM\nრუკის სტილი: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="about_openmaptiles_source">OpenMapTiles-ის საწყისი მონაცემები</string>
+    <string name="about_openstreetmap">OpenStreetMap-ის მონაწილეები</string>
+    <string name="about_nasa_gibs">NASA GIBS</string>
+    <string name="about_esri_world_imagery">Esri World Imagery</string>
+    <string name="about_esri_world_imagery_detail">უზრუნველყოფილია Esri-ის მიერ\nწყაროები: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © OpenStreetMap-ის მონაწილეები, TomTom, Garmin, FAO, NOAA და GIS-ის მომხმარებელთა საზოგადოება</string>
+    <string name="about_technology">ტექნოლოგია</string>
+    <string name="about_map_sdk_label">რუკის SDK</string>
+    <string name="about_maplibre">MapLibre</string>
+
+    <!-- Forecast -->
+    <string name="title_forecast">პროგნოზი</string>
+    <string name="loading_forecast_for_place">იტვირთება პროგნოზი %1$s-ისთვის…</string>
+    <string name="loading_forecast">იტვირთება პროგნოზი…</string>
+    <string name="forecast_location_restore_failed">პროგნოზის მდებარეობის აღდგენა ვერ მოხერხდა. ბრუნდება რუკაზე.</string>
+
+    <!-- Forecast information messages -->
+    <string name="forecast_no_thermals">სამწუხაროდ, თერმიკი მოსალოდნელი არ არის.</string>
+    <string name="forecast_loading_location">იტვირთება პროგნოზი ახალი მდებარეობისთვის…</string>
+    <string name="forecast_map_update_too_frequent">პროგნოზი არ განახლდა: დაელოდეთ %1$.1f წამს, სანამ რუკას ხელახლა გადააადგილებთ.</string>
+    <string name="forecast_map_update_too_close">პროგნოზი არ განახლდა: გადაინაცვლეთ მიმდინარე პროგნოზის წერტილიდან მინიმუმ %1$d მ.</string>
+
+    <!-- Model selector -->
+    <string name="title_weather_model">ამინდის მოდელი</string>
+    <string name="model_selector_fell_back">დაბრუნდა %1$s-ზე</string>
+    <string name="model_selector_attribution">open-meteo.com-ის მიერ</string>
+
+    <!-- Map -->
+    <string name="map_unavailable_title">რუკის პროვაიდერი ამჟამად მიუწვდომელია.</string>
+    <string name="map_unavailable_message">რუკის ჩატვირთვა ვერ მოხერხდა. შეამოწმეთ ქსელთან წვდომა ან სცადეთ ხელახლა.</string>
+    <string name="coordinates_lat_lon_format" formatted="false">Lat %.4f, Lon %.4f</string>
+    <string name="map_layer_openfreemap">OpenFreeMap</string>
+    <string name="map_layer_opentopomap">OpenTopoMap</string>
+    <string name="map_layer_nasa_gibs">NASA GIBS</string>
+    <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
+    <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
+    <string name="map_attribution_opentopomap_full">რუკის მონაცემები: © OpenStreetMap-ის მონაწილეები (ODbL), SRTM\nრუკის სტილი: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
+    <string name="map_attribution_nasa_gibs_full">გამოსახულებები: NASA Global Imagery Browse Services (GIBS)</string>
+    <string name="map_attribution_esri_world_imagery_compact">უზრუნველყოფილია Esri-ის მიერ · წყაროები</string>
+    <string name="map_attribution_esri_world_imagery_full">უზრუნველყოფილია Esri-ის მიერ\nწყაროები: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © OpenStreetMap-ის მონაწილეები, TomTom, Garmin, FAO, NOAA და GIS-ის მომხმარებელთა საზოგადოება</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">ასაფრენი ადგილების მონაცემები: © ParaglidingEarth-ის მონაწილეები, ლიცენზირებულია Creative Commons Attribution-ShareAlike 3.0-ით.</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
+    <string name="map_attribution_title">რუკის ატრიბუცია</string>
+    <string name="map_attribution_full">რუკის სერვისი: OpenFreeMap\nვექტორული ფილები: © OpenMapTiles\nრუკის მონაცემები: © OpenStreetMap-ის მონაწილეები (ODbL)</string>
+    <string name="map_waiting_for_location">ელოდება მოწყობილობის მდებარეობას…</string>
+    <string name="map_location_permission_denied">მდებარეობის ნებართვა საჭიროა რუკის თქვენს პოზიციაზე ცენტრირებისთვის.</string>
+    <string name="map_launch_site_source">ParaglidingEarth-ის ასაფრენი</string>
+    <string name="map_launch_site_original_name_format">ორიგინალი სახელი: %1$s</string>
+    <string name="map_launch_site_altitude_format">სიმაღლე %1$d მ</string>
+    <string name="map_launch_site_wind_format">ქარი: %1$s</string>
+    <string name="map_launch_site_activity_format">შესაფერისია: %1$s</string>
+    <string name="map_launch_site_landing_format">დაშვება: %1$s</string>
+    <string name="map_launch_site_data_attribution">მონაცემები: ParaglidingEarth (CC BY-SA 3.0)</string>
+
+    <!-- Help dialog - Thermic -->
+    <string name="help_thermic_title">თერმიკის პროგნოზის დახმარება</string>
+    <string name="help_thermic_summary">ფერი აჩვენებს ჰაერის სავარაუდო აღმავალ ნაკადს m/s-ში და არა ფრთის წმინდა აწევას. სკალა გადადის ღია ცისფრიდან მწვანეზე და წითელზე.</string>
+    <string name="help_thermic_model_blocks_info">ფერადი კვადრატები არის დრო-სიმაღლის უჯრები; მკვეთრი წითელი ფერები აღნიშნავს აღმავალი ნაკადის სკალის ზედა კიდეს.</string>
+    <string name="help_thermic_cursor_info">შეეხეთ უჯრას დროის, სიმაღლის, აწევის დიაპაზონის, ღრუბლის შრის, სანდოობისა და მოდელის დიაგნოსტიკის სანახავად.</string>
+    <string name="help_thermic_dashed_lines_title">ხაზები, ზოლები და დიაგნოსტიკა:</string>
+    <string name="help_thermic_dry_top_line">ნარინჯისფერი დაშტრიხვა – თერმიკის მწვერვალის გაურკვევლობა</string>
+    <string name="help_thermic_cloud_base_line">ლურჯი გამჭვირვალე არე – შესაძლო ღრუბლის შრე, არა მშრალი აწევა</string>
+    <string name="help_thermic_moist_top_line">იისფერი – ნოტიო/ღრუბლის მწვერვალი</string>
+    <string name="help_thermic_pressure_levels_line">ნაცრისფერი წყვეტილი – წნევის დაუმუშავებელი დონეები</string>
+
+    <!-- Help dialog - Skew-T -->
+    <string name="help_stuve_title">Skew-T log-P დიაგრამა</string>
+    <string name="help_stuve_summary">ვერტიკალური ზონდირება ერთი პროგნოზის საათისთვის. სიმაღლე იზრდება ზევით; წნევა მცირდება ზევით.</string>
+    <string name="help_stuve_lines_title">ხაზები:</string>
+    <string name="help_stuve_temperature_line">წითელი – ჰაერის ტემპერატურა</string>
+    <string name="help_stuve_dewpoint_line">ლურჯი – ნამის წერტილი</string>
+    <string name="help_stuve_parcel_line">ნაცრისფერი წყვეტილი – ჰაერის ნაწილაკის ნაგულისხმევი ტრაექტორია</string>
+    <string name="help_stuve_active_parcel_line">მწვანე – ჰაერის ნაწილაკის ტრაექტორია თქვენი შეხებიდან ან გათბობის ცვლილებიდან</string>
+    <string name="help_stuve_ccl_line">ყავისფერი წყვეტილი – კუმულუსის სავარაუდო ფუძე (CCL)</string>
+    <string name="help_stuve_reference_grid">ღია მწვანე, ფირუზისფერი და ლურჯი ბადის ხაზები არის მშრალი ადიაბატები, ნოტიო ადიაბატები და შერევის თანაფარდობის ხაზები. მარჯვენა ზოლი აღნიშნავს ნოტიო შრეებს.</string>
+    <string name="help_stuve_controls_title">მართვის ელემენტები:</string>
+    <string name="help_stuve_control_hour">დროის სლაიდერი – პროგნოზის საათის შეცვლა.</string>
+    <string name="help_stuve_control_cursor">შეეხეთ ან გადაათრიეთ დიაგრამა – წაიკითხეთ ტემპერატურა, ნამის წერტილი, ნაწილაკი, ქარი, წნევა და სიმაღლე დონეზე.</string>
+    <string name="help_stuve_control_heating_zoom">გადაათრიეთ მწვანე ქვედა სახელური ნაწილაკის საწყისი ტემპერატურის შესაცვლელად. შეკუმშეთ თითები სიმაღლის მასშტაბირებისთვის.</string>
+
+    <!-- Help dialog - Wind -->
+    <string name="help_wind_title">ქარის პროგნოზის დახმარება</string>
+    <string name="help_wind_summary">ქარის სიჩქარის ფერები გადადის ლურჯიდან მწვანეზე და წითელზე; წითელი აღნიშნავს სკალის მაქსიმუმს (km/h):</string>
+    <string name="help_wind_moisture_title">ტენიანობის ნიშნები:</string>
+    <string name="help_wind_ccl_line">ნარინჯისფერი CCL ხაზი – კუმულუსის სავარაუდო ფუძე, როდესაც გათბობა საკმარისია.</string>
+
+    <!-- Help dialog - Cloud -->
+    <string name="help_cloud_title">ღრუბლების პროგნოზის დახმარება</string>
+    <string name="help_cloud_summary">ღრუბლის საფარი და მზის ენერგია მიწაზე.</string>
+    <string name="help_cloud_legend_sun">მზის საათები – პირდაპირი მზის შუქი, რომელიც აღწევს მიწამდე.</string>
+    <string name="help_cloud_legend_radiation">W/m² – მზის ენერგია მიწაზე; თერმიკის მთავარი გამშვები.</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low – ცის საფარი შრეების მიხედვით, არა ღრუბლის სისქე.</string>
+    <string name="help_cloud_legend_rain" formatted="false">Rain – ალბათობა და რაოდენობა.</string>
+
+    <!-- Help dialog - Status messages -->
+    <string name="help_status_no_place">ადგილი ჯერ არ არის არჩეული. გახსენით წერტილი რუკიდან ამ ეკრანისთვის პროგნოზის კონტექსტის ჩასატვირთად.</string>
+
+    <!-- Help dialog - Model info -->
+    <string name="help_model_label">ამინდის მოდელი</string>
+    <string name="help_data_downloaded_label">მონაცემები ჩამოტვირთულია</string>
+    <string name="help_model_generated_label">მოდელის გაშვება</string>
+
+    <!-- Database error dialog -->
+    <string name="db_error_title">მონაცემთა ბაზის შეცდომა</string>
+    <string name="db_error_message">ლოკალურმა მონაცემთა ბაზამ წააწყდა სქემის შეცდომას და მისი გამოყენება შეუძლებელია. შეგიძლიათ გაასუფთაოთ მონაცემთა ბაზა ამ პრობლემის გადასაჭრელად (შენახული ადგილები დაიკარგება) ან დახუროთ აპი.</string>
+    <string name="db_error_clear">მონაცემთა ბაზის გასუფთავება</string>
+    <string name="db_error_close_app">აპის დახურვა</string>
+</resources>

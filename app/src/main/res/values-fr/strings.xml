@@ -1,0 +1,185 @@
+<resources>
+    <string name="app_name">Cloudbase Predictor</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Enregistrer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_close">Fermer</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="action_open">Ouvrir</string>
+    <string name="action_add_manually">Ajouter manuellement</string>
+    <string name="action_about">À propos de l\'application</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Retour</string>
+    <string name="cd_favorites">Favoris</string>
+    <string name="cd_settings">Paramètres</string>
+    <string name="cd_map_layer">Couche de la carte</string>
+    <string name="cd_current_location">Position actuelle</string>
+    <string name="cd_reset_north">Réinitialiser le nord</string>
+    <string name="cd_open_map">Ouvrir la carte</string>
+    <string name="cd_open_forecast_help">Ouvrir l\'aide des prévisions</string>
+    <string name="cd_favorite_marker">Favori %1$s</string>
+    <string name="cd_launch_site_marker">Site de décollage %1$s</string>
+    <string name="cd_selected">Sélectionné</string>
+    <string name="cd_mode_stuve">Stuve</string>
+    <string name="cd_mode_wind">Vent</string>
+    <string name="cd_mode_thermic">Thermique</string>
+    <string name="cd_mode_cloud">Nuages</string>
+
+    <!-- SaveFavoriteDialog -->
+    <string name="dialog_title_edit_favorite">Modifier le favori</string>
+    <string name="dialog_title_save_favorite">Enregistrer le favori</string>
+    <string name="label_name">Nom</string>
+
+    <!-- FavoritesListDialog -->
+    <string name="dialog_title_favorites">Favoris</string>
+    <string name="favorites_empty_message">Aucun favori pour le moment. Appuyez sur l\'étoile de l\'écran de prévisions pour enregistrer un lieu.</string>
+    <string name="dialog_title_add_manual_favorite">Ajouter un favori manuellement</string>
+    <string name="label_coordinates">Coordonnées</string>
+    <string name="manual_favorite_coordinates_placeholder">47.3769, 8.5417</string>
+    <string name="manual_favorite_coordinates_help">Saisissez la latitude et la longitude. Les degrés décimaux et le format DMS avec N/S/E/W sont acceptés ; les valeurs négatives indiquent le sud ou l\'ouest.</string>
+    <string name="manual_favorite_error_blank_name">Saisissez un nom.</string>
+    <string name="manual_favorite_error_name_too_long">Utilisez un nom plus court.</string>
+    <string name="manual_favorite_error_blank_coordinates">Saisissez des coordonnées.</string>
+    <string name="manual_favorite_error_coordinates_format">Saisissez deux coordonnées, par exemple 47.3769, 8.5417.</string>
+    <string name="manual_favorite_error_latitude_range">La latitude doit être comprise entre -90 et 90.</string>
+    <string name="manual_favorite_error_longitude_range">La longitude doit être comprise entre -180 et 180.</string>
+
+    <!-- Settings -->
+    <string name="title_settings">Paramètres</string>
+    <string name="settings_data_source">Source des données</string>
+    <string name="settings_units">Unités</string>
+    <string name="settings_map">Carte</string>
+    <string name="settings_show_launch_sites">Afficher les sites de décollage</string>
+    <string name="settings_start_with_favorites">Démarrer avec les favoris</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_system">Par défaut du système</string>
+
+    <!-- About -->
+    <string name="title_about">À propos</string>
+    <string name="about_app_name">Cloudbase Predictor</string>
+    <string name="about_version_format">v%1$s (%2$s)</string>
+    <string name="about_foss_label">est un logiciel libre et open source</string>
+    <string name="about_source_code">Code source</string>
+    <string name="about_data_sources">Sources des données</string>
+    <string name="about_forecast_data_label">Données de prévision</string>
+    <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">Sites de décollage</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">Les données des sites de décollage sont fournies par ParaglidingEarth et sont sous licence Creative Commons Attribution-ShareAlike 3.0.</string>
+    <string name="about_map_services_label">Services cartographiques et imagerie</string>
+    <string name="about_openfreemap">OpenFreeMap</string>
+    <string name="about_opentopomap">OpenTopoMap</string>
+    <string name="about_opentopomap_detail">Données cartographiques : © contributeurs OpenStreetMap (ODbL), SRTM\nStyle de carte : © OpenTopoMap (CC-BY-SA)</string>
+    <string name="about_openmaptiles_source">Données source OpenMapTiles</string>
+    <string name="about_openstreetmap">contributeurs OpenStreetMap</string>
+    <string name="about_nasa_gibs">NASA GIBS</string>
+    <string name="about_esri_world_imagery">Esri World Imagery</string>
+    <string name="about_esri_world_imagery_detail">Propulsé par Esri\nSources : Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © contributeurs OpenStreetMap, TomTom, Garmin, FAO, NOAA et la communauté des utilisateurs SIG</string>
+    <string name="about_technology">Technologie</string>
+    <string name="about_map_sdk_label">SDK cartographique</string>
+    <string name="about_maplibre">MapLibre</string>
+
+    <!-- Forecast -->
+    <string name="title_forecast">Prévisions</string>
+    <string name="loading_forecast_for_place">Chargement des prévisions pour %1$s…</string>
+    <string name="loading_forecast">Chargement des prévisions…</string>
+    <string name="forecast_location_restore_failed">Impossible de restaurer le lieu de prévision. Retour à la carte.</string>
+
+    <!-- Forecast information messages -->
+    <string name="forecast_no_thermals">Malheureusement, aucune ascendance thermique n\'est attendue.</string>
+    <string name="forecast_loading_location">Chargement des prévisions pour un nouveau lieu…</string>
+    <string name="forecast_map_update_too_frequent">Prévisions non mises à jour : attendez %1$.1f secondes avant de déplacer à nouveau la carte.</string>
+    <string name="forecast_map_update_too_close">Prévisions non mises à jour : déplacez-vous d\'au moins %1$d m du point de prévision actuel.</string>
+
+    <!-- Model selector -->
+    <string name="title_weather_model">Modèle météo</string>
+    <string name="model_selector_fell_back">Repli sur %1$s</string>
+    <string name="model_selector_attribution">par open-meteo.com</string>
+
+    <!-- Map -->
+    <string name="map_unavailable_title">Le fournisseur de cartes est actuellement indisponible.</string>
+    <string name="map_unavailable_message">Impossible de charger la carte. Vérifiez l\'accès au réseau ou réessayez.</string>
+    <string name="coordinates_lat_lon_format" formatted="false">Lat %.4f, Lon %.4f</string>
+    <string name="map_layer_openfreemap">OpenFreeMap</string>
+    <string name="map_layer_opentopomap">OpenTopoMap</string>
+    <string name="map_layer_nasa_gibs">NASA GIBS</string>
+    <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
+    <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
+    <string name="map_attribution_opentopomap_full">Données cartographiques : © contributeurs OpenStreetMap (ODbL), SRTM\nStyle de carte : © OpenTopoMap (CC-BY-SA)</string>
+    <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
+    <string name="map_attribution_nasa_gibs_full">Imagerie : NASA Global Imagery Browse Services (GIBS)</string>
+    <string name="map_attribution_esri_world_imagery_compact">Propulsé par Esri · Sources</string>
+    <string name="map_attribution_esri_world_imagery_full">Propulsé par Esri\nSources : Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © contributeurs OpenStreetMap, TomTom, Garmin, FAO, NOAA et la communauté des utilisateurs SIG</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">Données des sites de décollage : © contributeurs ParaglidingEarth, sous licence Creative Commons Attribution-ShareAlike 3.0.</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
+    <string name="map_attribution_title">Attribution de la carte</string>
+    <string name="map_attribution_full">Service cartographique : OpenFreeMap\nTuiles vectorielles : © OpenMapTiles\nDonnées cartographiques : © contributeurs OpenStreetMap (ODbL)</string>
+    <string name="map_waiting_for_location">En attente de la position de l\'appareil…</string>
+    <string name="map_location_permission_denied">L\'autorisation de localisation est nécessaire pour centrer la carte sur votre position.</string>
+    <string name="map_launch_site_source">Décollage ParaglidingEarth</string>
+    <string name="map_launch_site_original_name_format">Nom d\'origine : %1$s</string>
+    <string name="map_launch_site_altitude_format">Altitude %1$d m</string>
+    <string name="map_launch_site_wind_format">Vent : %1$s</string>
+    <string name="map_launch_site_activity_format">Adapté à : %1$s</string>
+    <string name="map_launch_site_landing_format">Atterrissage : %1$s</string>
+    <string name="map_launch_site_data_attribution">Données : ParaglidingEarth (CC BY-SA 3.0)</string>
+
+    <!-- Help dialog - Thermic -->
+    <string name="help_thermic_title">Aide sur les prévisions thermiques</string>
+    <string name="help_thermic_summary">La couleur indique l\'ascendance d\'air estimée en m/s, et non le taux de montée net du parapente. L\'échelle va du bleu pâle au vert puis au rouge.</string>
+    <string name="help_thermic_model_blocks_info">Les carrés colorés sont des cases temps-altitude ; les couleurs rouges pleines marquent le bord supérieur de l\'échelle d\'ascendance.</string>
+    <string name="help_thermic_cursor_info">Appuyez sur une cellule pour afficher l\'heure, l\'altitude, la plage d\'ascendance, la couche nuageuse, la confiance et les diagnostics du modèle.</string>
+    <string name="help_thermic_dashed_lines_title">Lignes, bandes et diagnostics :</string>
+    <string name="help_thermic_dry_top_line">Hachures orange – incertitude du sommet thermique</string>
+    <string name="help_thermic_cloud_base_line">Zone bleue translucide – couche nuageuse possible, pas d\'ascendance sèche</string>
+    <string name="help_thermic_moist_top_line">Violet – sommet humide/nuageux</string>
+    <string name="help_thermic_pressure_levels_line">Pointillés gris – niveaux de pression bruts</string>
+
+    <!-- Help dialog - Skew-T -->
+    <string name="help_stuve_title">Diagramme Skew-T log-P</string>
+    <string name="help_stuve_summary">Sondage vertical pour une heure de prévision. L\'altitude augmente vers le haut ; la pression diminue vers le haut.</string>
+    <string name="help_stuve_lines_title">Lignes :</string>
+    <string name="help_stuve_temperature_line">Rouge – température de l\'air</string>
+    <string name="help_stuve_dewpoint_line">Bleu – point de rosée</string>
+    <string name="help_stuve_parcel_line">Pointillés gris – trajectoire de parcelle par défaut</string>
+    <string name="help_stuve_active_parcel_line">Vert – trajectoire de parcelle issue de votre appui ou d\'un changement de chauffage</string>
+    <string name="help_stuve_ccl_line">Pointillés marron – base estimée des cumulus (CCL)</string>
+    <string name="help_stuve_reference_grid">Les lignes vert pâle, turquoise et bleues de la grille sont les adiabatiques sèches, les adiabatiques humides et les lignes de rapport de mélange. La bande de droite marque les couches humides.</string>
+    <string name="help_stuve_controls_title">Commandes :</string>
+    <string name="help_stuve_control_hour">Curseur de temps – changez l\'heure de prévision.</string>
+    <string name="help_stuve_control_cursor">Appuyez ou faites glisser sur le graphique – lisez la température, le point de rosée, la parcelle, le vent, la pression et l\'altitude à un niveau.</string>
+    <string name="help_stuve_control_heating_zoom">Faites glisser la poignée verte du bas pour modifier la température de départ de la parcelle. Pincez pour zoomer sur l\'altitude.</string>
+
+    <!-- Help dialog - Wind -->
+    <string name="help_wind_title">Aide sur les prévisions de vent</string>
+    <string name="help_wind_summary">Les couleurs de la vitesse du vent vont du bleu au vert puis au rouge ; le rouge marque le maximum de l\'échelle (km/h) :</string>
+    <string name="help_wind_moisture_title">Indices d\'humidité :</string>
+    <string name="help_wind_ccl_line">Ligne CCL orange – base estimée des cumulus lorsque le réchauffement est suffisant.</string>
+
+    <!-- Help dialog - Cloud -->
+    <string name="help_cloud_title">Aide sur les prévisions de nuages</string>
+    <string name="help_cloud_summary">Couverture nuageuse et énergie solaire au sol.</string>
+    <string name="help_cloud_legend_sun">Heures de soleil – ensoleillement direct atteignant le sol.</string>
+    <string name="help_cloud_legend_radiation">W/m² – énergie solaire au sol ; le principal déclencheur thermique.</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low – couverture du ciel par couche, pas l\'épaisseur des nuages.</string>
+    <string name="help_cloud_legend_rain" formatted="false">Rain – probabilité et quantité.</string>
+
+    <!-- Help dialog - Status messages -->
+    <string name="help_status_no_place">Aucun lieu n\'est encore sélectionné. Ouvrez un point depuis la carte pour charger le contexte de prévision de cet écran.</string>
+
+    <!-- Help dialog - Model info -->
+    <string name="help_model_label">Modèle météo</string>
+    <string name="help_data_downloaded_label">Données téléchargées</string>
+    <string name="help_model_generated_label">Exécution du modèle</string>
+
+    <!-- Database error dialog -->
+    <string name="db_error_title">Erreur de base de données</string>
+    <string name="db_error_message">La base de données locale a rencontré une erreur de schéma et ne peut pas être utilisée. Vous pouvez effacer la base de données pour résoudre ce problème (les lieux enregistrés seront perdus) ou fermer l\'application.</string>
+    <string name="db_error_clear">Effacer la base de données</string>
+    <string name="db_error_close_app">Fermer l\'application</string>
+</resources>

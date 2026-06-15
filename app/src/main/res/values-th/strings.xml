@@ -1,0 +1,185 @@
+<resources>
+    <string name="app_name">Cloudbase Predictor</string>
+
+    <!-- Common actions -->
+    <string name="action_save">บันทึก</string>
+    <string name="action_cancel">ยกเลิก</string>
+    <string name="action_delete">ลบ</string>
+    <string name="action_close">ปิด</string>
+    <string name="action_retry">ลองอีกครั้ง</string>
+    <string name="action_open">เปิด</string>
+    <string name="action_add_manually">เพิ่มด้วยตนเอง</string>
+    <string name="action_about">เกี่ยวกับแอป</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">ย้อนกลับ</string>
+    <string name="cd_favorites">รายการโปรด</string>
+    <string name="cd_settings">การตั้งค่า</string>
+    <string name="cd_map_layer">ชั้นแผนที่</string>
+    <string name="cd_current_location">ตำแหน่งปัจจุบัน</string>
+    <string name="cd_reset_north">รีเซ็ตทิศเหนือ</string>
+    <string name="cd_open_map">เปิดแผนที่</string>
+    <string name="cd_open_forecast_help">เปิดวิธีใช้การพยากรณ์</string>
+    <string name="cd_favorite_marker">รายการโปรด %1$s</string>
+    <string name="cd_launch_site_marker">จุดบินขึ้น %1$s</string>
+    <string name="cd_selected">เลือกแล้ว</string>
+    <string name="cd_mode_stuve">Stuve</string>
+    <string name="cd_mode_wind">ลม</string>
+    <string name="cd_mode_thermic">ความร้อน</string>
+    <string name="cd_mode_cloud">เมฆ</string>
+
+    <!-- SaveFavoriteDialog -->
+    <string name="dialog_title_edit_favorite">แก้ไขรายการโปรด</string>
+    <string name="dialog_title_save_favorite">บันทึกรายการโปรด</string>
+    <string name="label_name">ชื่อ</string>
+
+    <!-- FavoritesListDialog -->
+    <string name="dialog_title_favorites">รายการโปรด</string>
+    <string name="favorites_empty_message">ยังไม่มีรายการโปรด แตะที่ดาวบนหน้าจอพยากรณ์เพื่อบันทึกสถานที่</string>
+    <string name="dialog_title_add_manual_favorite">เพิ่มรายการโปรดด้วยตนเอง</string>
+    <string name="label_coordinates">พิกัด</string>
+    <string name="manual_favorite_coordinates_placeholder">47.3769, 8.5417</string>
+    <string name="manual_favorite_coordinates_help">ป้อนละติจูด ลองจิจูด รองรับองศาทศนิยมและ DMS ที่มี N/S/E/W ค่าติดลบหมายถึงทิศใต้หรือทิศตะวันตก</string>
+    <string name="manual_favorite_error_blank_name">ป้อนชื่อ</string>
+    <string name="manual_favorite_error_name_too_long">ใช้ชื่อที่สั้นลง</string>
+    <string name="manual_favorite_error_blank_coordinates">ป้อนพิกัด</string>
+    <string name="manual_favorite_error_coordinates_format">ป้อนพิกัดสองค่า เช่น 47.3769, 8.5417</string>
+    <string name="manual_favorite_error_latitude_range">ละติจูดต้องอยู่ระหว่าง -90 ถึง 90</string>
+    <string name="manual_favorite_error_longitude_range">ลองจิจูดต้องอยู่ระหว่าง -180 ถึง 180</string>
+
+    <!-- Settings -->
+    <string name="title_settings">การตั้งค่า</string>
+    <string name="settings_data_source">แหล่งข้อมูล</string>
+    <string name="settings_units">หน่วย</string>
+    <string name="settings_map">แผนที่</string>
+    <string name="settings_show_launch_sites">แสดงจุดบินขึ้น</string>
+    <string name="settings_start_with_favorites">เริ่มต้นด้วยรายการโปรด</string>
+    <string name="settings_language">ภาษา</string>
+    <string name="settings_language_system">ค่าเริ่มต้นของระบบ</string>
+
+    <!-- About -->
+    <string name="title_about">เกี่ยวกับ</string>
+    <string name="about_app_name">Cloudbase Predictor</string>
+    <string name="about_version_format">v%1$s (%2$s)</string>
+    <string name="about_foss_label">เป็นซอฟต์แวร์เสรีและโอเพนซอร์ส</string>
+    <string name="about_source_code">ซอร์สโค้ด</string>
+    <string name="about_data_sources">แหล่งข้อมูล</string>
+    <string name="about_forecast_data_label">ข้อมูลพยากรณ์</string>
+    <string name="about_open_meteo">Open-Meteo</string>
+    <string name="about_launch_sites_label">จุดบินขึ้น</string>
+    <string name="about_paraglidingearth">ParaglidingEarth</string>
+    <string name="about_paraglidingearth_detail">ข้อมูลจุดบินขึ้นจัดทำโดย ParaglidingEarth และอยู่ภายใต้สัญญาอนุญาต Creative Commons Attribution-ShareAlike 3.0</string>
+    <string name="about_map_services_label">บริการแผนที่และภาพถ่าย</string>
+    <string name="about_openfreemap">OpenFreeMap</string>
+    <string name="about_opentopomap">OpenTopoMap</string>
+    <string name="about_opentopomap_detail">ข้อมูลแผนที่: © ผู้ร่วมสร้าง OpenStreetMap (ODbL), SRTM\nรูปแบบแผนที่: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="about_openmaptiles_source">ข้อมูลต้นทาง OpenMapTiles</string>
+    <string name="about_openstreetmap">ผู้ร่วมสร้าง OpenStreetMap</string>
+    <string name="about_nasa_gibs">NASA GIBS</string>
+    <string name="about_esri_world_imagery">Esri World Imagery</string>
+    <string name="about_esri_world_imagery_detail">ขับเคลื่อนโดย Esri\nแหล่งที่มา: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © ผู้ร่วมสร้าง OpenStreetMap, TomTom, Garmin, FAO, NOAA และชุมชนผู้ใช้ GIS</string>
+    <string name="about_technology">เทคโนโลยี</string>
+    <string name="about_map_sdk_label">SDK แผนที่</string>
+    <string name="about_maplibre">MapLibre</string>
+
+    <!-- Forecast -->
+    <string name="title_forecast">การพยากรณ์</string>
+    <string name="loading_forecast_for_place">กำลังโหลดการพยากรณ์สำหรับ %1$s…</string>
+    <string name="loading_forecast">กำลังโหลดการพยากรณ์…</string>
+    <string name="forecast_location_restore_failed">ไม่สามารถกู้คืนตำแหน่งการพยากรณ์ได้ กำลังกลับไปยังแผนที่</string>
+
+    <!-- Forecast information messages -->
+    <string name="forecast_no_thermals">ขออภัย คาดว่าจะไม่มีกระแสอากาศร้อน</string>
+    <string name="forecast_loading_location">กำลังโหลดการพยากรณ์สำหรับตำแหน่งใหม่…</string>
+    <string name="forecast_map_update_too_frequent">ไม่ได้อัปเดตการพยากรณ์: รอ %1$.1f วินาทีก่อนเลื่อนแผนที่อีกครั้ง</string>
+    <string name="forecast_map_update_too_close">ไม่ได้อัปเดตการพยากรณ์: เลื่อนออกจากจุดพยากรณ์ปัจจุบันอย่างน้อย %1$d ม.</string>
+
+    <!-- Model selector -->
+    <string name="title_weather_model">แบบจำลองสภาพอากาศ</string>
+    <string name="model_selector_fell_back">เปลี่ยนไปใช้ %1$s</string>
+    <string name="model_selector_attribution">โดย open-meteo.com</string>
+
+    <!-- Map -->
+    <string name="map_unavailable_title">ผู้ให้บริการแผนที่ไม่พร้อมใช้งานในขณะนี้</string>
+    <string name="map_unavailable_message">ไม่สามารถโหลดแผนที่ได้ ตรวจสอบการเข้าถึงเครือข่ายหรือลองอีกครั้ง</string>
+    <string name="coordinates_lat_lon_format" formatted="false">Lat %.4f, Lon %.4f</string>
+    <string name="map_layer_openfreemap">OpenFreeMap</string>
+    <string name="map_layer_opentopomap">OpenTopoMap</string>
+    <string name="map_layer_nasa_gibs">NASA GIBS</string>
+    <string name="map_layer_esri_world_imagery">Esri World Imagery</string>
+    <string name="map_attribution_compact">© OpenMapTiles · © OpenStreetMap</string>
+    <string name="map_attribution_opentopomap_compact">© OpenTopoMap CC-BY-SA · © OpenStreetMap/SRTM</string>
+    <string name="map_attribution_opentopomap_full">ข้อมูลแผนที่: © ผู้ร่วมสร้าง OpenStreetMap (ODbL), SRTM\nรูปแบบแผนที่: © OpenTopoMap (CC-BY-SA)</string>
+    <string name="map_attribution_nasa_gibs_compact">NASA GIBS</string>
+    <string name="map_attribution_nasa_gibs_full">ภาพถ่าย: NASA Global Imagery Browse Services (GIBS)</string>
+    <string name="map_attribution_esri_world_imagery_compact">ขับเคลื่อนโดย Esri · แหล่งที่มา</string>
+    <string name="map_attribution_esri_world_imagery_full">ขับเคลื่อนโดย Esri\nแหล่งที่มา: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, © ผู้ร่วมสร้าง OpenStreetMap, TomTom, Garmin, FAO, NOAA และชุมชนผู้ใช้ GIS</string>
+    <string name="map_attribution_paraglidingearth_compact">© ParaglidingEarth CC BY-SA</string>
+    <string name="map_attribution_paraglidingearth_full">ข้อมูลจุดบินขึ้น: © ผู้ร่วมสร้าง ParaglidingEarth ภายใต้สัญญาอนุญาต Creative Commons Attribution-ShareAlike 3.0</string>
+    <string name="map_attribution_combined_format">%1$s · %2$s</string>
+    <string name="map_attribution_title">การระบุแหล่งที่มาของแผนที่</string>
+    <string name="map_attribution_full">บริการแผนที่: OpenFreeMap\nไทล์เวกเตอร์: © OpenMapTiles\nข้อมูลแผนที่: © ผู้ร่วมสร้าง OpenStreetMap (ODbL)</string>
+    <string name="map_waiting_for_location">กำลังรอตำแหน่งของอุปกรณ์…</string>
+    <string name="map_location_permission_denied">ต้องมีสิทธิ์เข้าถึงตำแหน่งเพื่อจัดกึ่งกลางแผนที่ไปยังตำแหน่งของคุณ</string>
+    <string name="map_launch_site_source">จุดบินขึ้น ParaglidingEarth</string>
+    <string name="map_launch_site_original_name_format">ชื่อเดิม: %1$s</string>
+    <string name="map_launch_site_altitude_format">ระดับความสูง %1$d ม.</string>
+    <string name="map_launch_site_wind_format">ลม: %1$s</string>
+    <string name="map_launch_site_activity_format">เหมาะสำหรับ: %1$s</string>
+    <string name="map_launch_site_landing_format">จุดลงจอด: %1$s</string>
+    <string name="map_launch_site_data_attribution">ข้อมูล: ParaglidingEarth (CC BY-SA 3.0)</string>
+
+    <!-- Help dialog - Thermic -->
+    <string name="help_thermic_title">วิธีใช้การพยากรณ์กระแสอากาศร้อน</string>
+    <string name="help_thermic_summary">สีแสดงกระแสอากาศยกตัวโดยประมาณเป็น m/s ไม่ใช่อัตราไต่สุทธิของร่มร่อน สเกลไล่จากสีฟ้าอ่อนผ่านสีเขียวไปจนถึงสีแดง</string>
+    <string name="help_thermic_model_blocks_info">สี่เหลี่ยมสีคือช่องเวลา-ระดับความสูง สีแดงทึบแสดงขอบบนสุดของสเกลกระแสยกตัว</string>
+    <string name="help_thermic_cursor_info">แตะที่เซลล์เพื่อดูเวลา ระดับความสูง ช่วงการยกตัว ชั้นเมฆ ความเชื่อมั่น และข้อมูลวินิจฉัยของแบบจำลอง</string>
+    <string name="help_thermic_dashed_lines_title">เส้น แถบ และข้อมูลวินิจฉัย:</string>
+    <string name="help_thermic_dry_top_line">ลายเส้นสีส้ม – ความไม่แน่นอนของยอดกระแสอากาศร้อน</string>
+    <string name="help_thermic_cloud_base_line">พื้นที่สีฟ้าโปร่งแสง – ชั้นเมฆที่เป็นไปได้ ไม่ใช่การยกตัวแบบแห้ง</string>
+    <string name="help_thermic_moist_top_line">สีม่วง – ยอดชื้น/ยอดเมฆ</string>
+    <string name="help_thermic_pressure_levels_line">เส้นประสีเทา – ระดับความกดอากาศดิบ</string>
+
+    <!-- Help dialog - Skew-T -->
+    <string name="help_stuve_title">แผนภาพ Skew-T log-P</string>
+    <string name="help_stuve_summary">การหยั่งอากาศแนวดิ่งสำหรับหนึ่งชั่วโมงพยากรณ์ ระดับความสูงเพิ่มขึ้นด้านบน ความกดอากาศลดลงด้านบน</string>
+    <string name="help_stuve_lines_title">เส้น:</string>
+    <string name="help_stuve_temperature_line">สีแดง – อุณหภูมิอากาศ</string>
+    <string name="help_stuve_dewpoint_line">สีน้ำเงิน – จุดน้ำค้าง</string>
+    <string name="help_stuve_parcel_line">เส้นประสีเทา – เส้นทางของก้อนอากาศเริ่มต้น</string>
+    <string name="help_stuve_active_parcel_line">สีเขียว – เส้นทางของก้อนอากาศจากการแตะของคุณหรือการเปลี่ยนการให้ความร้อน</string>
+    <string name="help_stuve_ccl_line">เส้นประสีน้ำตาล – ฐานเมฆคิวมูลัสโดยประมาณ (CCL)</string>
+    <string name="help_stuve_reference_grid">เส้นกริดสีเขียวอ่อน สีฟ้าครามและสีน้ำเงินคือเส้นอะเดียแบติกแห้ง เส้นอะเดียแบติกชื้น และเส้นอัตราส่วนการผสม แถบด้านขวาแสดงชั้นที่มีความชื้น</string>
+    <string name="help_stuve_controls_title">การควบคุม:</string>
+    <string name="help_stuve_control_hour">แถบเลื่อนเวลา – เปลี่ยนชั่วโมงพยากรณ์</string>
+    <string name="help_stuve_control_cursor">แตะหรือลากบนแผนภูมิ – อ่านอุณหภูมิ จุดน้ำค้าง ก้อนอากาศ ลม ความกดอากาศ และระดับความสูงที่ระดับหนึ่ง</string>
+    <string name="help_stuve_control_heating_zoom">ลากที่จับสีเขียวด้านล่างเพื่อเปลี่ยนอุณหภูมิเริ่มต้นของก้อนอากาศ บีบนิ้วเพื่อซูมระดับความสูง</string>
+
+    <!-- Help dialog - Wind -->
+    <string name="help_wind_title">วิธีใช้การพยากรณ์ลม</string>
+    <string name="help_wind_summary">สีของความเร็วลมไล่จากสีน้ำเงินผ่านสีเขียวไปจนถึงสีแดง สีแดงแสดงค่าสูงสุดของสเกล (km/h):</string>
+    <string name="help_wind_moisture_title">สัญญาณความชื้น:</string>
+    <string name="help_wind_ccl_line">เส้น CCL สีส้ม – ฐานเมฆคิวมูลัสโดยประมาณเมื่อมีการให้ความร้อนเพียงพอ</string>
+
+    <!-- Help dialog - Cloud -->
+    <string name="help_cloud_title">วิธีใช้การพยากรณ์เมฆ</string>
+    <string name="help_cloud_summary">ปริมาณเมฆปกคลุมและพลังงานแสงอาทิตย์ที่พื้นดิน</string>
+    <string name="help_cloud_legend_sun">ชั่วโมงแสงแดด – แสงแดดโดยตรงที่ส่องถึงพื้นดิน</string>
+    <string name="help_cloud_legend_radiation">W/m² – พลังงานแสงอาทิตย์ที่พื้นดิน ตัวกระตุ้นกระแสอากาศร้อนหลัก</string>
+    <string name="help_cloud_legend_layers" formatted="false">High / Mid / Low – การปกคลุมท้องฟ้าตามชั้น ไม่ใช่ความหนาของเมฆ</string>
+    <string name="help_cloud_legend_rain" formatted="false">Rain – ความน่าจะเป็นและปริมาณ</string>
+
+    <!-- Help dialog - Status messages -->
+    <string name="help_status_no_place">ยังไม่ได้เลือกสถานที่ เปิดจุดจากแผนที่เพื่อโหลดบริบทการพยากรณ์สำหรับหน้าจอนี้</string>
+
+    <!-- Help dialog - Model info -->
+    <string name="help_model_label">แบบจำลองสภาพอากาศ</string>
+    <string name="help_data_downloaded_label">ดาวน์โหลดข้อมูลแล้ว</string>
+    <string name="help_model_generated_label">รอบการประมวลผลแบบจำลอง</string>
+
+    <!-- Database error dialog -->
+    <string name="db_error_title">ข้อผิดพลาดฐานข้อมูล</string>
+    <string name="db_error_message">ฐานข้อมูลในเครื่องพบข้อผิดพลาดของสคีมาและไม่สามารถใช้งานได้ คุณสามารถล้างฐานข้อมูลเพื่อแก้ไขปัญหานี้ (สถานที่ที่บันทึกไว้จะหายไป) หรือปิดแอป</string>
+    <string name="db_error_clear">ล้างฐานข้อมูล</string>
+    <string name="db_error_close_app">ปิดแอป</string>
+</resources>
