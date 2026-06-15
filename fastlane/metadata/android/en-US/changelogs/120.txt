@@ -1,0 +1,5 @@
+New in 1.6.0:
+
+- Add an in-app language selector with several new translations.
+- Persist your theme choice and back up theme and start-with-favorites settings.
+- Anchor wind arrows to the lowest level for clearer reading.
