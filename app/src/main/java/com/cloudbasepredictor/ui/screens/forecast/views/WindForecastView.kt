@@ -54,8 +54,10 @@ import com.cloudbasepredictor.ui.screens.forecast.windSpeedColor
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
@@ -344,45 +346,60 @@ private fun WindChartCanvas(
             }
         }
 
-        // Wind arrows: thin columns by hour (as before), but stack rows from the
-        // bottom up — the lowest level is always drawn, and higher levels appear
-        // only when zoom leaves vertical room for them. Each arrow shows its own
-        // level (no averaging across bands).
+        // Wind arrows: the native pressure levels are sparse and unevenly spaced
+        // (≈0.5 km apart above 850 hPa), which leaves large empty gaps between rows.
+        // Instead of drawing only on those raw levels, resample the profile onto an
+        // evenly spaced grid of rows that fills the available vertical room, linearly
+        // interpolating the wind (via u/v components, so direction wraps correctly)
+        // between the surrounding levels. The lowest level is always the bottom row.
         val clusteredHours = chart.hours.filterIndexed { i, _ -> i % hourCluster == 0 }
         val minArrowSpacingPx = arrowSizePx * 1.1f
-        val drawnBands = buildList {
-            var lastY = Float.NaN
-            visibleBands.forEach { band ->
-                val centerY = altitudeToY(
-                    band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-                )
-                if (centerY !in plotTop..plotBottom) return@forEach
-                if (lastY.isNaN() || lastY - centerY >= minArrowSpacingPx) {
-                    add(band)
-                    lastY = centerY
-                }
-            }
-        }
         val arrowDrawSize = min(arrowSizePx, columnWidth * hourCluster * 0.8f)
+
+        // Per-hour wind profile (ascending altitude) used for interpolation.
+        val profileByHour = HashMap<Int, List<WindSample>>(chart.hours.size)
+        chart.hours.forEach { hour ->
+            val samples = chart.altitudeBandsKm.mapNotNull { altKm ->
+                val key = hour.toLong().shl(32) or altKm.toBits().toLong()
+                val cell = cellLookup[key] ?: return@mapNotNull null
+                WindSample(altKm, cell.speedKmh, cell.directionDeg)
+            }
+            if (samples.isNotEmpty()) profileByHour[hour] = samples
+        }
+
+        // Evenly spaced target altitudes from the lowest visible level up to the
+        // highest, one arrow row per ~minArrowSpacingPx of vertical space.
+        val lowAltKm = max(minAltitudeKm, visibleBands.first().centerKm)
+        val highAltKm = min(effectiveTopAltitudeKm, visibleBands.last().centerKm)
+        val kmPerPx = (effectiveTopAltitudeKm - minAltitudeKm) / plotHeight
+        val altStepKm = (minArrowSpacingPx * kmPerPx).coerceAtLeast(0.01f)
+        val arrowAltitudes = buildList {
+            var a = lowAltKm
+            while (a <= highAltKm + 0.0001f) {
+                add(a)
+                a += altStepKm
+            }
+            if (isEmpty()) add(lowAltKm)
+        }
 
         clusteredHours.forEach { hour ->
             val hourIndex = chart.hours.indexOf(hour)
             val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
+            val profile = profileByHour[hour] ?: return@forEach
 
-            drawnBands.forEach drawnBand@{ band ->
-                val key = hour.toLong().shl(32) or band.centerKm.toBits().toLong()
-                val cell = cellLookup[key] ?: return@drawnBand
+            arrowAltitudes.forEach { altKm ->
+                val sample = interpolateWind(profile, altKm) ?: return@forEach
                 val cellCenterY = altitudeToY(
-                    band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+                    altKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
                 )
 
                 // Draw arrow — black in light theme (onSurface)
                 drawWindArrow(
                     centerX = cellCenterX,
                     centerY = cellCenterY,
-                    directionDeg = cell.directionDeg,
+                    directionDeg = sample.directionDeg,
                     arrowSize = arrowDrawSize,
-                    speedKmh = cell.speedKmh,
+                    speedKmh = sample.speedKmh,
                     color = onSurfaceColor,
                 )
             }
@@ -465,19 +482,19 @@ private fun WindChartCanvas(
             clusteredHours.forEach { hour ->
                 val hourIndex = chart.hours.indexOf(hour)
                 val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
+                val profile = profileByHour[hour] ?: return@forEach
 
-                drawnBands.forEach drawnBandLabel@{ band ->
-                    val key = hour.toLong().shl(32) or band.centerKm.toBits().toLong()
-                    val cell = cellLookup[key] ?: return@drawnBandLabel
+                arrowAltitudes.forEach arrowLabel@{ altKm ->
+                    val sample = interpolateWind(profile, altKm) ?: return@arrowLabel
                     val cellCenterY = altitudeToY(
-                        band.centerKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+                        altKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
                     )
 
                     // Speed text below the arrow
                     val labelBaseline = cellCenterY + arrowDrawSize / 2f + speedLabelPaint.textSize + 1.dp.toPx()
-                    if (labelBaseline > plotBottom - 2.dp.toPx()) return@drawnBandLabel
+                    if (labelBaseline > plotBottom - 2.dp.toPx()) return@arrowLabel
                     canvas.nativeCanvas.drawText(
-                        formatWindSpeed(cell.speedKmh, displayUnits, withUnit = false),
+                        formatWindSpeed(sample.speedKmh, displayUnits, withUnit = false),
                         cellCenterX,
                         labelBaseline,
                         speedLabelPaint,
@@ -674,6 +691,52 @@ private fun DrawScope.drawWindArrow(
         strokeWidth = strokeWidth,
         cap = StrokeCap.Round,
     )
+}
+
+/** A wind reading at a single altitude, used to interpolate the profile. */
+private data class WindSample(
+    val altKm: Float,
+    val speedKmh: Float,
+    val directionDeg: Float,
+)
+
+/**
+ * Linearly interpolate the wind at [targetKm] from a profile sorted ascending by
+ * altitude. Interpolation is done on the u/v vector components so that direction
+ * wraps correctly through 360°. Targets outside the profile are clamped to the
+ * nearest end (no extrapolation), so edge rows still get a sensible arrow.
+ */
+private fun interpolateWind(profile: List<WindSample>, targetKm: Float): WindSample? {
+    if (profile.isEmpty()) return null
+    val first = profile.first()
+    val last = profile.last()
+    if (targetKm <= first.altKm) return first
+    if (targetKm >= last.altKm) return last
+
+    var lowerIndex = 0
+    while (lowerIndex < profile.lastIndex && profile[lowerIndex + 1].altKm <= targetKm) {
+        lowerIndex++
+    }
+    val lower = profile[lowerIndex]
+    val upper = profile[lowerIndex + 1]
+    val span = upper.altKm - lower.altKm
+    if (span <= 0f) return lower
+    val t = ((targetKm - lower.altKm) / span).coerceIn(0f, 1f)
+
+    val (lowerU, lowerV) = windUV(lower.speedKmh, lower.directionDeg)
+    val (upperU, upperV) = windUV(upper.speedKmh, upper.directionDeg)
+    val u = lowerU + (upperU - lowerU) * t
+    val v = lowerV + (upperV - lowerV) * t
+
+    val speed = hypot(u, v)
+    val direction = ((atan2(u, v) * 180f / PI.toFloat()) + 360f) % 360f
+    return WindSample(targetKm, speed, direction)
+}
+
+/** Decompose a wind speed/direction into u/v components for interpolation. */
+private fun windUV(speedKmh: Float, directionDeg: Float): Pair<Float, Float> {
+    val rad = directionDeg * PI.toFloat() / 180f
+    return (speedKmh * sin(rad)) to (speedKmh * cos(rad))
 }
 
 /** Background color for wind cells — same scale as windSpeedColor but with moderate alpha. */
