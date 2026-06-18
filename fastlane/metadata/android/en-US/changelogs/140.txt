@@ -1,0 +1,4 @@
+New in 1.7.0:
+
+- Favorite place names now sit on a readable background and stay legible on every map layer, including topo and satellite imagery; labels are drawn into the map so they move smoothly with it.
+- Wind arrows are resampled onto an even grid that fills the vertical space for clearer reading.
