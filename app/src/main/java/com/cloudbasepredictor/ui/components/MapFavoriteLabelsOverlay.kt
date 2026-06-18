@@ -1,9 +1,13 @@
 package com.cloudbasepredictor.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,11 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -34,8 +36,8 @@ import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.spatialk.geojson.Position
 
-private val FavoriteLabelTextColor = Color(0xFF1B1B1B)
-private val FavoriteLabelWidth = 96.dp
+private val FavoriteLabelMaxWidth = 120.dp
+private val FavoriteLabelShape: Shape = RoundedCornerShape(6.dp)
 
 @Composable
 fun MapFavoriteLabelsOverlay(
@@ -92,38 +94,65 @@ private fun FavoriteLabelsOverlayContent(
     ) {
         labels
             .filter { label ->
-                label.screenOffset.x >= -FavoriteLabelWidth &&
-                    label.screenOffset.x <= mapWidth + FavoriteLabelWidth &&
+                label.screenOffset.x >= -FavoriteLabelMaxWidth &&
+                    label.screenOffset.x <= mapWidth + FavoriteLabelMaxWidth &&
                     label.screenOffset.y >= -markerRadius &&
-                    label.screenOffset.y <= mapHeight + FavoriteLabelWidth
+                    label.screenOffset.y <= mapHeight + FavoriteLabelMaxWidth
             }
             .forEach { label ->
-                Text(
-                    text = label.name,
-                    modifier = Modifier
-                        .width(FavoriteLabelWidth)
-                        .offset(
-                            x = label.screenOffset.x - FavoriteLabelWidth / 2,
-                            y = label.screenOffset.y + markerRadius + 2.dp,
-                        )
-                        .align(Alignment.TopStart),
-                    style = MaterialTheme.typography.labelSmall.merge(
-                        TextStyle(
-                            color = FavoriteLabelTextColor,
-                            fontSize = fontSize,
-                            shadow = Shadow(
-                                color = Color.White,
-                                offset = Offset.Zero,
-                                blurRadius = 4f,
-                            ),
-                        )
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
+                FavoriteLabel(
+                    label = label,
+                    markerRadius = markerRadius,
+                    fontSize = fontSize,
                 )
             }
     }
+}
+
+/**
+ * A single favorite name rendered as a translucent, theme-aware pill so the text
+ * stays legible across every map layer (street, topo and satellite imagery).
+ *
+ * The pill wraps its text (capped at [FavoriteLabelMaxWidth]) and is centered
+ * under the marker using its measured width.
+ */
+@Composable
+private fun FavoriteLabel(
+    label: FavoriteLabelPosition,
+    markerRadius: Dp,
+    fontSize: TextUnit,
+) {
+    val density = LocalDensity.current
+    var labelWidth by remember { mutableStateOf(0) }
+    val halfWidth = with(density) { (labelWidth / 2).toDp() }
+
+    Text(
+        text = label.name,
+        modifier = Modifier
+            .widthIn(max = FavoriteLabelMaxWidth)
+            .offset(
+                x = label.screenOffset.x - halfWidth,
+                y = label.screenOffset.y + markerRadius + 2.dp,
+            )
+            .onSizeChanged { labelWidth = it.width }
+            .clip(FavoriteLabelShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.80f))
+            .border(
+                width = Dp.Hairline,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                shape = FavoriteLabelShape,
+            )
+            .padding(horizontal = 7.dp, vertical = 2.dp),
+        style = MaterialTheme.typography.labelSmall.merge(
+            TextStyle(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = fontSize,
+            )
+        ),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = TextAlign.Center,
+    )
 }
 
 private data class FavoriteLabelPosition(

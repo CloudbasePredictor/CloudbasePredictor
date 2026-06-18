@@ -6,6 +6,7 @@ agent-local/
 /.idea/*
 /.vscode/
 .DS_Store
+/.claude/
 /build
 /captures
 .externalNativeBuild
