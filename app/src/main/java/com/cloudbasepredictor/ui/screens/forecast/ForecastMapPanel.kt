@@ -46,7 +46,7 @@ import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapAttributionOverlay
-import com.cloudbasepredictor.ui.components.MapFavoriteLabelsOverlay
+import com.cloudbasepredictor.ui.screens.map.FavoriteLabelsLayer
 import com.cloudbasepredictor.ui.map.MapRasterBaseLayer
 import com.cloudbasepredictor.ui.map.mapBaseStyle
 import com.cloudbasepredictor.ui.map.mapLayerAttributionDetailRes
@@ -344,15 +344,17 @@ fun ForecastMapPanel(
                                     strokeColor = const(Color.White),
                                     strokeWidth = const(2.dp),
                                 )
+
+                                // Native favorite name labels, drawn in-map so
+                                // they move in sync with the base map (no lag).
+                                FavoriteLabelsLayer(
+                                    places = favoritePlaces,
+                                    markerRadius = 6.dp,
+                                    idPrefix = "forecast-favorite-label",
+                                    textSize = 9.sp,
+                                )
                             }
                         }
-
-                        MapFavoriteLabelsOverlay(
-                            favoritePlaces = favoritePlaces,
-                            cameraState = cameraState,
-                            markerRadius = 6.dp,
-                            fontSize = 9.sp,
-                        )
 
                         // Crosshair center indicator
                         Box(

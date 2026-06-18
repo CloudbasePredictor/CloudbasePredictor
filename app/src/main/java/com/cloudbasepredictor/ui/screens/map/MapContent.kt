@@ -26,11 +26,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.SavedPlace
-import com.cloudbasepredictor.ui.components.MapFavoriteLabelsOverlay
 import com.cloudbasepredictor.ui.components.MapTestTags
 import com.cloudbasepredictor.ui.map.MapRasterBaseLayer
 import com.cloudbasepredictor.ui.map.mapBaseStyle
@@ -154,6 +152,7 @@ internal fun MapContent(
             MapRasterBaseLayer(mapLayer)
             MapMarkerLayers(
                 featureCollections = featureCollections,
+                favoriteLabelPlaces = markerLayerData.favoriteLabelPlaces,
             )
             locationLayer()
         }
@@ -169,19 +168,6 @@ internal fun MapContent(
             suppressNextMapClick = suppressNextMapClick,
         )
 
-        MapFavoriteLabelsOverlay(
-            favoritePlaces = markerLayerData.favoriteLabelPlaces,
-            cameraState = cameraState,
-            markerRadius = if (
-                markerLayerData.selectedFavoritePlace == null &&
-                markerLayerData.selectedFavoriteLaunchSite == null
-            ) {
-                FAVORITE_ICON_SIZE / 2
-            } else {
-                SELECTED_FAVORITE_ICON_SIZE / 2
-            },
-            fontSize = 10.sp,
-        )
     }
 }
 
@@ -317,6 +303,7 @@ private fun View.findMapView(): MapView? {
 @MaplibreComposable
 private fun MapMarkerLayers(
     featureCollections: MapFeatureCollections,
+    favoriteLabelPlaces: List<SavedPlace>,
 ) {
     val launchSitesSource = rememberGeoJsonSource(
         data = GeoJsonData.JsonString(featureCollections.launchSites),
@@ -445,6 +432,15 @@ private fun MapMarkerLayers(
         strokeColor = const(Color.White),
         strokeWidth = const(3.dp),
     )
+
+    // Favorite name labels are rendered as native symbol layers (see
+    // FavoriteLabelsLayer) so they pan/zoom in perfect sync with the map instead
+    // of lagging behind like a Compose overlay would.
+    FavoriteLabelsLayer(
+        places = favoriteLabelPlaces,
+        markerRadius = FAVORITE_ICON_SIZE / 2,
+        idPrefix = FAVORITE_LABELS_LAYER_ID,
+    )
 }
 
 private data class MapFeatureCollections(
@@ -518,6 +514,7 @@ private val LAUNCH_SITE_MARKER_COLOR = Color(0xFF00796B)
 private val SELECTED_LAUNCH_SITE_ICON_SIZE = 30.dp
 private val FAVORITE_ICON_SIZE = 20.dp
 private val SELECTED_FAVORITE_ICON_SIZE = 30.dp
+private const val FAVORITE_LABELS_LAYER_ID = "favorite-label"
 
 @Preview(showBackground = true)
 @Composable
