@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
+import com.cloudbasepredictor.data.language.AppLanguage
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
@@ -822,6 +823,8 @@ class DesignSystemScreenshotCaptureTest {
                     onDataSourceChanged = {},
                     theme = theme,
                     onThemeChanged = {},
+                    language = AppLanguage.SYSTEM,
+                    onLanguageChanged = {},
                     unitPreset = unitPreset,
                     onUnitPresetChanged = {},
                     showLaunchSites = true,
@@ -849,6 +852,8 @@ class DesignSystemScreenshotCaptureTest {
                     onDataSourceChanged = {},
                     theme = theme,
                     onThemeChanged = {},
+                    language = AppLanguage.SYSTEM,
+                    onLanguageChanged = {},
                     unitPreset = unitPreset,
                     onUnitPresetChanged = {},
                     showLaunchSites = true,
