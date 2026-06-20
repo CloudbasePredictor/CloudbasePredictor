@@ -131,8 +131,28 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureForecastThermicDay1Dark() {
+        captureForecastScreen("forecast_thermic_day1_dark", ForecastMode.THERMIC, dayIndex = 1, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastThermicDay2Dark() {
+        captureForecastScreen("forecast_thermic_day2_dark", ForecastMode.THERMIC, dayIndex = 2, darkTheme = true)
+    }
+
+    @Test
     fun captureForecastStuveDay0Dark() {
         captureForecastScreen("forecast_stuve_day0_dark", ForecastMode.STUVE, dayIndex = 0, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastStuveDay1Dark() {
+        captureForecastScreen("forecast_stuve_day1_dark", ForecastMode.STUVE, dayIndex = 1, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastStuveDay2Dark() {
+        captureForecastScreen("forecast_stuve_day2_dark", ForecastMode.STUVE, dayIndex = 2, darkTheme = true)
     }
 
     @Test
@@ -141,8 +161,28 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureForecastWindDay1Dark() {
+        captureForecastScreen("forecast_wind_day1_dark", ForecastMode.WIND, dayIndex = 1, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastWindDay2Dark() {
+        captureForecastScreen("forecast_wind_day2_dark", ForecastMode.WIND, dayIndex = 2, darkTheme = true)
+    }
+
+    @Test
     fun captureForecastCloudDay0Dark() {
         captureForecastScreen("forecast_cloud_day0_dark", ForecastMode.CLOUD, dayIndex = 0, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastCloudDay1Dark() {
+        captureForecastScreen("forecast_cloud_day1_dark", ForecastMode.CLOUD, dayIndex = 1, darkTheme = true)
+    }
+
+    @Test
+    fun captureForecastCloudDay2Dark() {
+        captureForecastScreen("forecast_cloud_day2_dark", ForecastMode.CLOUD, dayIndex = 2, darkTheme = true)
     }
 
     @Test
@@ -176,6 +216,39 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureForecastThermicDay2ZoomedOutDark() {
+        captureForecastScreen(
+            name = "forecast_thermic_day2_zoomed_out_dark",
+            mode = ForecastMode.THERMIC,
+            dayIndex = 2,
+            topAltitudeKm = 6.5f,
+            darkTheme = true,
+        )
+    }
+
+    @Test
+    fun captureForecastStuveDay2ZoomedOutDark() {
+        captureForecastScreen(
+            name = "forecast_stuve_day2_zoomed_out_dark",
+            mode = ForecastMode.STUVE,
+            dayIndex = 2,
+            topAltitudeKm = 6.5f,
+            darkTheme = true,
+        )
+    }
+
+    @Test
+    fun captureForecastWindDay2ZoomedOutDark() {
+        captureForecastScreen(
+            name = "forecast_wind_day2_zoomed_out_dark",
+            mode = ForecastMode.WIND,
+            dayIndex = 2,
+            topAltitudeKm = 6.5f,
+            darkTheme = true,
+        )
+    }
+
+    @Test
     fun captureForecastThermicBestEffortFallback() {
         captureForecastScreen(
             name = "forecast_thermic_best_effort_fallback",
@@ -183,6 +256,18 @@ class DesignSystemScreenshotCaptureTest {
             dayIndex = 0,
             model = ForecastModel.BEST_MATCH,
             resolvedModel = ForecastModel.ICON_D2,
+        )
+    }
+
+    @Test
+    fun captureForecastThermicBestEffortFallbackDark() {
+        captureForecastScreen(
+            name = "forecast_thermic_best_effort_fallback_dark",
+            mode = ForecastMode.THERMIC,
+            dayIndex = 0,
+            model = ForecastModel.BEST_MATCH,
+            resolvedModel = ForecastModel.ICON_D2,
+            darkTheme = true,
         )
     }
 
@@ -197,12 +282,34 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureForecastThermicAromeModelDark() {
+        captureForecastScreen(
+            name = "forecast_thermic_arome_model_dark",
+            mode = ForecastMode.THERMIC,
+            dayIndex = 0,
+            model = ForecastModel.METEOFRANCE_AROME,
+            darkTheme = true,
+        )
+    }
+
+    @Test
     fun captureForecastWindEcmwfModel() {
         captureForecastScreen(
             name = "forecast_wind_ecmwf_model",
             mode = ForecastMode.WIND,
             dayIndex = 0,
             model = ForecastModel.ECMWF_IFS,
+        )
+    }
+
+    @Test
+    fun captureForecastWindEcmwfModelDark() {
+        captureForecastScreen(
+            name = "forecast_wind_ecmwf_model_dark",
+            mode = ForecastMode.WIND,
+            dayIndex = 0,
+            model = ForecastModel.ECMWF_IFS,
+            darkTheme = true,
         )
     }
 
@@ -217,12 +324,34 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureForecastThermicImperialUnitsDark() {
+        captureForecastScreen(
+            name = "forecast_thermic_imperial_units_dark",
+            mode = ForecastMode.THERMIC,
+            dayIndex = 0,
+            unitPreset = UnitPreset.IMPERIAL,
+            darkTheme = true,
+        )
+    }
+
+    @Test
     fun captureForecastWindAviationUnits() {
         captureForecastScreen(
             name = "forecast_wind_aviation_units",
             mode = ForecastMode.WIND,
             dayIndex = 0,
             unitPreset = UnitPreset.AVIATION,
+        )
+    }
+
+    @Test
+    fun captureForecastWindAviationUnitsDark() {
+        captureForecastScreen(
+            name = "forecast_wind_aviation_units_dark",
+            mode = ForecastMode.WIND,
+            dayIndex = 0,
+            unitPreset = UnitPreset.AVIATION,
+            darkTheme = true,
         )
     }
 
@@ -300,48 +429,85 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
-    fun captureForecastThermicSelectedCell() {
-        composeRule.setContent {
-            CloudbasePredictorTheme {
+    fun captureForecastNoPlaceDark() {
+        captureScreen("forecast_no_place_dark") {
+            CloudbasePredictorTheme(darkTheme = true) {
                 ForecastScreen(
-                    uiState = simulatedState(ForecastMode.THERMIC),
+                    uiState = ForecastNoPlaceUiState(),
                     onDateSelected = {},
                     onOpenMap = {},
                 )
             }
         }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(THERMIC_VIEW).performTouchInput {
-            click(Offset(width * 0.62f, height * 0.58f))
-        }
-        composeRule.waitForIdle()
-        captureCurrentContent("forecast_thermic_selected_cell")
+    }
+
+    @Test
+    fun captureForecastThermicSelectedCell() {
+        captureForecastSelectedCell(
+            name = "forecast_thermic_selected_cell",
+            mode = ForecastMode.THERMIC,
+            viewTag = THERMIC_VIEW,
+            offset = Offset(0.62f, 0.58f),
+            darkTheme = false,
+        )
+    }
+
+    @Test
+    fun captureForecastThermicSelectedCellDark() {
+        captureForecastSelectedCell(
+            name = "forecast_thermic_selected_cell_dark",
+            mode = ForecastMode.THERMIC,
+            viewTag = THERMIC_VIEW,
+            offset = Offset(0.62f, 0.58f),
+            darkTheme = true,
+        )
     }
 
     @Test
     fun captureForecastWindSelectedCell() {
-        composeRule.setContent {
-            CloudbasePredictorTheme {
-                ForecastScreen(
-                    uiState = simulatedState(ForecastMode.WIND),
-                    onDateSelected = {},
-                    onOpenMap = {},
-                )
-            }
-        }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(WIND_VIEW).performTouchInput {
-            click(Offset(width * 0.55f, height * 0.52f))
-        }
-        composeRule.waitForIdle()
-        captureCurrentContent("forecast_wind_selected_cell")
+        captureForecastSelectedCell(
+            name = "forecast_wind_selected_cell",
+            mode = ForecastMode.WIND,
+            viewTag = WIND_VIEW,
+            offset = Offset(0.55f, 0.52f),
+            darkTheme = false,
+        )
+    }
+
+    @Test
+    fun captureForecastWindSelectedCellDark() {
+        captureForecastSelectedCell(
+            name = "forecast_wind_selected_cell_dark",
+            mode = ForecastMode.WIND,
+            viewTag = WIND_VIEW,
+            offset = Offset(0.55f, 0.52f),
+            darkTheme = true,
+        )
     }
 
     @Test
     fun captureForecastStuveSelectedMidlevel() {
+        captureForecastStuveSelectedMidlevel(
+            name = "forecast_stuve_selected_midlevel",
+            darkTheme = false,
+        )
+    }
+
+    @Test
+    fun captureForecastStuveSelectedMidlevelDark() {
+        captureForecastStuveSelectedMidlevel(
+            name = "forecast_stuve_selected_midlevel_dark",
+            darkTheme = true,
+        )
+    }
+
+    private fun captureForecastStuveSelectedMidlevel(
+        name: String,
+        darkTheme: Boolean,
+    ) {
         val stuveState = simulatedState(ForecastMode.STUVE)
         composeRule.setContent {
-            CloudbasePredictorTheme {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
                 ForecastScreen(
                     uiState = stuveState.copy(
                         chartViewport = stuveState.chartViewport.copy(
@@ -358,7 +524,7 @@ class DesignSystemScreenshotCaptureTest {
             click(Offset(width * 0.48f, height * 0.47f))
         }
         composeRule.waitForIdle()
-        captureCurrentContent("forecast_stuve_selected_midlevel")
+        captureCurrentContent(name)
     }
 
     @Test
@@ -367,13 +533,28 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureThermicHelpDialogDark() {
+        captureForecastHelpDialog("dialog_help_thermic_dark", ForecastMode.THERMIC, darkTheme = true)
+    }
+
+    @Test
     fun captureStuveHelpDialogLight() {
         captureForecastHelpDialog("dialog_help_stuve_light", ForecastMode.STUVE, darkTheme = false)
     }
 
     @Test
+    fun captureStuveHelpDialogDark() {
+        captureForecastHelpDialog("dialog_help_stuve_dark", ForecastMode.STUVE, darkTheme = true)
+    }
+
+    @Test
     fun captureWindHelpDialogLight() {
         captureForecastHelpDialog("dialog_help_wind_light", ForecastMode.WIND, darkTheme = false)
+    }
+
+    @Test
+    fun captureWindHelpDialogDark() {
+        captureForecastHelpDialog("dialog_help_wind_dark", ForecastMode.WIND, darkTheme = true)
     }
 
     @Test
@@ -399,6 +580,23 @@ class DesignSystemScreenshotCaptureTest {
     @Test
     fun captureSaveFavoriteNewDialogLight() {
         captureDialog("dialog_save_favorite_new_light") {
+            SaveFavoriteDialog(
+                currentName = "",
+                isFavorite = false,
+                favoritePlaces = PreviewData.favoritePlaces,
+                onSave = {},
+                onDelete = {},
+                onDismiss = {},
+            )
+        }
+    }
+
+    @Test
+    fun captureSaveFavoriteNewDialogDark() {
+        captureDialog(
+            name = "dialog_save_favorite_new_dark",
+            darkTheme = true,
+        ) {
             SaveFavoriteDialog(
                 currentName = "",
                 isFavorite = false,
@@ -468,6 +666,18 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureMapSelectedLaunchSiteDark() {
+        captureMapScreen(
+            name = "map_selected_launch_site_dark",
+            darkTheme = true,
+            uiState = PreviewData.mapUiState.copy(
+                selectedPlace = null,
+                selectedLaunchSite = PreviewData.paraglidingLaunchSite,
+            ),
+        )
+    }
+
+    @Test
     fun captureMapTopoSelectedPointLight() {
         captureMapScreen(
             name = "map_topo_selected_point_light",
@@ -479,50 +689,34 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureMapTopoSelectedPointDark() {
+        captureMapScreen(
+            name = "map_topo_selected_point_dark",
+            darkTheme = true,
+            uiState = PreviewData.mapUiState.copy(
+                mapLayer = MapLayerPreference.OPENTOPOMAP,
+            ),
+        )
+    }
+
+    @Test
     fun captureMapLayerMenu() {
-        composeRule.setContent {
-            CloudbasePredictorTheme {
-                MapScreen(
-                    uiState = PreviewData.mapUiState.copy(
-                        mapLayer = MapLayerPreference.ESRI_WORLD_IMAGERY,
-                    ),
-                    onMapTapped = { _, _ -> },
-                    onFavoriteTapped = {},
-                    onLaunchSiteTapped = {},
-                    onOpenForecast = {},
-                    onFavoriteClick = {},
-                    onSaveCameraPosition = { _, _, _ -> },
-                    autoOpenFavoritesOnStartup = false,
-                )
-            }
-        }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(MapTestTags.LAYER_BUTTON).performClick()
-        composeRule.waitForIdle()
-        captureCurrentWindow("map_layer_menu")
+        captureMapLayerMenu("map_layer_menu", darkTheme = false)
+    }
+
+    @Test
+    fun captureMapLayerMenuDark() {
+        captureMapLayerMenu("map_layer_menu_dark", darkTheme = true)
     }
 
     @Test
     fun captureMapAttributionDialog() {
-        composeRule.setContent {
-            CloudbasePredictorTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomEnd,
-                    ) {
-                        MapAttributionOverlay(
-                            text = "OpenFreeMap + ParaglidingEarth",
-                            detailText = "OpenFreeMap, OpenStreetMap, and ParaglidingEarth attribution details.",
-                        )
-                    }
-                }
-            }
-        }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(MapTestTags.ATTRIBUTION_OVERLAY).performClick()
-        composeRule.waitForIdle()
-        captureCurrentWindow("dialog_map_attribution")
+        captureMapAttributionDialog("dialog_map_attribution", darkTheme = false)
+    }
+
+    @Test
+    fun captureMapAttributionDialogDark() {
+        captureMapAttributionDialog("dialog_map_attribution_dark", darkTheme = true)
     }
 
     @Test
@@ -537,27 +731,12 @@ class DesignSystemScreenshotCaptureTest {
 
     @Test
     fun captureFavoritesDialogEmptyLight() {
-        composeRule.setContent {
-            CloudbasePredictorTheme {
-                MapScreen(
-                    uiState = PreviewData.mapUiState.copy(
-                        selectedPlace = null,
-                        favoritePlaces = emptyList(),
-                    ),
-                    onMapTapped = { _, _ -> },
-                    onFavoriteTapped = {},
-                    onLaunchSiteTapped = {},
-                    onOpenForecast = {},
-                    onFavoriteClick = {},
-                    onSaveCameraPosition = { _, _, _ -> },
-                    autoOpenFavoritesOnStartup = false,
-                )
-            }
-        }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(MapTestTags.FAVORITES_BUTTON).performClick()
-        composeRule.waitForIdle()
-        captureCurrentWindow("dialog_favorites_empty_light")
+        captureFavoritesDialogEmpty("dialog_favorites_empty_light", darkTheme = false)
+    }
+
+    @Test
+    fun captureFavoritesDialogEmptyDark() {
+        captureFavoritesDialogEmpty("dialog_favorites_empty_dark", darkTheme = true)
     }
 
     @Test
@@ -582,6 +761,17 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureSettingsLightAutoMetric() {
+        captureSettingsScreen(
+            name = "settings_light_auto_metric",
+            darkTheme = false,
+            dataSource = DataSourcePreference.REAL,
+            theme = ThemePreference.AUTO,
+            unitPreset = UnitPreset.METRIC_MPS,
+        )
+    }
+
+    @Test
     fun captureSettingsDarkSimulatedImperial() {
         captureSettingsScreen(
             name = "settings_dark_simulated_imperial",
@@ -593,12 +783,36 @@ class DesignSystemScreenshotCaptureTest {
     }
 
     @Test
+    fun captureSettingsDarkAutoMetric() {
+        captureSettingsScreen(
+            name = "settings_dark_auto_metric",
+            darkTheme = true,
+            dataSource = DataSourcePreference.REAL,
+            theme = ThemePreference.AUTO,
+            unitPreset = UnitPreset.METRIC_MPS,
+        )
+    }
+
+    @Test
     fun captureSettingsDataSourceMenu() {
         captureSettingsDropdown(
             name = "settings_data_source_menu",
             fieldText = "Real",
+            darkTheme = false,
             dataSource = DataSourcePreference.REAL,
             theme = ThemePreference.LIGHT,
+            unitPreset = UnitPreset.METRIC_MPS,
+        )
+    }
+
+    @Test
+    fun captureSettingsDataSourceMenuDark() {
+        captureSettingsDropdown(
+            name = "settings_data_source_menu_dark",
+            fieldText = "Real",
+            darkTheme = true,
+            dataSource = DataSourcePreference.REAL,
+            theme = ThemePreference.DARK,
             unitPreset = UnitPreset.METRIC_MPS,
         )
     }
@@ -608,8 +822,21 @@ class DesignSystemScreenshotCaptureTest {
         captureSettingsDropdown(
             name = "settings_theme_menu",
             fieldText = "Light",
+            darkTheme = false,
             dataSource = DataSourcePreference.REAL,
             theme = ThemePreference.LIGHT,
+            unitPreset = UnitPreset.METRIC_MPS,
+        )
+    }
+
+    @Test
+    fun captureSettingsThemeMenuDark() {
+        captureSettingsDropdown(
+            name = "settings_theme_menu_dark",
+            fieldText = "Dark",
+            darkTheme = true,
+            dataSource = DataSourcePreference.REAL,
+            theme = ThemePreference.DARK,
             unitPreset = UnitPreset.METRIC_MPS,
         )
     }
@@ -619,8 +846,21 @@ class DesignSystemScreenshotCaptureTest {
         captureSettingsDropdown(
             name = "settings_units_menu",
             fieldText = "Metric (m/s)",
+            darkTheme = false,
             dataSource = DataSourcePreference.REAL,
             theme = ThemePreference.LIGHT,
+            unitPreset = UnitPreset.METRIC_MPS,
+        )
+    }
+
+    @Test
+    fun captureSettingsUnitsMenuDark() {
+        captureSettingsDropdown(
+            name = "settings_units_menu_dark",
+            fieldText = "Metric (m/s)",
+            darkTheme = true,
+            dataSource = DataSourcePreference.REAL,
+            theme = ThemePreference.DARK,
             unitPreset = UnitPreset.METRIC_MPS,
         )
     }
@@ -695,6 +935,30 @@ class DesignSystemScreenshotCaptureTest {
         )
     }
 
+    private fun captureForecastSelectedCell(
+        name: String,
+        mode: ForecastMode,
+        viewTag: String,
+        offset: Offset,
+        darkTheme: Boolean,
+    ) {
+        composeRule.setContent {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
+                ForecastScreen(
+                    uiState = simulatedState(mode),
+                    onDateSelected = {},
+                    onOpenMap = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(viewTag).performTouchInput {
+            click(Offset(width * offset.x, height * offset.y))
+        }
+        composeRule.waitForIdle()
+        captureCurrentContent(name)
+    }
+
     private fun captureForecastHelpDialog(
         name: String,
         mode: ForecastMode,
@@ -759,6 +1023,57 @@ class DesignSystemScreenshotCaptureTest {
         }
     }
 
+    private fun captureMapLayerMenu(
+        name: String,
+        darkTheme: Boolean,
+    ) {
+        composeRule.setContent {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
+                MapScreen(
+                    uiState = PreviewData.mapUiState.copy(
+                        mapLayer = MapLayerPreference.ESRI_WORLD_IMAGERY,
+                    ),
+                    onMapTapped = { _, _ -> },
+                    onFavoriteTapped = {},
+                    onLaunchSiteTapped = {},
+                    onOpenForecast = {},
+                    onFavoriteClick = {},
+                    onSaveCameraPosition = { _, _, _ -> },
+                    autoOpenFavoritesOnStartup = false,
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(MapTestTags.LAYER_BUTTON).performClick()
+        composeRule.waitForIdle()
+        captureCurrentWindow(name)
+    }
+
+    private fun captureMapAttributionDialog(
+        name: String,
+        darkTheme: Boolean,
+    ) {
+        composeRule.setContent {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomEnd,
+                    ) {
+                        MapAttributionOverlay(
+                            text = "OpenFreeMap + ParaglidingEarth",
+                            detailText = "OpenFreeMap, OpenStreetMap, and ParaglidingEarth attribution details.",
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(MapTestTags.ATTRIBUTION_OVERLAY).performClick()
+        composeRule.waitForIdle()
+        captureCurrentWindow(name)
+    }
+
     private fun captureFavoritesDialog(
         name: String,
         darkTheme: Boolean,
@@ -767,6 +1082,33 @@ class DesignSystemScreenshotCaptureTest {
             CloudbasePredictorTheme(darkTheme = darkTheme) {
                 MapScreen(
                     uiState = PreviewData.mapUiState,
+                    onMapTapped = { _, _ -> },
+                    onFavoriteTapped = {},
+                    onLaunchSiteTapped = {},
+                    onOpenForecast = {},
+                    onFavoriteClick = {},
+                    onSaveCameraPosition = { _, _, _ -> },
+                    autoOpenFavoritesOnStartup = false,
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(MapTestTags.FAVORITES_BUTTON).performClick()
+        composeRule.waitForIdle()
+        captureCurrentWindow(name)
+    }
+
+    private fun captureFavoritesDialogEmpty(
+        name: String,
+        darkTheme: Boolean,
+    ) {
+        composeRule.setContent {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
+                MapScreen(
+                    uiState = PreviewData.mapUiState.copy(
+                        selectedPlace = null,
+                        favoritePlaces = emptyList(),
+                    ),
                     onMapTapped = { _, _ -> },
                     onFavoriteTapped = {},
                     onLaunchSiteTapped = {},
@@ -841,12 +1183,13 @@ class DesignSystemScreenshotCaptureTest {
     private fun captureSettingsDropdown(
         name: String,
         fieldText: String,
+        darkTheme: Boolean,
         dataSource: DataSourcePreference,
         theme: ThemePreference,
         unitPreset: UnitPreset,
     ) {
         composeRule.setContent {
-            CloudbasePredictorTheme {
+            CloudbasePredictorTheme(darkTheme = darkTheme) {
                 SettingsScreen(
                     dataSource = dataSource,
                     onDataSourceChanged = {},
