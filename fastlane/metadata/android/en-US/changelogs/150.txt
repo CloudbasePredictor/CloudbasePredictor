@@ -1,0 +1,4 @@
+New in 1.8.0:
+
+- The Stüve diagram cursor is simpler to read: the isotherm now anchors to the point you place, and the on-tap humidity guide line has been removed.
+- The encrypted database passphrase is now protected by the Android Keystore for stronger at-rest security.
