@@ -107,7 +107,7 @@ class StuveForecastViewMathTest {
     }
 
     @Test
-    fun buildSkewTProjection_keepsDryAdiabatScreenSlopeStableAcrossZoom() {
+    fun buildSkewTProjection_keepsAdiabatAndCurveAnglesFixedAcrossZoom() {
         val chart = sampleChart(
             temperaturePoints = listOf(
                 point(1000f, 20f, 120f),
@@ -128,31 +128,43 @@ class StuveForecastViewMathTest {
             surfacePressureHpa = 980f,
         )
         val bottomPressure = 1000f
-        val fullProjection = buildSkewTProjection(
-            chart = chart,
-            topPressure = 500f,
-            bottomPressure = bottomPressure,
-            plotLeft = 40f,
-            plotRight = 340f,
-            plotTop = 16f,
-            plotBottom = 616f,
-        )
-        val zoomProjection = buildSkewTProjection(
-            chart = chart,
-            topPressure = 800f,
-            bottomPressure = bottomPressure,
-            plotLeft = 40f,
-            plotRight = 340f,
-            plotTop = 16f,
-            plotBottom = 616f,
-        )
+
+        // Three different vertical zoom levels: full column, mid zoom, tight zoom near the ground.
+        // The °C span scales with the visible pressure span, so every line angle must stay constant.
+        val projections = listOf(500f, 650f, 800f).map { topPressure ->
+            buildSkewTProjection(
+                chart = chart,
+                topPressure = topPressure,
+                bottomPressure = bottomPressure,
+                plotLeft = 40f,
+                plotRight = 340f,
+                plotTop = 16f,
+                plotBottom = 616f,
+            )
+        }
+        val reference = projections.first()
         val dryThetaK = potentialTemperatureK(18f, 980f)
 
-        val fullSlope = dryAdiabatScreenSlope(fullProjection, dryThetaK)
-        val zoomSlope = dryAdiabatScreenSlope(zoomProjection, dryThetaK)
+        val referenceAdiabatSlope = dryAdiabatScreenSlope(reference, dryThetaK)
+        val referenceProfileSlope = profileSegmentScreenSlope(reference)
+        projections.forEach { projection ->
+            // A background dry-adiabat must keep the same on-screen angle at every zoom level.
+            assertEquals(
+                referenceAdiabatSlope,
+                dryAdiabatScreenSlope(projection, dryThetaK),
+                0.01f,
+            )
+            // A segment of the plotted temperature profile must keep its on-screen angle too.
+            assertEquals(
+                referenceProfileSlope,
+                profileSegmentScreenSlope(projection),
+                0.01f,
+            )
+        }
 
-        assertEquals(fullSlope, zoomSlope, 0.01f)
-        assertTrue(zoomProjection.temperatureRange.spanC < fullProjection.temperatureRange.spanC)
+        // The °C window does crop with zoom (the accepted trade-off for fixed angles): zooming in
+        // toward the ground shows a narrower span than the full-column view.
+        assertTrue(projections.last().temperatureRange.spanC < reference.temperatureRange.spanC)
     }
 
     @Test
@@ -375,19 +387,33 @@ class StuveForecastViewMathTest {
     private fun dryAdiabatScreenSlope(
         projection: SkewTProjection,
         thetaK: Float,
+    ): Float = screenSlopeBetweenPressures(
+        projection = projection,
+        lowerPressure = 950f,
+        upperPressure = 900f,
+        temperatureAt = { pressure -> dryAdiabatTempC(thetaK, pressure) },
+    )
+
+    private fun profileSegmentScreenSlope(
+        projection: SkewTProjection,
+    ): Float = screenSlopeBetweenPressures(
+        projection = projection,
+        lowerPressure = 950f,
+        upperPressure = 900f,
+        // A straight 950→900 hPa segment with a fixed lapse: 17 °C at 950, 14 °C at 900.
+        temperatureAt = { pressure -> 17f + (14f - 17f) * (950f - pressure) / (950f - 900f) },
+    )
+
+    private fun screenSlopeBetweenPressures(
+        projection: SkewTProjection,
+        lowerPressure: Float,
+        upperPressure: Float,
+        temperatureAt: (Float) -> Float,
     ): Float {
-        val bottomPressure = 950f
-        val topPressure = 900f
-        val bottomX = projection.temperatureToX(
-            dryAdiabatTempC(thetaK, bottomPressure),
-            bottomPressure,
-        )
-        val topX = projection.temperatureToX(
-            dryAdiabatTempC(thetaK, topPressure),
-            topPressure,
-        )
-        val bottomY = projection.pressureToY(bottomPressure)
-        val topY = projection.pressureToY(topPressure)
-        return (topX - bottomX) / (topY - bottomY)
+        val lowerX = projection.temperatureToX(temperatureAt(lowerPressure), lowerPressure)
+        val upperX = projection.temperatureToX(temperatureAt(upperPressure), upperPressure)
+        val lowerY = projection.pressureToY(lowerPressure)
+        val upperY = projection.pressureToY(upperPressure)
+        return (upperX - lowerX) / (upperY - lowerY)
     }
 }

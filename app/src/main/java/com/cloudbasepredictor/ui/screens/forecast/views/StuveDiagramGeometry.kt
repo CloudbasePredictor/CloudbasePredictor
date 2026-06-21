@@ -19,7 +19,7 @@ import kotlin.math.pow
 internal const val SKEWT_MIN_TOP_PRESSURE = 250f
 internal const val SKEWT_BOTTOM_PRESSURE = 1050f
 internal const val SKEWT_SKEW_RATIO = 0.45f
-private const val SKEWT_REFERENCE_PLOT_ASPECT_RATIO = 0.48f
+private const val STUVE_TEMP_AXIS_HALF_WIDTH_C = 20f
 
 internal val STUVE_DRY_REFERENCE_PRESSURES = listOf(
     1050f, 1000f, 975f, 950f, 925f, 900f, 875f, 850f, 825f, 800f, 775f, 750f, 725f, 700f,
@@ -99,8 +99,6 @@ internal fun buildSkewTProjection(
             chart = chart,
             topPressure = topPressure,
             bottomPressure = bottomPressure,
-            plotWidth = plotRight - plotLeft,
-            plotHeight = plotBottom - plotTop,
         ),
         plotLeft = plotLeft,
         plotRight = plotRight,
@@ -255,14 +253,13 @@ internal fun buildSkewTTemperatureAxisRange(
     chart: StuveForecastChartUiModel,
     topPressure: Float,
     bottomPressure: Float,
-    plotWidth: Float,
-    plotHeight: Float,
 ): TempAxisRange {
-    val focusedRange = buildVisibleTemperatureAxisRange(
-        chart = chart,
-        topPressure = topPressure,
-        bottomPressure = bottomPressure,
-    )
+    // Deliberate product choice: the on-screen angle of every adiabat and curve stays constant across
+    // zoom. That requires the temperature span to scale together with the visible log-pressure span
+    // (span ∝ V holds the ratio °C-per-pixel : decade-per-pixel — and thus every line angle — fixed).
+    // The accepted trade-off is that the bottom °C scale crops in when zooming in and widens when
+    // zooming out. The center is anchored once from the auto-fit view so the diagram crops without
+    // sliding sideways; at that reference zoom the width is ±[STUVE_TEMP_AXIS_HALF_WIDTH_C].
     val referenceTopPressure = altitudeKmToApproxPressureHpa(recommendedStuveTopAltitudeKm(chart))
         .coerceIn(SKEWT_MIN_TOP_PRESSURE, bottomPressure - 50f)
     val referenceRange = buildVisibleTemperatureAxisRange(
@@ -270,30 +267,18 @@ internal fun buildSkewTTemperatureAxisRange(
         topPressure = referenceTopPressure,
         bottomPressure = bottomPressure,
     )
-    val referenceLogSpan = logPressureSpan(
-        bottomPressure = bottomPressure,
-        topPressure = referenceTopPressure,
-    )
-    val visibleLogSpan = logPressureSpan(
-        bottomPressure = bottomPressure,
-        topPressure = topPressure,
-    )
-    val plotAspect = if (plotWidth > 0f && plotHeight > 0f) {
-        plotWidth / plotHeight
+    val referenceLogSpan = logPressureSpan(bottomPressure = bottomPressure, topPressure = referenceTopPressure)
+    val visibleLogSpan = logPressureSpan(bottomPressure = bottomPressure, topPressure = topPressure)
+    val referenceSpanC = STUVE_TEMP_AXIS_HALF_WIDTH_C * 2f
+    val span = if (referenceLogSpan > 0f) {
+        referenceSpanC * (visibleLogSpan / referenceLogSpan)
     } else {
-        SKEWT_REFERENCE_PLOT_ASPECT_RATIO
-    }
-    val aspectScale = (plotAspect / SKEWT_REFERENCE_PLOT_ASPECT_RATIO).coerceAtLeast(0.25f)
-    // Keep the Skew-T x/y scale ratio stable while pinch zoom changes the log-pressure span.
-    val stableSpan = if (referenceLogSpan > 0f) {
-        referenceRange.spanC * (visibleLogSpan / referenceLogSpan) * aspectScale
-    } else {
-        focusedRange.spanC
+        referenceSpanC
     }.coerceAtLeast(TEMP_AXIS_MIN_STABLE_SPAN_C)
 
     return TempAxisRange(
-        minC = focusedRange.centerC - stableSpan / 2f,
-        maxC = focusedRange.centerC + stableSpan / 2f,
+        minC = referenceRange.centerC - span / 2f,
+        maxC = referenceRange.centerC + span / 2f,
     )
 }
 
@@ -307,6 +292,16 @@ private fun collectProfileTemperatures(
         .forEach { point -> add(point.temperatureC) }
     interpolateProfileTemperature(profile, topPressure)?.let(::add)
     interpolateProfileTemperature(profile, bottomPressure)?.let(::add)
+}
+
+private fun logPressureSpan(
+    bottomPressure: Float,
+    topPressure: Float,
+): Float {
+    if (bottomPressure <= 0f || topPressure <= 0f || bottomPressure <= topPressure) {
+        return 0f
+    }
+    return ln(bottomPressure) - ln(topPressure)
 }
 
 internal fun buildTemperatureAxisLabels(range: TempAxisRange): List<Float> {
@@ -325,16 +320,6 @@ private fun temperatureAxisStep(spanC: Float): Float = when {
     spanC <= 18f -> 2f
     spanC <= 34f -> 5f
     else -> TEMP_STEP
-}
-
-private fun logPressureSpan(
-    bottomPressure: Float,
-    topPressure: Float,
-): Float {
-    if (bottomPressure <= 0f || topPressure <= 0f || bottomPressure <= topPressure) {
-        return 0f
-    }
-    return ln(bottomPressure) - ln(topPressure)
 }
 
 /**
