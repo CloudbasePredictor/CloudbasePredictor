@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.sp
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.formatWindSpeed
 import com.cloudbasepredictor.domain.forecast.dryAdiabatTempC
-import com.cloudbasepredictor.domain.forecast.mixingRatioTemperatureC
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -155,18 +154,6 @@ internal fun drawCursorInlineLabels(
             )
         }
 
-        readout.criticalSurfaceDewpointC?.let { criticalSurfaceDewpoint ->
-            val bottomTemp = readout.guideMixingRatioGKg?.let {
-                mixingRatioTemperatureC(it, bottomPressure)
-            } ?: return@let
-            add(
-                BottomAxisLabel(
-                    text = String.format(Locale.US, "Crit Td %.0f°", criticalSurfaceDewpoint),
-                    preferredX = temperatureToX(bottomTemp, bottomPressure),
-                    paint = pointLabelPaint(Color(0xFFB7BCC7)).apply { textAlign = Paint.Align.CENTER },
-                ),
-            )
-        }
     }
 
     drawBottomAxisLabels(

@@ -1,9 +1,7 @@
 package com.cloudbasepredictor.ui.screens.forecast.views
 
 import com.cloudbasepredictor.domain.forecast.dryAdiabatTempC
-import com.cloudbasepredictor.domain.forecast.mixingRatioTemperatureC
 import com.cloudbasepredictor.domain.forecast.potentialTemperatureK
-import com.cloudbasepredictor.domain.forecast.satMixingRatioGKg
 import com.cloudbasepredictor.ui.screens.forecast.StuveForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.StuveProfilePoint
 import com.cloudbasepredictor.ui.screens.forecast.interpolateProfileHeightMeters
@@ -26,9 +24,7 @@ internal data class CursorReadout(
     val parcelTemperatureC: Float?,
     val guideTemperatureC: Float?,
     val guideDryThetaK: Float?,
-    val guideMixingRatioGKg: Float?,
     val parcelSurfaceTemperatureC: Float?,
-    val criticalSurfaceDewpointC: Float?,
     val windSpeedKmh: Float?,
     val windDirectionDeg: Float?,
 )
@@ -66,18 +62,9 @@ internal fun buildCursorReadout(
         guideDryThetaK = guideTemperatureC?.let { temperature ->
             potentialTemperatureK(temperature, clampedPressure)
         },
-        guideMixingRatioGKg = guideTemperatureC?.let { temperature ->
-            satMixingRatioGKg(temperature, clampedPressure)
-        },
         parcelSurfaceTemperatureC = guideTemperatureC?.let { temperature ->
             dryAdiabatTempC(
                 potentialTemperatureK(temperature, clampedPressure),
-                chart.surfacePressureHpa,
-            )
-        },
-        criticalSurfaceDewpointC = guideTemperatureC?.let { temperature ->
-            mixingRatioTemperatureC(
-                satMixingRatioGKg(temperature, clampedPressure),
                 chart.surfacePressureHpa,
             )
         },

@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.domain.forecast.dryAdiabatTempC
-import com.cloudbasepredictor.domain.forecast.mixingRatioTemperatureC
 import com.cloudbasepredictor.domain.forecast.moistAdiabatTempFromPointC
 
 internal fun DrawScope.drawCursorOverlay(
@@ -85,23 +84,6 @@ internal fun DrawScope.drawCursorOverlay(
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 5.dp.toPx())),
             )
         }
-    }
-
-    readout.guideMixingRatioGKg?.let { mixingRatio ->
-        drawAdiabat(
-            pressures = buildReferencePressures(bottomPressure, topPressure, stepHpa = 25f),
-            computeTemp = { pressure -> mixingRatioTemperatureC(mixingRatio, pressure) },
-            mapXY = { temperature, pressure ->
-                Offset(temperatureToX(temperature, pressure), pressureToY(pressure))
-            },
-            plotLeft = plotLeft,
-            plotRight = plotRight,
-            plotTop = pressureToY(topPressure),
-            plotBottom = pressureToY(bottomPressure),
-            color = onSurfaceColor.copy(alpha = 0.55f),
-            strokeWidth = 1.5f.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx())),
-        )
     }
 
     readout.temperatureC?.let { temperature ->
