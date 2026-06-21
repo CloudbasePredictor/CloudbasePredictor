@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.detekt)
 }
 
 val requestedTasks = gradle.startParameter.taskNames
@@ -131,6 +132,23 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        // Start lenient: block on errors only, keep warnings non-fatal so the
+        // gate begins green. Tighten (warningsAsErrors = true) in a follow-up.
+        warningsAsErrors = false
+        abortOnError = true
+        checkReleaseBuilds = true
+    }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+    // Analyze the main + test sources; this is a single-module project.
+    source.setFrom(files("src/main/java", "src/test/java", "src/androidTest/java"))
 }
 
 androidComponents {

@@ -1,0 +1,582 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:ManualFavoriteInput.kt:minutes &lt; 0.0 || minutes &gt;= 60.0 || seconds &lt; 0.0 || seconds &gt;= 60.0</ID>
+    <ID>ComplexCondition:ParcelAnalysis.kt:(direction &lt; 0f &amp;&amp; pressureHpa &gt; targetPressureHpa + 0.01f) || (direction &gt; 0f &amp;&amp; pressureHpa &lt; targetPressureHpa - 0.01f)</ID>
+    <ID>ComplexCondition:ThermalForecastEngine.kt:ThermalForecastEngine$pblSanity.exceeded &amp;&amp; !pblSanity.mountainOrographicOverride &amp;&amp; pblSanity.pblTopKm != null &amp;&amp; endKm &gt; pblSanity.pblTopKm</ID>
+    <ID>ComplexCondition:ThermicForecastView.kt:chartSize.width &lt;= 0 || chartSize.height &lt;= 0 || panelSize.width &lt;= 0 || panelSize.height &lt;= 0</ID>
+    <ID>ComplexCondition:ThermicForecastView.kt:position == null || chart.timeSlots.isEmpty() || chartSize.width &lt;= 0 || chartSize.height &lt;= 0</ID>
+    <ID>CyclomaticComplexMethod:CloudForecastView.kt:@Composable private fun CloudLayersCanvas</ID>
+    <ID>CyclomaticComplexMethod:CloudForecastView.kt:@Composable private fun CloudRainCanvas</ID>
+    <ID>CyclomaticComplexMethod:ForecastChartBuilders.kt:internal fun buildStuveChartFromData: StuveForecastChartUiModel</ID>
+    <ID>CyclomaticComplexMethod:ForecastChartBuilders.kt:internal fun buildThermicChartFromData: ThermicForecastChartUiModel</ID>
+    <ID>CyclomaticComplexMethod:ForecastChartBuilders.kt:internal fun buildWindChartFromData: WindForecastChartUiModel</ID>
+    <ID>CyclomaticComplexMethod:ForecastGridCard.kt:@Composable private fun ForecastRiskGrid</ID>
+    <ID>CyclomaticComplexMethod:ForecastMapPanel.kt:@Composable fun ForecastMapPanel</ID>
+    <ID>CyclomaticComplexMethod:MapScreen.kt:@SuppressLint("MissingPermission") @Composable fun MapScreen</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun cloudCoverByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun dewPointsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun geopotentialHeightsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun relativeHumidityByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun temperaturesByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun windDirectionsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun windSpeedsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:ParcelAnalysis.kt:fun estimateSurfaceHeating: Float</ID>
+    <ID>CyclomaticComplexMethod:StuveDiagramCanvas.kt:@Composable internal fun StuveDiagramCanvas</ID>
+    <ID>CyclomaticComplexMethod:StuveDiagramGestures.kt:internal suspend fun PointerInputScope.detectSkewTGestures</ID>
+    <ID>CyclomaticComplexMethod:StuveDiagramLabels.kt:internal fun drawCursorInlineLabels</ID>
+    <ID>CyclomaticComplexMethod:StuveDiagramLabels.kt:internal fun layoutBottomAxisLabelCenters: List&lt;Float&gt;</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$fun analyze: ThermalForecastResult?</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun buildLayers: List&lt;ThermalForecastLayer&gt;</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun dampingFactor: ThermalDamping</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun diagnosticUpdraftCapMps: Float</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun resolveConfidence: ThermalForecastConfidence</ID>
+    <ID>CyclomaticComplexMethod:ThermicForecastChartUiModel.kt:internal fun ThermicForecastChartUiModel.aggregatedForDisplay: ThermicForecastChartUiModel</ID>
+    <ID>CyclomaticComplexMethod:ThermicForecastView.kt:@Composable private fun ThermicForecastGrid</ID>
+    <ID>CyclomaticComplexMethod:ThermicForecastView.kt:private fun buildThermicCursorInfo: ThermicCursorInfo?</ID>
+    <ID>CyclomaticComplexMethod:WindForecastView.kt:@Composable private fun WindChartCanvas</ID>
+    <ID>EmptyFunctionBlock:SettingsViewModelTest.kt:SettingsViewModelTest.FakeForecastRepository${}</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable fun AboutRoute</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable fun AboutScreen</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun AboutSection</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun DataSourceGroup</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun LinkText</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun ProviderBlock</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun ProviderDivider</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Composable private fun ProviderTitleLink</ID>
+    <ID>FunctionNaming:AboutScreen.kt:@Preview(showBackground = true) @Composable private fun AboutScreenPreview</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable internal fun CloudForecastView</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable private fun CloudLayersCanvas</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable private fun CloudRadiationCanvas</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable private fun CloudRainCanvas</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable private fun CloudSunshineCanvas</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Composable private fun CloudTimeAxisCanvas</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Preview( name = "Cloud Dark", showBackground = true, widthDp = 420, heightDp = 720, uiMode = Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun CloudForecastViewDarkPreview</ID>
+    <ID>FunctionNaming:CloudForecastView.kt:@Preview(name = "Cloud Default", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun CloudForecastViewPreview</ID>
+    <ID>FunctionNaming:CloudbaseNavGraph.kt:@Composable fun CloudbaseNavGraph</ID>
+    <ID>FunctionNaming:CloudbaseNavGraph.kt:@Composable private fun InvalidForecastDestination</ID>
+    <ID>FunctionNaming:CloudbaseNavGraph.kt:@Preview(showBackground = true) @Composable private fun CloudbaseNavGraphPreview</ID>
+    <ID>FunctionNaming:CloudbasePredictorApp.kt:@Composable fun CloudbasePredictorApp</ID>
+    <ID>FunctionNaming:CloudbasePredictorApp.kt:@Composable private fun ApplySystemBarsStyle</ID>
+    <ID>FunctionNaming:CloudbasePredictorApp.kt:@Composable private fun DatabaseErrorDialog</ID>
+    <ID>FunctionNaming:CloudbasePredictorApp.kt:@Preview(showBackground = true) @Composable private fun CloudbasePredictorAppPreview</ID>
+    <ID>FunctionNaming:CloudbasePredictorApp.kt:@Preview(showBackground = true) @Composable private fun DatabaseErrorDialogPreview</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Composable internal fun FavoritesListDialog</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Composable private fun AddManualFavoriteButton</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Composable private fun FavoriteListItem</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Composable private fun FavoritesEmptyContent</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Preview(showBackground = true) @Composable private fun FavoritesListDialogEmptyPreview</ID>
+    <ID>FunctionNaming:FavoritesListDialog.kt:@Preview(showBackground = true) @Composable private fun FavoritesListDialogPreview</ID>
+    <ID>FunctionNaming:ForecastDatePicker.kt:@Composable internal fun ForecastDatePicker</ID>
+    <ID>FunctionNaming:ForecastDatePicker.kt:@Preview(showBackground = true, widthDp = 420) @Composable private fun ForecastDatePickerPreview</ID>
+    <ID>FunctionNaming:ForecastGridCard.kt:@Composable internal fun ForecastChartCard</ID>
+    <ID>FunctionNaming:ForecastGridCard.kt:@Composable internal fun ForecastGridCard</ID>
+    <ID>FunctionNaming:ForecastGridCard.kt:@Composable private fun ForecastRiskGrid</ID>
+    <ID>FunctionNaming:ForecastGridCard.kt:@Preview(name = "Forecast Grid Card", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun ForecastGridCardPreview</ID>
+    <ID>FunctionNaming:ForecastInformationView.kt:@Composable internal fun ForecastInformationView</ID>
+    <ID>FunctionNaming:ForecastInformationView.kt:@Preview( showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun ForecastInformationViewDarkPreview</ID>
+    <ID>FunctionNaming:ForecastInformationView.kt:@Preview(showBackground = true) @Composable private fun ForecastInformationViewPreview</ID>
+    <ID>FunctionNaming:ForecastMapPanel.kt:@Composable fun ForecastMapPanel</ID>
+    <ID>FunctionNaming:ForecastMapPanel.kt:@Preview(showBackground = true, heightDp = 400) @Composable private fun ForecastMapPanelPreview</ID>
+    <ID>FunctionNaming:ForecastMapPanel.kt:@Preview(showBackground = true, heightDp = 400, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES) @Composable private fun ForecastMapPanelDarkPreview</ID>
+    <ID>FunctionNaming:ForecastModePicker.kt:@Composable internal fun ForecastModePicker</ID>
+    <ID>FunctionNaming:ForecastModePicker.kt:@Composable private fun ForecastModePickerItem</ID>
+    <ID>FunctionNaming:ForecastModePicker.kt:@Preview(showBackground = true) @Composable private fun ForecastModePickerPreview</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Composable fun ForecastRoute</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Composable fun ForecastScreen</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Composable private fun ForecastErrorContent</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Composable private fun ForecastLoadingContent</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Composable private fun ForecastReadyContent</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Preview( name = "Forecast Loading Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun ForecastScreenLoadingDarkPreview</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Preview(showBackground = true) @Composable private fun ForecastScreenCloudPreview</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Preview(showBackground = true) @Composable private fun ForecastScreenErrorPreview</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Preview(showBackground = true) @Composable private fun ForecastScreenLoadingPreview</ID>
+    <ID>FunctionNaming:ForecastScreen.kt:@Preview(showBackground = true) @Composable private fun ForecastScreenPreview</ID>
+    <ID>FunctionNaming:ForecastTopBar.kt:@Composable internal fun ForecastTopBar</ID>
+    <ID>FunctionNaming:ForecastTopBar.kt:@Composable private fun AutoScalingTitle</ID>
+    <ID>FunctionNaming:ForecastTopBar.kt:@Preview(showBackground = true) @Composable private fun ForecastTopBarFavoritePreview</ID>
+    <ID>FunctionNaming:ForecastTopBar.kt:@Preview(showBackground = true) @Composable private fun ForecastTopBarPreview</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable internal fun HelpButtonOverlay</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun CloudForecastLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun ForecastHelpInfoRow</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun ForecastHelpModelInfo</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun ForecastLineLegendRow</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun StuveControlsHelp</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun StuveDiagramLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun ThermicDiagnosticLineLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun ThermicStrengthLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun WindCclLegendRow</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun WindMoistureLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Composable private fun WindSpeedLegend</ID>
+    <ID>FunctionNaming:HelpButtonOverlay.kt:@Preview(name = "Forecast Help Overlay", showBackground = true) @Composable private fun HelpButtonOverlayPreview</ID>
+    <ID>FunctionNaming:ManualFavoriteDialog.kt:@Composable internal fun ManualFavoriteDialog</ID>
+    <ID>FunctionNaming:ManualFavoriteDialog.kt:@Preview(showBackground = true) @Composable private fun ManualFavoriteDialogPreview</ID>
+    <ID>FunctionNaming:MapAttributionOverlay.kt:@Composable fun MapAttributionOverlay</ID>
+    <ID>FunctionNaming:MapAttributionOverlay.kt:@Preview(showBackground = true) @Composable private fun MapAttributionOverlayPreview</ID>
+    <ID>FunctionNaming:MapChrome.kt:@Composable internal fun MapChrome</ID>
+    <ID>FunctionNaming:MapChrome.kt:@Composable private fun MapChromeIconButton</ID>
+    <ID>FunctionNaming:MapChrome.kt:@Preview(showBackground = true) @Composable private fun MapChromePreview</ID>
+    <ID>FunctionNaming:MapContent.kt:@Composable @MaplibreComposable private fun MapMarkerLayers</ID>
+    <ID>FunctionNaming:MapContent.kt:@Composable internal fun MapContent</ID>
+    <ID>FunctionNaming:MapContent.kt:@Composable private fun MapMarkerPassThroughTouchHandler</ID>
+    <ID>FunctionNaming:MapContent.kt:@Preview(showBackground = true) @Composable private fun MapContentPreview</ID>
+    <ID>FunctionNaming:MapFavoriteLabelLayer.kt:@Composable @MaplibreComposable internal fun FavoriteLabelsLayer</ID>
+    <ID>FunctionNaming:MapFavoriteLabelLayer.kt:@Composable @MaplibreComposable private fun FavoriteLabel</ID>
+    <ID>FunctionNaming:MapLayerStyle.kt:@Composable internal fun MapRasterBaseLayer</ID>
+    <ID>FunctionNaming:MapLayerStyle.kt:@Preview(showBackground = true) @Composable private fun MapLayerAttributionPreview</ID>
+    <ID>FunctionNaming:MapScreen.kt:@Composable fun MapRoute</ID>
+    <ID>FunctionNaming:MapScreen.kt:@Preview(showBackground = true) @Composable private fun MapScreenPreview</ID>
+    <ID>FunctionNaming:MapScreen.kt:@SuppressLint("MissingPermission") @Composable fun MapScreen</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable internal fun LaunchSiteCard</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable internal fun MapSelectionCards</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable internal fun MapUnavailableCard</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable internal fun SelectedPointCard</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable private fun SelectionCardActions</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Composable private fun SelectionCardHeader</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Preview(showBackground = true) @Composable private fun LaunchSiteCardPreview</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Preview(showBackground = true) @Composable private fun MapSelectionCardsPreview</ID>
+    <ID>FunctionNaming:MapSelectionCards.kt:@Preview(showBackground = true) @Composable private fun SelectedPointCardPreview</ID>
+    <ID>FunctionNaming:ModelSelectorOverlay.kt:@Composable private fun ModelOptionRow</ID>
+    <ID>FunctionNaming:ModelSelectorOverlay.kt:@Composable private fun ModelSelectorSheetContent</ID>
+    <ID>FunctionNaming:ModelSelectorOverlay.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun ModelSelectorOverlay</ID>
+    <ID>FunctionNaming:ModelSelectorOverlay.kt:@Preview(showBackground = true) @Composable private fun ModelSelectorOverlayPreview</ID>
+    <ID>FunctionNaming:ModelSelectorOverlay.kt:@Preview(showBackground = true) @Composable private fun ModelSelectorSheetContentPreview</ID>
+    <ID>FunctionNaming:SaveFavoriteDialog.kt:@Composable fun SaveFavoriteDialog</ID>
+    <ID>FunctionNaming:SaveFavoriteDialog.kt:@Composable private fun FavoritePlaceListItem</ID>
+    <ID>FunctionNaming:SaveFavoriteDialog.kt:@Preview(showBackground = true) @Composable private fun SaveFavoriteDialogEditPreview</ID>
+    <ID>FunctionNaming:SaveFavoriteDialog.kt:@Preview(showBackground = true) @Composable private fun SaveFavoriteDialogNewPreview</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Composable fun SettingsRoute</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsScreen</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Preview( showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun SettingsScreenDarkPreview</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Preview(showBackground = true) @Composable private fun SettingsScreenPreview</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Preview(showBackground = true) @Composable private fun SettingsScreenRealPreview</ID>
+    <ID>FunctionNaming:StuveDiagramCanvas.kt:@Composable internal fun StuveDiagramCanvas</ID>
+    <ID>FunctionNaming:StuveDiagramCanvas.kt:@Preview(name = "Stuve Diagram Canvas", showBackground = true, widthDp = 420, heightDp = 640) @Composable private fun StuveDiagramCanvasPreview</ID>
+    <ID>FunctionNaming:StuveForecastView.kt:@Composable internal fun StuveForecastView</ID>
+    <ID>FunctionNaming:StuveForecastView.kt:@Composable private fun StuveTimeSlider</ID>
+    <ID>FunctionNaming:StuveForecastView.kt:@Preview( name = "Stuve Dark", showBackground = true, widthDp = 420, heightDp = 720, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun SkewTForecastViewDarkPreview</ID>
+    <ID>FunctionNaming:StuveForecastView.kt:@Preview(name = "Stuve Default", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun SkewTForecastViewPreview</ID>
+    <ID>FunctionNaming:Theme.kt:@Composable fun CloudbasePredictorTheme</ID>
+    <ID>FunctionNaming:Theme.kt:@Preview(showBackground = true) @Composable private fun CloudbasePredictorThemePreview</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Composable internal fun ThermicForecastView</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Composable private fun ThermicCursorInfoPanel</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Composable private fun ThermicForecastGrid</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Preview( name = "Thermic Dark", showBackground = true, widthDp = 420, heightDp = 720, uiMode = Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun ThermicForecastViewDarkPreview</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Preview(name = "Thermic Default", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun ThermicForecastViewPreview</ID>
+    <ID>FunctionNaming:ThermicForecastView.kt:@Preview(name = "Thermic Zoomed Out", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun ThermicForecastViewZoomedOutPreview</ID>
+    <ID>FunctionNaming:TopLevelDestination.kt:@Preview(showBackground = true) @Composable private fun TopLevelDestinationPreview</ID>
+    <ID>FunctionNaming:WindForecastView.kt:@Composable internal fun WindForecastView</ID>
+    <ID>FunctionNaming:WindForecastView.kt:@Composable private fun WindChartCanvas</ID>
+    <ID>FunctionNaming:WindForecastView.kt:@Preview( name = "Wind Dark", showBackground = true, widthDp = 420, heightDp = 720, uiMode = Configuration.UI_MODE_NIGHT_YES, ) @Composable private fun WindForecastViewDarkPreview</ID>
+    <ID>FunctionNaming:WindForecastView.kt:@Preview(name = "Wind Default", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun WindForecastViewPreview</ID>
+    <ID>FunctionNaming:WindForecastView.kt:@Preview(name = "Wind Zoomed Out", showBackground = true, widthDp = 420, heightDp = 720) @Composable private fun WindForecastViewZoomedOutPreview</ID>
+    <ID>LargeClass:DesignSystemScreenshotCaptureTest.kt:DesignSystemScreenshotCaptureTest</ID>
+    <ID>LargeClass:ThermalForecastEngine.kt:ThermalForecastEngine</ID>
+    <ID>LongMethod:AboutScreen.kt:@Composable fun AboutScreen</ID>
+    <ID>LongMethod:CloudForecastView.kt:@Composable internal fun CloudForecastView</ID>
+    <ID>LongMethod:CloudForecastView.kt:@Composable private fun CloudLayersCanvas</ID>
+    <ID>LongMethod:CloudForecastView.kt:@Composable private fun CloudRadiationCanvas</ID>
+    <ID>LongMethod:CloudForecastView.kt:@Composable private fun CloudRainCanvas</ID>
+    <ID>LongMethod:CloudForecastView.kt:@Composable private fun CloudSunshineCanvas</ID>
+    <ID>LongMethod:CloudbaseNavGraph.kt:@Composable fun CloudbaseNavGraph</ID>
+    <ID>LongMethod:DatabaseMigrations.kt:&lt;no name provided&gt;$override fun migrate</ID>
+    <ID>LongMethod:ForecastChartBuilders.kt:internal fun buildStuveChartFromData: StuveForecastChartUiModel</ID>
+    <ID>LongMethod:ForecastChartBuilders.kt:internal fun buildThermicChartFromData: ThermicForecastChartUiModel</ID>
+    <ID>LongMethod:ForecastChartBuilders.kt:internal fun buildWindChartFromData: WindForecastChartUiModel</ID>
+    <ID>LongMethod:ForecastChartBuildersWindTest.kt:ForecastChartBuildersWindTest$private fun openMeteoFozaIconSeamlessWindData: HourlyForecastData</ID>
+    <ID>LongMethod:ForecastGridCard.kt:@Composable private fun ForecastRiskGrid</ID>
+    <ID>LongMethod:ForecastMapPanel.kt:@Composable fun ForecastMapPanel</ID>
+    <ID>LongMethod:ForecastRepository.kt:InMemoryForecastRepository$override suspend fun loadForecast</ID>
+    <ID>LongMethod:ForecastScreen.kt:@Composable fun ForecastScreen</ID>
+    <ID>LongMethod:ForecastScreenTest.kt:ForecastScreenTest$@Test fun forecastScreen_thermicCursorPanelAvoidsSelectedPointAndRemainsTouchable</ID>
+    <ID>LongMethod:ForecastViewModel.kt:private fun buildForecastText: String</ID>
+    <ID>LongMethod:HelpButtonOverlay.kt:@Composable internal fun HelpButtonOverlay</ID>
+    <ID>LongMethod:HourlyForecastConversion.kt:fun OpenMeteoHourlyForecastResponse.toHourlyForecastData: HourlyForecastData</ID>
+    <ID>LongMethod:HourlyForecastConversionTest.kt:HourlyForecastConversionTest$@Test fun toHourlyForecastData_synthesizesMissingUpperPressureLevels</ID>
+    <ID>LongMethod:ManualFavoriteDialog.kt:@Composable internal fun ManualFavoriteDialog</ID>
+    <ID>LongMethod:MapChrome.kt:@Composable internal fun MapChrome</ID>
+    <ID>LongMethod:MapContent.kt:@Composable @MaplibreComposable private fun MapMarkerLayers</ID>
+    <ID>LongMethod:MapContent.kt:@Composable internal fun MapContent</ID>
+    <ID>LongMethod:MapMarkerLayerData.kt:internal fun buildMapMarkerLayerData: MapMarkerLayerData</ID>
+    <ID>LongMethod:MapScreen.kt:@SuppressLint("MissingPermission") @Composable fun MapScreen</ID>
+    <ID>LongMethod:MapSelectionCards.kt:@Composable internal fun LaunchSiteCard</ID>
+    <ID>LongMethod:ParcelAnalysis.kt:fun analyzeParcel: ParcelAnalysisResult?</ID>
+    <ID>LongMethod:SaveFavoriteDialog.kt:@Composable fun SaveFavoriteDialog</ID>
+    <ID>LongMethod:SettingsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsScreen</ID>
+    <ID>LongMethod:StuveDiagramCanvas.kt:@Composable internal fun StuveDiagramCanvas</ID>
+    <ID>LongMethod:StuveDiagramCursorOverlay.kt:internal fun DrawScope.drawCursorOverlay</ID>
+    <ID>LongMethod:StuveDiagramGestures.kt:internal suspend fun PointerInputScope.detectSkewTGestures</ID>
+    <ID>LongMethod:StuveDiagramLabels.kt:internal fun drawCursorInlineLabels</ID>
+    <ID>LongMethod:StuveForecastChartUiModel.kt:internal fun buildPlaceholderStuveChart: StuveForecastChartUiModel</ID>
+    <ID>LongMethod:StuveForecastView.kt:@Composable internal fun StuveForecastView</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$fun analyze: ThermalForecastResult?</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun buildLayers: List&lt;ThermalForecastLayer&gt;</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun dampingFactor: ThermalDamping</ID>
+    <ID>LongMethod:ThermicChartPressureLevelBoundariesTest.kt:ThermicChartPressureLevelBoundariesTest$@Test fun thermalCells_useUniformAglBinsAndPressureLevelsRemainGridLines</ID>
+    <ID>LongMethod:ThermicForecastChartUiModel.kt:internal fun ThermicForecastChartUiModel.aggregatedForDisplay: ThermicForecastChartUiModel</ID>
+    <ID>LongMethod:ThermicForecastChartUiModel.kt:internal fun buildPlaceholderThermicForecastChart: ThermicForecastChartUiModel</ID>
+    <ID>LongMethod:ThermicForecastChartUiModelTest.kt:ThermicForecastChartUiModelTest$@Test fun aggregatedForDisplay_preservesThermalTopAndCloudHeights</ID>
+    <ID>LongMethod:ThermicForecastView.kt:@Composable private fun ThermicForecastGrid</ID>
+    <ID>LongMethod:ThermicForecastView.kt:private fun buildThermicCursorInfo: ThermicCursorInfo?</ID>
+    <ID>LongMethod:WindForecastView.kt:@Composable private fun WindChartCanvas</ID>
+    <ID>LoopWithTooManyJumpStatements:ParcelAnalysis.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:StuveForecastChartUiModel.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:ThermalForecastEngine.kt:ThermalForecastEngine$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ThermalForecastEngine.kt:ThermalForecastEngine$while</ID>
+    <ID>MagicNumber:CclAnalysis.kt:0.01f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:17.67f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:243.5f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:6.112f</ID>
+    <ID>MagicNumber:CloudForecastChartUiModel.kt:0.5f</ID>
+    <ID>MagicNumber:CloudForecastChartUiModel.kt:3600f</ID>
+    <ID>MagicNumber:CloudForecastChartUiModel.kt:800f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.01f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.02f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.05f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.15f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.35f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.5f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:0.7f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:10f</ID>
+    <ID>MagicNumber:CloudForecastView.kt:3</ID>
+    <ID>MagicNumber:CloudForecastView.kt:5f</ID>
+    <ID>MagicNumber:CloudbasePredictorApplication.kt:CloudbasePredictorApplication$10</ID>
+    <ID>MagicNumber:CloudbasePredictorApplication.kt:CloudbasePredictorApplication$1024</ID>
+    <ID>MagicNumber:CloudbasePredictorApplication.kt:CloudbasePredictorApplication$20</ID>
+    <ID>MagicNumber:CloudbasePredictorApplication.kt:CloudbasePredictorApplication$200L</ID>
+    <ID>MagicNumber:DisplayUnits.kt:1000f</ID>
+    <ID>MagicNumber:DisplayUnits.kt:3.6f</ID>
+    <ID>MagicNumber:ForecastChartBuilders.kt:0.01f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:0.12f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:0.18f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:0.25f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:0.35f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:0.5f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:100f</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:3</ID>
+    <ID>MagicNumber:ForecastGridCard.kt:3.5f</ID>
+    <ID>MagicNumber:ForecastMapPanel.kt:0xFFE64A5B</ID>
+    <ID>MagicNumber:ForecastMapPanel.kt:0xFFFFD700</ID>
+    <ID>MagicNumber:ForecastMapPanel.kt:200</ID>
+    <ID>MagicNumber:ForecastMapPanel.kt:3f</ID>
+    <ID>MagicNumber:ForecastScreen.kt:0.6f</ID>
+    <ID>MagicNumber:ForecastScreen.kt:300</ID>
+    <ID>MagicNumber:ForecastViewModel.kt:ForecastViewModel$22</ID>
+    <ID>MagicNumber:ForecastViewModel.kt:ForecastViewModel$6</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFF2088E0</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFF2E6FB5</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFF59A36A</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFFA040C0</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFFB36A27</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFFD83A3A</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFFE07020</ID>
+    <ID>MagicNumber:HelpButtonOverlay.kt:0xFFFF8C00</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:0.1903</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:1013.25</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:180.0</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:1e-6</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:360.0</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:44330.0</ID>
+    <ID>MagicNumber:LaunchSiteBounds.kt:LaunchSiteBounds$180.0</ID>
+    <ID>MagicNumber:LaunchSiteBounds.kt:LaunchSiteBounds$90.0</ID>
+    <ID>MagicNumber:LaunchSiteRepository.kt:180.0</ID>
+    <ID>MagicNumber:LaunchSiteRepository.kt:90.0</ID>
+    <ID>MagicNumber:ManualFavoriteInput.kt:180.0</ID>
+    <ID>MagicNumber:ManualFavoriteInput.kt:3</ID>
+    <ID>MagicNumber:ManualFavoriteInput.kt:60.0</ID>
+    <ID>MagicNumber:ManualFavoriteInput.kt:90.0</ID>
+    <ID>MagicNumber:MapAttributionOverlay.kt:0xFF202124</ID>
+    <ID>MagicNumber:MapChrome.kt:0xFFFFD700</ID>
+    <ID>MagicNumber:MapChrome.kt:360.0</ID>
+    <ID>MagicNumber:MapGeoJson.kt:16</ID>
+    <ID>MagicNumber:MapGeoJson.kt:4</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$1000</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$250</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$300</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$350</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$400</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$450</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$500</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$550</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$600</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$650</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$700</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$750</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$800</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$850</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$875</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$900</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$925</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$950</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$975</ID>
+    <ID>MagicNumber:OpenMeteoRemoteDataSource.kt:OpenMeteoRemoteDataSource$400</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.001f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.0065</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.01f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:1000f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:1013.25</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:17.67f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:20</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:243.5f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:273.15f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:288.15</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:3f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:4</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:5.2561</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:6</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:6.112f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:622f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:8f</ID>
+    <ID>MagicNumber:PlaceLocation.kt:PlaceLocation.Companion$180.0</ID>
+    <ID>MagicNumber:PlaceLocation.kt:PlaceLocation.Companion$90.0</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0.35f</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFF2E6FB5</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFF2F8BAA</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFF4E9B64</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFF59A36A</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFF6E93C0</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFFB36A27</ID>
+    <ID>MagicNumber:StuveDiagramCanvas.kt:0xFFD83A3A</ID>
+    <ID>MagicNumber:StuveDiagramCursorOverlay.kt:0xFF2E6FB5</ID>
+    <ID>MagicNumber:StuveDiagramCursorOverlay.kt:0xFF59A36A</ID>
+    <ID>MagicNumber:StuveDiagramCursorOverlay.kt:0xFFD83A3A</ID>
+    <ID>MagicNumber:StuveDiagramCursorOverlay.kt:0xFFE2A85F</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:0.0000225577f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:0.01f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:100</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:1000f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:1013.25f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:18f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:250f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:28f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:300f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:34f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:5.25588f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:500f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:5f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:700f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:850f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:8f</ID>
+    <ID>MagicNumber:StuveDiagramGeometry.kt:950f</ID>
+    <ID>MagicNumber:StuveDiagramLabels.kt:0xFF2B2B2B</ID>
+    <ID>MagicNumber:StuveDiagramLabels.kt:0xFF2E6FB5</ID>
+    <ID>MagicNumber:StuveDiagramLabels.kt:0xFF59A36A</ID>
+    <ID>MagicNumber:StuveDiagramLabels.kt:0xFFD83A3A</ID>
+    <ID>MagicNumber:StuveDiagramLabels.kt:0xFFF3F3F3</ID>
+    <ID>MagicNumber:StuveDiagramPrimitives.kt:0xFF4E7C9A</ID>
+    <ID>MagicNumber:StuveDiagramPrimitives.kt:0xFFD7EAF4</ID>
+    <ID>MagicNumber:StuveDiagramPrimitives.kt:10</ID>
+    <ID>MagicNumber:StuveDiagramPrimitives.kt:50</ID>
+    <ID>MagicNumber:StuveForecastChartUiModel.kt:0.5f</ID>
+    <ID>MagicNumber:StuveForecastView.kt:0.01f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.1f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.25f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.30f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.45f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.50f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.55f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.5f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.60f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.65f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.66f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.68f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.75f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.78f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.82f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.85f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.90f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.95f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.96f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.02f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.05f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.08f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1000f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$100f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$10f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1800f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$2.4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$250f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$25f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$2f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$3.0f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$300f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$3f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$4.4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$40f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$5.6f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$60f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$6f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$75f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$800f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastLayer$1000f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastLayer$280f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:0.5f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:1.5f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:10f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:3f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:4f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:ThermicForecastCellUiModel$1000f</ID>
+    <ID>MagicNumber:ThermicForecastChartUiModel.kt:ThermicForecastCellUiModel$280f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:0.1f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:0.35f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:0.5f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:1000f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:100f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:180f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:270f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:3.5f</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:8</ID>
+    <ID>MagicNumber:ThermicForecastView.kt:90f</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$3</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$45</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$48</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$51</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$53</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$55</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$56</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$57</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$61</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$63</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$65</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$66</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$67</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$71</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$73</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$75</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$77</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$80</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$81</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$82</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$85</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$86</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$95</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$96</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$99</ID>
+    <ID>MagicNumber:WindForecastView.kt:0.001f</ID>
+    <ID>MagicNumber:WindForecastView.kt:0.15f</ID>
+    <ID>MagicNumber:WindForecastView.kt:0.35f</ID>
+    <ID>MagicNumber:WindForecastView.kt:0xFF00BCD4</ID>
+    <ID>MagicNumber:WindForecastView.kt:0xFFFF8C00</ID>
+    <ID>MagicNumber:WindForecastView.kt:100f</ID>
+    <ID>MagicNumber:WindForecastView.kt:180f</ID>
+    <ID>MagicNumber:WindForecastView.kt:270f</ID>
+    <ID>MagicNumber:WindForecastView.kt:3</ID>
+    <ID>MagicNumber:WindForecastView.kt:90f</ID>
+    <ID>MaxLineLength:DesignSystemScreenshotCaptureTest.kt:DesignSystemScreenshotCaptureTest$*</ID>
+    <ID>MaxLineLength:ForecastGridCard.kt:val wave = ((sin((timeNormalized * PI.toFloat() * (1.4f + (mode.ordinal * 0.18f))) + (mode.ordinal * 0.7f)) + 1f) / 2f)</ID>
+    <ID>MaxLineLength:ForecastMapPanel.kt:forecastMapDistanceMeters(targetLocation, programmaticIdleTarget) &lt;= CAMERA_RECENTER_EPSILON_METERS</ID>
+    <ID>MaxLineLength:ForecastMapPanel.kt:val</ID>
+    <ID>MaxLineLength:ForecastMapPanel.kt:val totalPanelHeight = (panelHeightPx + handleHeightPx).coerceIn(handleHeightPx, maxPanelHeightPx + handleHeightPx)</ID>
+    <ID>MaxLineLength:ForecastModelE2eTest.kt:ForecastModelE2eTest$*</ID>
+    <ID>MaxLineLength:ForecastViewModelTest.kt:FakePlaceRepository$private</ID>
+    <ID>MaxLineLength:LaunchSiteRepository.kt:DefaultLaunchSiteRepository$override suspend</ID>
+    <ID>MaxLineLength:ManualFavoriteDialog.kt:ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE -&gt; stringResource(R.string.manual_favorite_error_longitude_range)</ID>
+    <ID>MaxLineLength:MapScreen.kt:onVisibleBoundsChanged: (north: Double, south: Double, west: Double, east: Double, zoom: Double) -&gt; Unit = { _, _, _, _, _ -&gt; }</ID>
+    <ID>MaxLineLength:OpenMeteoApi.kt:"geopotential_height_1000hPa,geopotential_height_975hPa,geopotential_height_950hPa,geopotential_height_925hPa,geopotential_height_900hPa,"</ID>
+    <ID>MaxLineLength:OpenMeteoApi.kt:"geopotential_height_700hPa,geopotential_height_650hPa,geopotential_height_600hPa,geopotential_height_550hPa,geopotential_height_500hPa,"</ID>
+    <ID>MaxLineLength:SaveFavoriteDialog.kt:Text(text = if (isFavorite) stringResource(R.string.dialog_title_edit_favorite) else stringResource(R.string.dialog_title_save_favorite))</ID>
+    <ID>MaxLineLength:StuveDiagramCanvas.kt:mapXY = { temperature, pressure -&gt; Offset(temperatureToX(temperature, pressure), pressureToY(pressure)) }</ID>
+    <ID>MaxLineLength:StuveDiagramCursorOverlay.kt:pressures</ID>
+    <ID>MaxLineLength:StuveDiagramLabels.kt:"${formatWindSpeed(readout.windSpeedKmh, displayUnits)} ${String.format(Locale.US, "%03.0f°", readout.windDirectionDeg)}"</ID>
+    <ID>MaxLineLength:StuveForecastChartUiModel.kt:heightKm</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$level.heightKm in (realEnvelope.start - HEIGHT_EPSILON_KM)..(realEnvelope.endInclusive + HEIGHT_EPSILON_KM)</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$saturationPointTemperatureC = primaryCcl.cclTemperatureC ?: dryAdiabatTempC(nominalThetaK, lcl.pressureHpa)</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$sourceQuality = if (exact.isSynthetic) ThermalLayerSourceQuality.SYNTHETIC else ThermalLayerSourceQuality.REAL</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertFalse("Surface dewpoint and temperature profile are enough to classify CCL status", result.cloudBaseStatus == ThermalCloudBaseStatus.UNKNOWN)</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertTrue("High CAPE should allow stronger calibrated lift", highCape.updraftNominalMps &gt; noCape.updraftNominalMps)</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertTrue("Nominal lift should stay practical with missing PBL, got ${result.updraftNominalMps}", result.updraftNominalMps &lt;= 3.6f)</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertTrue("Synthetic extrapolation must not lift dry-top above real data", result.topNominalKm &lt;= realProfileTopKm)</ID>
+    <ID>MaxLineLength:ThermicForecastView.kt:drawDiagnosticLine(thermalTopColor, pathEffect = null, strokeWidth = diagLineWidth * 1.2f) { it.topNominalKm }</ID>
+    <ID>MaxLineLength:ThermicForecastView.kt:lines += "Heat trigger ${formatSignedValue(diag.triggerExcessC)} dry ${formatSignedValue(diag.dryTopExcessC)}"</ID>
+    <ID>MaxLineLength:WindForecastChartUiModel.kt:val top = if (index &lt; altitudes.lastIndex) (center + altitudes[index + 1]) / 2f else center + altitudeStepKm / 2f</ID>
+    <ID>MayBeConstant:PreviewData.kt:PreviewData$val manualFavoriteCoordinates = "47.6468, 11.5216"</ID>
+    <ID>MayBeConstant:PreviewData.kt:PreviewData$val manualFavoriteName = "Brauneck South"</ID>
+    <ID>MayBeConstant:PreviewData.kt:PreviewData$val settingsShowLaunchSites = true</ID>
+    <ID>MayBeConstant:PreviewData.kt:PreviewData$val settingsStartWithFavorites = true</ID>
+    <ID>NewLineAtEndOfFile:ExampleUnitTest.kt:com.cloudbasepredictor.ExampleUnitTest.kt</ID>
+    <ID>ReturnCount:CclAnalysis.kt:internal fun mixedLayerMixingRatioKgKg: Float?</ID>
+    <ID>ReturnCount:CclAnalysis.kt:private fun analyzeCclMethod: CclHourlyResult</ID>
+    <ID>ReturnCount:CclAnalysis.kt:private fun interpolatedMixingRatioAtPressure: PressureMixingRatio?</ID>
+    <ID>ReturnCount:ForecastCachePolicy.kt:private fun isFirstForecastDateBeforeToday: Boolean</ID>
+    <ID>ReturnCount:ForecastCachePolicy.kt:private fun nextForecastDateInvalidationMillis: Long?</ID>
+    <ID>ReturnCount:ForecastChartBuilders.kt:internal fun buildCloudChartFromData: CloudForecastChartUiModel</ID>
+    <ID>ReturnCount:ForecastChartBuilders.kt:internal fun buildStuveChartFromData: StuveForecastChartUiModel</ID>
+    <ID>ReturnCount:ForecastChartBuilders.kt:internal fun buildThermicChartFromData: ThermicForecastChartUiModel</ID>
+    <ID>ReturnCount:ForecastChartBuilders.kt:internal fun buildWindChartFromData: WindForecastChartUiModel</ID>
+    <ID>ReturnCount:ForecastChartBuilders.kt:private fun HourlyPoint.analyzeCclForForecast: List&lt;CclHourlyResult&gt;</ID>
+    <ID>ReturnCount:ForecastMapPanel.kt:internal fun forecastMapLocationUpdateDecision: ForecastMapLocationUpdateDecision</ID>
+    <ID>ReturnCount:ForecastRepository.kt:InMemoryForecastRepository$private suspend fun loadFromDbCache: ForecastSnapshot?</ID>
+    <ID>ReturnCount:ForecastScreen.kt:internal fun favoriteDialogInitialName: String</ID>
+    <ID>ReturnCount:ForecastViewModel.kt:ForecastViewModel$private suspend fun scheduleRefreshForSnapshot</ID>
+    <ID>ReturnCount:ForecastViewModel.kt:private fun HourlyForecastData.hasRequiredForecastInputs: Boolean</ID>
+    <ID>ReturnCount:ForecastViewModel.kt:private fun buildForecastText: String</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun extrapolateDirection: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun extrapolateField: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun regressLinear: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun synthesizePressureLevel: PressureLevelPoint?</ID>
+    <ID>ReturnCount:LaunchSiteBounds.kt:LaunchSiteBounds.Companion$fun normalizedForMap: LaunchSiteBounds?</ID>
+    <ID>ReturnCount:LaunchSiteRepository.kt:internal fun ParaglidingEarthFeature.toDomainModel: ParaglidingLaunchSite?</ID>
+    <ID>ReturnCount:ManualFavoriteInput.kt:internal fun parseManualFavoriteInput: ManualFavoriteInputResult</ID>
+    <ID>ReturnCount:ManualFavoriteInput.kt:private fun dmsToDecimalDegrees: Double?</ID>
+    <ID>ReturnCount:ManualFavoriteInput.kt:private fun numbersForCardinal: List&lt;Double&gt;?</ID>
+    <ID>ReturnCount:ManualFavoriteInput.kt:private fun parseDirectionalCoordinates: List&lt;Pair&lt;Char, Double&gt;&gt;?</ID>
+    <ID>ReturnCount:ManualFavoriteInput.kt:private fun parseDirectionalCoordinates: ManualFavoriteCoordinates?</ID>
+    <ID>ReturnCount:MapClickTargetResolver.kt:internal fun resolveMapClickTarget: MapClickTarget</ID>
+    <ID>ReturnCount:MapContent.kt:private fun View.findMapView: MapView?</ID>
+    <ID>ReturnCount:MapLayerRepository.kt:SharedPrefsMapLayerRepository$private fun loadLayerPreference: MapLayerPreference</ID>
+    <ID>ReturnCount:MapMarkerLayerData.kt:private fun favoritePlacesWithSelected: List&lt;SavedPlace&gt;</ID>
+    <ID>ReturnCount:MapMarkerLayerData.kt:private fun launchSitesWithSelected: List&lt;ParaglidingLaunchSite&gt;</ID>
+    <ID>ReturnCount:MapScreenTest.kt:private fun View.findMapView: MapView?</ID>
+    <ID>ReturnCount:MapStartupRepository.kt:SharedPrefsMapStartupRepository$private fun loadStartWithFavorites: Boolean</ID>
+    <ID>ReturnCount:MapViewModel.kt:MapViewModel$fun loadLaunchSitesForVisibleBounds</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:fun interpolateHeightKmAtPressure: Float?</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:fun interpolateTemperatureCAtPressure: Float?</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findDryThermalTop: Float</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findLcl: PressureHeightResult</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findMoistEquilibriumTop: Float?</ID>
+    <ID>ReturnCount:PlaceLocation.kt:PlaceLocation.Companion$fun fromRouteValue: PlaceLocation?</ID>
+    <ID>ReturnCount:StuveDiagramLabels.kt:internal fun layoutBottomAxisLabelCenters: List&lt;Float&gt;</ID>
+    <ID>ReturnCount:StuveForecastChartUiModel.kt:fun pressureToApproxHeightMeters: Int</ID>
+    <ID>ReturnCount:StuveForecastChartUiModel.kt:private fun interpolateProfileValue: Float?</ID>
+    <ID>ReturnCount:ThemeRepository.kt:SharedPrefsThemeRepository$private fun loadPreference: ThemePreference</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun analyzeTopScenario: ThermalTopScenarioResult</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun findMoistTop: Float?</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun findThermalLcl: PressureHeight</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun hasClearDryThermalSupport: Boolean</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun interpolateProfileAtHeight: InterpolatedProfilePoint?</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun optimisticDryTopAllowed: Boolean</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun pblLayerFactor: Float</ID>
+    <ID>ReturnCount:ThermicForecastChartUiModel.kt:internal fun ThermicForecastChartUiModel.aggregatedForDisplay: ThermicForecastChartUiModel</ID>
+    <ID>ReturnCount:ThermicForecastView.kt:private fun buildThermicCursorInfo: ThermicCursorInfo?</ID>
+    <ID>ReturnCount:UnitSettingsRepository.kt:SharedPrefsUnitSettingsRepository$private fun loadUnitPreset: UnitPreset</ID>
+    <ID>ReturnCount:WindForecastView.kt:private fun interpolateWind: WindSample?</ID>
+    <ID>TooGenericExceptionCaught:ForecastCacheMaintenance.kt:ForecastCacheMaintenance$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ForecastRepository.kt:InMemoryForecastRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LaunchSiteRepository.kt:DefaultLaunchSiteRepository$throwable: Throwable</ID>
+    <ID>TooGenericExceptionCaught:MapViewModel.kt:MapViewModel$throwable: Throwable</ID>
+    <ID>TooManyFunctions:CclAnalysis.kt:com.cloudbasepredictor.domain.forecast.CclAnalysis.kt</ID>
+    <ID>TooManyFunctions:CloudForecastView.kt:com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView.kt</ID>
+    <ID>TooManyFunctions:FavoritePlacesBackupStore.kt:FavoritePlacesBackupStore</ID>
+    <ID>TooManyFunctions:ForecastCachePolicy.kt:com.cloudbasepredictor.data.forecast.ForecastCachePolicy.kt</ID>
+    <ID>TooManyFunctions:ForecastGridCard.kt:com.cloudbasepredictor.ui.screens.forecast.views.ForecastGridCard.kt</ID>
+    <ID>TooManyFunctions:ForecastViewModel.kt:ForecastViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ForecastViewModel.kt:com.cloudbasepredictor.ui.screens.forecast.ForecastViewModel.kt</ID>
+    <ID>TooManyFunctions:HelpButtonOverlay.kt:com.cloudbasepredictor.ui.screens.forecast.HelpButtonOverlay.kt</ID>
+    <ID>TooManyFunctions:MapSelectionCards.kt:com.cloudbasepredictor.ui.screens.map.MapSelectionCards.kt</ID>
+    <ID>TooManyFunctions:MapViewModel.kt:MapViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ParcelAnalysis.kt:com.cloudbasepredictor.domain.forecast.ParcelAnalysis.kt</ID>
+    <ID>TooManyFunctions:RepositoryModule.kt:RepositoryModule</ID>
+    <ID>TooManyFunctions:StuveDiagramGeometry.kt:com.cloudbasepredictor.ui.screens.forecast.views.StuveDiagramGeometry.kt</ID>
+    <ID>TooManyFunctions:ThermalForecastEngine.kt:ThermalForecastEngine</ID>
+    <ID>TooManyFunctions:ThermicForecastView.kt:com.cloudbasepredictor.ui.screens.forecast.views.ThermicForecastView.kt</ID>
+    <ID>TooManyFunctions:WindForecastView.kt:com.cloudbasepredictor.ui.screens.forecast.views.WindForecastView.kt</ID>
+    <ID>UnusedParameter:CclAnalysis.kt:input: CclHourlyInput</ID>
+    <ID>UnusedParameter:CloudForecastView.kt:onVisibleTopAltitudeChange: (Float) -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:lclPressureHpa: Float</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:surfaceMixingRatio: Float</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:surfacePressureHpa: Float</ID>
+    <ID>WildcardImport:ExampleUnitTest.kt:import org.junit.Assert.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

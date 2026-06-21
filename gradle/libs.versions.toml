@@ -12,6 +12,10 @@ room = "2.8.4"
 okhttp = "4.12.0"
 ksp = "2.3.4"
 kotlin = "2.3.10"
+# detekt 2.0.0-alpha is the first line supporting Kotlin 2.3.x (coordinates moved
+# to the dev.detekt group); alpha.5 is built against AGP 9.2.1 (matching this
+# project). The stable 1.x line does not support Kotlin 2.3 yet.
+detekt = "2.0.0-alpha.5"
 material = "1.10.0"
 appcompat = "1.6.1"
 hilt = "2.59.2"
@@ -66,3 +70,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
