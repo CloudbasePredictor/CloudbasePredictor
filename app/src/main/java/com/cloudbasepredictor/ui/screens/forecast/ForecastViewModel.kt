@@ -310,7 +310,11 @@ class ForecastViewModel @Inject constructor(
             )
         }
 
-        if (currentError != null) {
+        // Only fall back to the full-screen error when there is nothing to display.
+        // A failed background refresh (or extra-day load) while a usable forecast is
+        // already cached must not wipe the chart; the user is notified via the
+        // transient networkErrorEvent toast instead.
+        if (currentError != null && snapshot?.hourlyData == null) {
             return@combine ForecastErrorUiState(
                 errorMessage = currentError,
                 selectedPlace = place,
