@@ -3,6 +3,7 @@ package com.cloudbasepredictor.ui.screens.forecast.views
 import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -153,6 +154,11 @@ private fun ThermicForecastGrid(
     var chartSize by remember { mutableStateOf(IntSize.Zero) }
     var crosshairPos by remember { mutableStateOf<Offset?>(null) }
     var cursorPanelSize by remember { mutableStateOf(IntSize.Zero) }
+
+    // Back dismisses the tap overlay (crosshair + info panel) first, before navigating away.
+    BackHandler(enabled = crosshairPos != null) {
+        crosshairPos = null
+    }
     val latestVisibleTopAltitudeKm = rememberUpdatedState(visibleTopAltitudeKm)
     val cursorInfo = remember(
         crosshairPos,

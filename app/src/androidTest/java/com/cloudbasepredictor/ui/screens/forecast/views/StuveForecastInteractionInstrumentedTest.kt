@@ -89,6 +89,41 @@ class StuveForecastInteractionInstrumentedTest {
     }
 
     @Test
+    fun stuveView_backDismissesPinnedOverlayBeforeNavigating() {
+        var visibleTopAltitudeKm by mutableFloatStateOf(DEFAULT_TOP_ALTITUDE_KM)
+
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                StuveForecastView(
+                    uiState = SimulatedTestData.forecastUiState(
+                        composeRule.activity,
+                        mode = ForecastMode.STUVE,
+                        topAltitudeKm = visibleTopAltitudeKm,
+                    ),
+                    onVisibleTopAltitudeChange = { visibleTopAltitudeKm = it },
+                )
+            }
+        }
+
+        composeRule.waitForIdle()
+
+        // Tap to pin the readout overlay.
+        composeRule.onNodeWithTag(STUVE_CHART_CANVAS).performTouchInput { click(center) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(STUVE_CHART_CANVAS)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "pinned"))
+
+        // Pressing back must dismiss the overlay (and not navigate away).
+        composeRule.runOnUiThread {
+            composeRule.activity.onBackPressedDispatcher.onBackPressed()
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(STUVE_CHART_CANVAS)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "idle"))
+    }
+
+    @Test
     fun stuveView_tapSetsActiveThetaK() {
         var visibleTopAltitudeKm by mutableFloatStateOf(DEFAULT_TOP_ALTITUDE_KM)
 

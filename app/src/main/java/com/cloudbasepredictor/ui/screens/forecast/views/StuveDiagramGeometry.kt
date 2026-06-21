@@ -282,6 +282,12 @@ internal fun buildSkewTTemperatureAxisRange(
     )
 }
 
+/**
+ * The pre-computed dashed parcel guide is hidden while the tap overlay (cursor readout) is showing,
+ * so it does not compete with the interactive parcel drawn through the tapped point.
+ */
+internal fun shouldDrawDefaultParcelGuide(isCursorActive: Boolean): Boolean = !isCursorActive
+
 private fun collectProfileTemperatures(
     profile: List<StuveProfilePoint>,
     topPressure: Float,

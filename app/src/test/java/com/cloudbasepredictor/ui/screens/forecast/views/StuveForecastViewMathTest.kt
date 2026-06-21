@@ -6,6 +6,7 @@ import com.cloudbasepredictor.domain.forecast.potentialTemperatureK
 import com.cloudbasepredictor.ui.screens.forecast.StuveForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.StuveProfilePoint
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -200,6 +201,14 @@ class StuveForecastViewMathTest {
         val roundTrippedTemperature = projection.xToTemperature(x, pressure)
 
         assertEquals(temperature, roundTrippedTemperature, 0.001f)
+    }
+
+    @Test
+    fun shouldDrawDefaultParcelGuide_hidesGuideWhileTapOverlayIsShowing() {
+        // No overlay → the default dashed parcel guide is drawn.
+        assertTrue(shouldDrawDefaultParcelGuide(isCursorActive = false))
+        // Tap overlay (cursor readout) showing → the default guide is hidden.
+        assertFalse(shouldDrawDefaultParcelGuide(isCursorActive = true))
     }
 
     @Test

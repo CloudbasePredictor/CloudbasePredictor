@@ -2,6 +2,7 @@ package com.cloudbasepredictor.ui.screens.forecast.views
 
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -113,6 +114,12 @@ internal fun StuveDiagramCanvas(
         chart.dewpointProfile,
     ) {
         mutableStateOf<SkewTCursorState?>(null)
+    }
+
+    // Pressing the system back button first dismisses the tap overlay (cursor readout); only once
+    // there is no overlay does back fall through to navigation. Disabled when no overlay is shown.
+    BackHandler(enabled = cursorState != null) {
+        cursorState = null
     }
 
     // Heating-handle state: tracks how many °C the user has shifted the parcel start
@@ -413,17 +420,21 @@ internal fun StuveDiagramCanvas(
                 dataDotRadius = 2.2f.dp.toPx(),
             )
 
-            drawSkewTProfile(
-                points = chart.parcelAscentPath,
-                mapXY = { temperature, pressure -> Offset(temperatureToX(temperature, pressure), pressureToY(pressure)) },
-                plotLeft = plotLeft,
-                plotRight = plotRight,
-                plotTop = plotTop,
-                plotBottom = plotBottom,
-                color = onSurfaceColor.copy(alpha = 0.58f),
-                strokeWidth = 2f.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx())),
-            )
+            // The default dashed parcel guide is hidden while the tap overlay is showing, so it does
+            // not clutter the interactive parcel drawn through the tapped point.
+            if (shouldDrawDefaultParcelGuide(isCursorActive = cursorState != null)) {
+                drawSkewTProfile(
+                    points = chart.parcelAscentPath,
+                    mapXY = { temperature, pressure -> Offset(temperatureToX(temperature, pressure), pressureToY(pressure)) },
+                    plotLeft = plotLeft,
+                    plotRight = plotRight,
+                    plotTop = plotTop,
+                    plotBottom = plotBottom,
+                    color = onSurfaceColor.copy(alpha = 0.58f),
+                    strokeWidth = 2f.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx())),
+                )
+            }
 
             // ── Interactive parcel overlay ──────────────────────────────────────
             val interactiveParcelPath: List<StuveProfilePoint>? = when {

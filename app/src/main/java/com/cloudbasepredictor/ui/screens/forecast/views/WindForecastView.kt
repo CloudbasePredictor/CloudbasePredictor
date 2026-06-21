@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +48,7 @@ import com.cloudbasepredictor.data.units.formatAltitudeKm
 import com.cloudbasepredictor.data.units.formatWindSpeed
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.ui.preview.PreviewData
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_TIME_AXIS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
@@ -145,8 +149,17 @@ private fun WindChartCanvas(
     var crosshairPos by remember { mutableStateOf<Offset?>(null) }
     val latestVisibleTopAltitudeKm = rememberUpdatedState(visibleTopAltitudeKm)
 
+    // Back dismisses the tap overlay (crosshair tooltip) first, before navigating away.
+    BackHandler(enabled = crosshairPos != null) {
+        crosshairPos = null
+    }
+
     Canvas(
         modifier = modifier
+            .testTag(WIND_CHART_CANVAS)
+            .semantics {
+                stateDescription = if (crosshairPos != null) "cursor" else "idle"
+            }
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {

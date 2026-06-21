@@ -27,6 +27,7 @@ object ForecastTestTags {
     const val STUVE_SELECTED_HOUR = "forecast_stuve_selected_hour"
     const val WIND_TIME_AXIS = "forecast_wind_time_axis"
     const val WIND_ALTITUDE_UNIT = "forecast_wind_altitude_unit"
+    const val WIND_CHART_CANVAS = "forecast_wind_chart_canvas"
 
     const val HELP_BUTTON = "forecast_help_button"
 
