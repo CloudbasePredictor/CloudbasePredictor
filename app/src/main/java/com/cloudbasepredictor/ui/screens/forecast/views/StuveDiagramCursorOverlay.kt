@@ -29,7 +29,9 @@ internal fun DrawScope.drawCursorOverlay(
         pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
     )
 
-    readout.temperatureC?.let { temperature ->
+    // Isotherm guide through the placed (tapped) point, not through the environment temperature on
+    // the red curve — so the line passes through the cursor's green marker.
+    readout.guideTemperatureC?.let { temperature ->
         drawLine(
             color = Color(0xFFD83A3A).copy(alpha = 0.45f),
             start = Offset(temperatureToX(temperature, bottomPressure), pressureToY(bottomPressure)),
