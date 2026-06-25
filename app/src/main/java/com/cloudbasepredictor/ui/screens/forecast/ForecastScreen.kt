@@ -38,6 +38,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,8 +77,18 @@ fun ForecastRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(viewModel, placeLocation) {
-        viewModel.setPlaceLocation(placeLocation)
+    // The active forecast location is owned here, seeded from the navigation argument.
+    // Moving the in-forecast map panel updates this in place so only the forecast data
+    // reloads. Routing those moves back through navigation would replace the back stack
+    // entry and recreate the whole screen, collapsing the map panel and resetting the
+    // camera on every update. rememberSaveable keeps the moved location across
+    // configuration changes and process death.
+    var forecastLocation by rememberSaveable(stateSaver = PlaceLocationSaver) {
+        mutableStateOf(placeLocation)
+    }
+
+    LaunchedEffect(viewModel, forecastLocation) {
+        viewModel.setPlaceLocation(forecastLocation)
     }
 
     LaunchedEffect(viewModel) {
@@ -100,15 +112,24 @@ fun ForecastRoute(
         onModelSelected = viewModel::selectModel,
         onOpenMap = onOpenMap,
         onMapLocationChanged = { latitude, longitude ->
-            onPlaceLocationChanged(
-                PlaceLocation(
-                    latitude = latitude,
-                    longitude = longitude,
-                ),
+            forecastLocation = PlaceLocation(
+                latitude = latitude,
+                longitude = longitude,
             )
         },
     )
 }
+
+private val PlaceLocationSaver: Saver<PlaceLocation, Any> = listSaver(
+    save = { listOf(it.latitude, it.longitude, it.name) },
+    restore = {
+        PlaceLocation(
+            latitude = it[0] as Double,
+            longitude = it[1] as Double,
+            name = it[2] as String?,
+        )
+    },
+)
 
 @Composable
 fun ForecastScreen(
@@ -211,9 +232,16 @@ fun ForecastScreen(
                 )
             }
 
+            // Keep the day picker on screen across loading transitions (e.g. when moving
+            // the map panel or switching day) so its row doesn't disappear and shift the
+            // whole layout. Reuse the last known day chips until fresh ones arrive.
+            var lastDayChips by remember { mutableStateOf<List<ForecastDayChipUiModel>>(emptyList()) }
             if (uiState is ForecastReadyUiState) {
+                lastDayChips = uiState.dayChips
+            }
+            if (lastDayChips.isNotEmpty()) {
                 ForecastDatePicker(
-                    dayChips = uiState.dayChips,
+                    dayChips = lastDayChips,
                     selectedDayIndex = uiState.selectedDayIndex,
                     onDateSelected = onDateSelected,
                 )

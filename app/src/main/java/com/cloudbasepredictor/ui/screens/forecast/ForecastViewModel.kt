@@ -478,6 +478,9 @@ class ForecastViewModel @Inject constructor(
     }
 
     fun selectDay(index: Int) {
+        // Ignore re-taps on the already-selected day so we don't cancel and restart an
+        // in-flight load (the day picker stays interactive during loading).
+        if (index == selectedDayIndex.value) return
         selectedDayIndex.value = index
         val place = forecastPlace.value ?: return
         val model = forecastModelRepository.selectedModel.value
