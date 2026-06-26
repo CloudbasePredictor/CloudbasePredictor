@@ -1,0 +1,4 @@
+New in 1.8.1:
+
+- Moving the in-forecast map panel now updates the forecast in place: the map panel no longer collapses and the camera no longer jumps on every move.
+- The day picker stays on screen and keeps its place while a forecast loads, so the layout no longer shifts during updates.
