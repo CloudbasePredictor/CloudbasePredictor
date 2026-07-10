@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:ParcelAnalysis.kt:(direction &lt; 0f &amp;&amp; pressureHpa &gt; targetPressureHpa + 0.01f) || (direction &gt; 0f &amp;&amp; pressureHpa &lt; targetPressureHpa - 0.01f)</ID>
+    <ID>ComplexCondition:ThermalForecastEngine.kt:ThermalForecastEngine$pblSanity.exceeded &amp;&amp; !pblSanity.mountainOrographicOverride &amp;&amp; pblSanity.pblTopKm != null &amp;&amp; endKm &gt; pblSanity.pblTopKm</ID>
+    <ID>CyclomaticComplexMethod:ParcelAnalysis.kt:fun estimateSurfaceHeating: Float</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$fun analyze: ThermalForecastResult?</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun buildLayers: List&lt;ThermalForecastLayer&gt;</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun dampingFactor: ThermalDamping</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun diagnosticUpdraftCapMps: Float</ID>
+    <ID>CyclomaticComplexMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun resolveConfidence: ThermalForecastConfidence</ID>
+    <ID>LargeClass:ThermalForecastEngine.kt:ThermalForecastEngine</ID>
+    <ID>LongMethod:ParcelAnalysis.kt:fun analyzeParcel: ParcelAnalysisResult?</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$fun analyze: ThermalForecastResult?</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun buildLayers: List&lt;ThermalForecastLayer&gt;</ID>
+    <ID>LongMethod:ThermalForecastEngine.kt:ThermalForecastEngine$private fun dampingFactor: ThermalDamping</ID>
+    <ID>LoopWithTooManyJumpStatements:ParcelAnalysis.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:ThermalForecastEngine.kt:ThermalForecastEngine$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ThermalForecastEngine.kt:ThermalForecastEngine$while</ID>
+    <ID>MagicNumber:CclAnalysis.kt:0.01f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:17.67f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:243.5f</ID>
+    <ID>MagicNumber:CclAnalysis.kt:6.112f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.001f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.0065</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:0.01f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:1000f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:1013.25</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:17.67f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:20</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:243.5f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:273.15f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:288.15</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:3f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:4</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:5.2561</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:6</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:6.112f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:622f</ID>
+    <ID>MagicNumber:ParcelAnalysis.kt:8f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.1f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.25f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.30f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.45f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.50f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.55f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.5f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.60f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.65f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.66f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.68f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.75f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.78f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.82f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.85f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.90f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.95f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$0.96f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.02f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.05f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1.08f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1000f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$100f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$10f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$1800f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$2.4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$250f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$25f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$2f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$3.0f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$300f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$3f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$4.4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$40f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$4f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$5.6f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$60f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$6f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$75f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastEngine$800f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastLayer$1000f</ID>
+    <ID>MagicNumber:ThermalForecastEngine.kt:ThermalForecastLayer$280f</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$level.heightKm in (realEnvelope.start - HEIGHT_EPSILON_KM)..(realEnvelope.endInclusive + HEIGHT_EPSILON_KM)</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$saturationPointTemperatureC = primaryCcl.cclTemperatureC ?: dryAdiabatTempC(nominalThetaK, lcl.pressureHpa)</ID>
+    <ID>MaxLineLength:ThermalForecastEngine.kt:ThermalForecastEngine$sourceQuality = if (exact.isSynthetic) ThermalLayerSourceQuality.SYNTHETIC else ThermalLayerSourceQuality.REAL</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertTrue(highCape.updraftNominalMps &gt; noCape.updraftNominalMps, "High CAPE should allow stronger calibrated lift")</ID>
+    <ID>MaxLineLength:ThermalForecastEngineTest.kt:ThermalForecastEngineTest$assertTrue(result.topNominalKm &lt;= realProfileTopKm, "Synthetic extrapolation must not lift dry-top above real data")</ID>
+    <ID>ReturnCount:CclAnalysis.kt:internal fun mixedLayerMixingRatioKgKg: Float?</ID>
+    <ID>ReturnCount:CclAnalysis.kt:private fun analyzeCclMethod: CclHourlyResult</ID>
+    <ID>ReturnCount:CclAnalysis.kt:private fun interpolatedMixingRatioAtPressure: PressureMixingRatio?</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:fun interpolateHeightKmAtPressure: Float?</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:fun interpolateTemperatureCAtPressure: Float?</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findDryThermalTop: Float</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findLcl: PressureHeightResult</ID>
+    <ID>ReturnCount:ParcelAnalysis.kt:private fun findMoistEquilibriumTop: Float?</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun analyzeTopScenario: ThermalTopScenarioResult</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun findMoistTop: Float?</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun findThermalLcl: PressureHeight</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun hasClearDryThermalSupport: Boolean</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun interpolateProfileAtHeight: InterpolatedProfilePoint?</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun optimisticDryTopAllowed: Boolean</ID>
+    <ID>ReturnCount:ThermalForecastEngine.kt:ThermalForecastEngine$private fun pblLayerFactor: Float</ID>
+    <ID>TooManyFunctions:CclAnalysis.kt:com.cloudbasepredictor.domain.forecast.CclAnalysis.kt</ID>
+    <ID>TooManyFunctions:ParcelAnalysis.kt:com.cloudbasepredictor.domain.forecast.ParcelAnalysis.kt</ID>
+    <ID>TooManyFunctions:ThermalForecastEngine.kt:ThermalForecastEngine</ID>
+    <ID>UnusedParameter:CclAnalysis.kt:input: CclHourlyInput</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:lclPressureHpa: Float</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:surfaceMixingRatio: Float</ID>
+    <ID>UnusedParameter:ParcelAnalysis.kt:surfacePressureHpa: Float</ID>
+  </CurrentIssues>
+</SmellBaseline>

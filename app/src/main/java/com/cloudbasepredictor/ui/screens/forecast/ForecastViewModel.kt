@@ -480,12 +480,18 @@ class ForecastViewModel @Inject constructor(
     fun selectDay(index: Int) {
         // Ignore re-taps on the already-selected day so we don't cancel and restart an
         // in-flight load (the day picker stays interactive during loading).
-        if (index == selectedDayIndex.value) return
-        selectedDayIndex.value = index
-        val place = forecastPlace.value ?: return
+        if (index != selectedDayIndex.value) {
+            selectedDayIndex.value = index
+            forecastPlace.value?.let { place ->
+                loadForecastForSelectedDay(place = place, dayIndex = index)
+            }
+        }
+    }
+
+    private fun loadForecastForSelectedDay(place: SavedPlace, dayIndex: Int) {
         val model = forecastModelRepository.selectedModel.value
         val requiredForecastDays = requestedForecastDaysForDayIndex(
-            dayIndex = index,
+            dayIndex = dayIndex,
             maxForecastDays = (uiState.value.resolvedModel ?: model).visibleForecastDays(),
         )
         if (forecastRepository.isCached(
@@ -495,14 +501,14 @@ class ForecastViewModel @Inject constructor(
             )
         ) {
             cancelForecastLoad()
-            return
+        } else {
+            errorMessage.value = null
+            startForecastLoad(
+                place = place,
+                model = model,
+                forecastDays = requiredForecastDays,
+            )
         }
-        errorMessage.value = null
-        startForecastLoad(
-            place = place,
-            model = model,
-            forecastDays = requiredForecastDays,
-        )
     }
 
     fun selectForecastMode(mode: ForecastMode) {

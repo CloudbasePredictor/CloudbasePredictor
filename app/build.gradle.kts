@@ -147,7 +147,7 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline = file("detekt-baseline.xml")
-    // Analyze the main + test sources; this is a single-module project.
+    // Analyze the Android main + test sources. The KMP engine configures its own sources.
     source.setFrom(files("src/main/java", "src/test/java", "src/androidTest/java"))
 }
 
