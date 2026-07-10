@@ -213,6 +213,8 @@ ksp {
 }
 
 dependencies {
+    implementation(project(":engine"))
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.retrofit.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))

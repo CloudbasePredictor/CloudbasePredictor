@@ -1,12 +1,12 @@
 package com.cloudbasepredictor.domain.forecast
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
 import kotlin.math.abs
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ThermalForecastEngineTest {
 
@@ -25,15 +25,14 @@ class ThermalForecastEngineTest {
         val result = analyze(profile = crossingProfileWithoutSurface())
 
         assertNotNull(result)
-        result!!
-        assertTrue("Surface-to-first-level layer should be present", result.layers.isNotEmpty())
+        assertTrue(result.layers.isNotEmpty(), "Surface-to-first-level layer should be present")
         assertEquals(
-            "Thermic layers should start at launch elevation, not at first pressure level",
             ELEVATION_KM,
             result.layers.first().startAltitudeKm,
             0.001f,
+            "Thermic layers should start at launch elevation, not at first pressure level",
         )
-        assertTrue("Top should be above launch elevation", result.topNominalKm > ELEVATION_KM)
+        assertTrue(result.topNominalKm > ELEVATION_KM, "Top should be above launch elevation")
     }
 
     @Test
@@ -41,15 +40,14 @@ class ThermalForecastEngineTest {
         val result = analyze(profile = crossingProfileWithoutSurface())
 
         assertNotNull(result)
-        result!!
         val lower = requireNotNull(result.lowerSourceLevel)
         val upper = requireNotNull(result.upperSourceLevel)
 
-        assertTrue("Nominal top should be inside its raw bracket", result.topNominalKm >= lower.altitudeKm - 0.001f)
-        assertTrue("Nominal top should be inside its raw bracket", result.topNominalKm <= upper.altitudeKm + 0.001f)
-        assertTrue("Low top should include the lower source level", result.topLowKm <= lower.altitudeKm + 0.001f)
-        assertTrue("High top should include the upper source level", result.topHighKm >= upper.altitudeKm - 0.001f)
-        assertTrue("Source pressures should be ordered by altitude", lower.pressureHpa > upper.pressureHpa)
+        assertTrue(result.topNominalKm >= lower.altitudeKm - 0.001f, "Nominal top should be inside its raw bracket")
+        assertTrue(result.topNominalKm <= upper.altitudeKm + 0.001f, "Nominal top should be inside its raw bracket")
+        assertTrue(result.topLowKm <= lower.altitudeKm + 0.001f, "Low top should include the lower source level")
+        assertTrue(result.topHighKm >= upper.altitudeKm - 0.001f, "High top should include the upper source level")
+        assertTrue(lower.pressureHpa > upper.pressureHpa, "Source pressures should be ordered by altitude")
     }
 
     @Test
@@ -59,15 +57,13 @@ class ThermalForecastEngineTest {
 
         assertNotNull(dense)
         assertNotNull(coarse)
-        dense!!
-        coarse!!
 
         val denseWidthKm = dense.topHighKm - dense.topLowKm
         val coarseWidthKm = coarse.topHighKm - coarse.topLowKm
-        assertTrue("Coarse pressure spacing should widen top uncertainty", coarseWidthKm > denseWidthKm)
+        assertTrue(coarseWidthKm > denseWidthKm, "Coarse pressure spacing should widen top uncertainty")
         assertTrue(
-            "Coarse pressure spacing should not have higher confidence than dense spacing",
             coarse.confidence.ordinal >= dense.confidence.ordinal,
+            "Coarse pressure spacing should not have higher confidence than dense spacing",
         )
     }
 
@@ -86,10 +82,8 @@ class ThermalForecastEngineTest {
 
         assertNotNull(noCape)
         assertNotNull(highCape)
-        noCape!!
-        highCape!!
-        assertTrue("Zero CAPE should keep optimistic lift capped", noCape.updraftHighMps <= 4.2f)
-        assertTrue("High CAPE should allow stronger calibrated lift", highCape.updraftNominalMps > noCape.updraftNominalMps)
+        assertTrue(noCape.updraftHighMps <= 4.2f, "Zero CAPE should keep optimistic lift capped")
+        assertTrue(highCape.updraftNominalMps > noCape.updraftNominalMps, "High CAPE should allow stronger calibrated lift")
     }
 
     @Test
@@ -116,10 +110,12 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertTrue("Nominal lift should stay practical with missing PBL, got ${result.updraftNominalMps}", result.updraftNominalMps <= 3.6f)
-        assertTrue("Optimistic lift should not hit the old 10 m/s cap", result.updraftHighMps < 5f)
-        assertTrue("Missing PBL and zero CAPE should lower confidence", result.confidence.ordinal > 0)
+        assertTrue(
+            result.updraftNominalMps <= 3.6f,
+            "Nominal lift should stay practical with missing PBL, got ${result.updraftNominalMps}",
+        )
+        assertTrue(result.updraftHighMps < 5f, "Optimistic lift should not hit the old 10 m/s cap")
+        assertTrue(result.confidence.ordinal > 0, "Missing PBL and zero CAPE should lower confidence")
     }
 
     @Test
@@ -137,20 +133,18 @@ class ThermalForecastEngineTest {
 
         assertNotNull(baseline)
         assertNotNull(degraded)
-        baseline!!
-        degraded!!
-        assertTrue("Degraded weather should lower updraft", degraded.updraftNominalMps < baseline.updraftNominalMps)
+        assertTrue(degraded.updraftNominalMps < baseline.updraftNominalMps, "Degraded weather should lower updraft")
         assertTrue(
-            "Degraded weather should not improve confidence",
             degraded.confidence.ordinal >= baseline.confidence.ordinal,
+            "Degraded weather should not improve confidence",
         )
         assertTrue(
-            "Main limiter should report one of the degrading factors",
             degraded.limitingReason in setOf(
                 ThermalLimitingReason.PRECIPITATION,
                 ThermalLimitingReason.WEAK_RADIATION,
                 ThermalLimitingReason.WIND_SHEAR,
             ),
+            "Main limiter should report one of the degrading factors",
         )
     }
 
@@ -177,8 +171,6 @@ class ThermalForecastEngineTest {
 
         assertNotNull(clear)
         assertNotNull(thinHighMidCloud)
-        clear!!
-        thinHighMidCloud!!
         assertEquals(clear.updraftNominalMps, thinHighMidCloud.updraftNominalMps, 0.001f)
         assertEquals(clear.updraftHighMps, thinHighMidCloud.updraftHighMps, 0.001f)
     }
@@ -191,9 +183,8 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertTrue("Forecast should still have a usable top", result.topNominalKm > ELEVATION_KM)
-        assertTrue("Missing raw humidity/cloud/PBL fields should lower confidence", result.confidence.ordinal > 0)
+        assertTrue(result.topNominalKm > ELEVATION_KM, "Forecast should still have a usable top")
+        assertTrue(result.confidence.ordinal > 0, "Missing raw humidity/cloud/PBL fields should lower confidence")
     }
 
     @Test
@@ -211,9 +202,8 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertEquals("Unreachable CCL should not be exposed as thermic CCL", null, result.cclKm)
-        assertEquals("Unreachable CCL should not create cloud base", null, result.cloudBaseKm)
+        assertNull(result.cclKm, "Unreachable CCL should not be exposed as thermic CCL")
+        assertNull(result.cloudBaseKm, "Unreachable CCL should not create cloud base")
     }
 
     @Test
@@ -231,12 +221,11 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertTrue("Trigger excess should expose the local bubble assumption", result.triggerExcessC >= 6f)
-        assertTrue("Nominal dry-top excess should be entrainment-limited", result.dryTopExcessC <= 3f)
+        assertTrue(result.triggerExcessC >= 6f, "Trigger excess should expose the local bubble assumption")
+        assertTrue(result.dryTopExcessC <= 3f, "Nominal dry-top excess should be entrainment-limited")
         assertTrue(
-            "Dry-top excess should not reuse the full trigger excess",
             result.dryTopExcessC < result.triggerExcessC,
+            "Dry-top excess should not reuse the full trigger excess",
         )
     }
 
@@ -250,12 +239,11 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
         assertTrue(result.warnings.contains(ThermalForecastWarning.PBL_EXCEEDED))
         assertEquals(ThermalForecastConfidence.LOW, result.confidence)
         assertTrue(
-            "Layers above the exceeded PBL should carry a PBL warning",
             result.layers.any { ThermalForecastWarning.PBL_EXCEEDED in it.warnings },
+            "Layers above the exceeded PBL should carry a PBL warning",
         )
     }
 
@@ -278,12 +266,11 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
         assertTrue(result.warnings.contains(ThermalForecastWarning.PBL_EXCEEDED))
         assertEquals(
-            "Clear midday dry support should be uncertainty, not automatic low confidence",
             ThermalForecastConfidence.MEDIUM,
             result.confidence,
+            "Clear midday dry support should be uncertainty, not automatic low confidence",
         )
     }
 
@@ -296,9 +283,9 @@ class ThermalForecastEngineTest {
         assertNotNull(negative)
         assertNotNull(positive)
         assertNotNull(missing)
-        assertEquals(80f, negative!!.normalizedCinJKg!!, 0.001f)
-        assertEquals(80f, positive!!.normalizedCinJKg!!, 0.001f)
-        assertNull(missing!!.normalizedCinJKg)
+        assertEquals(80f, negative.normalizedCinJKg!!, 0.001f)
+        assertEquals(80f, positive.normalizedCinJKg!!, 0.001f)
+        assertNull(missing.normalizedCinJKg)
         assertTrue(missing.warnings.contains(ThermalForecastWarning.MISSING_CIN))
     }
 
@@ -312,11 +299,10 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
         assertTrue(result.warnings.contains(ThermalForecastWarning.MISSING_PBL))
         assertTrue(result.warnings.contains(ThermalForecastWarning.MISSING_CIN))
         assertTrue(result.warnings.contains(ThermalForecastWarning.MISSING_LIFTED_INDEX))
-        assertTrue("Missing model diagnostics should prevent high confidence", result.confidence.ordinal > 0)
+        assertTrue(result.confidence.ordinal > 0, "Missing model diagnostics should prevent high confidence")
     }
 
     @Test
@@ -332,11 +318,10 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
         assertTrue(result.warnings.contains(ThermalForecastWarning.NEAR_SURFACE_PROFILE_MISMATCH))
         assertTrue(
-            "Mismatched near-surface pressure level should not survive profile validation",
             result.pressureLevelAltitudesKm.none { abs(it - mismatchedNearSurfaceHeightKm) < 0.001f },
+            "Mismatched near-surface pressure level should not survive profile validation",
         )
     }
 
@@ -348,8 +333,10 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertFalse("Surface dewpoint and temperature profile are enough to classify CCL status", result.cloudBaseStatus == ThermalCloudBaseStatus.UNKNOWN)
+        assertFalse(
+            result.cloudBaseStatus == ThermalCloudBaseStatus.UNKNOWN,
+            "Surface dewpoint and temperature profile are enough to classify CCL status",
+        )
         assertFalse(result.warnings.contains(ThermalForecastWarning.MISSING_CCL))
         assertEquals(ThermalForecastConfidence.MEDIUM, result.confidence)
     }
@@ -375,8 +362,7 @@ class ThermalForecastEngineTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertTrue("Synthetic extrapolation must not lift dry-top above real data", result.topNominalKm <= realProfileTopKm)
+        assertTrue(result.topNominalKm <= realProfileTopKm, "Synthetic extrapolation must not lift dry-top above real data")
         assertTrue(result.layers.all { it.endAltitudeKm <= realProfileTopKm + 0.001f })
     }
 

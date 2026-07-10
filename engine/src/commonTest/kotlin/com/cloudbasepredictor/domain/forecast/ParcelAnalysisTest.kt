@@ -1,10 +1,10 @@
 package com.cloudbasepredictor.domain.forecast
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ParcelAnalysisTest {
 
@@ -53,8 +53,8 @@ class ParcelAnalysisTest {
         val t1000 = dryAdiabatTempC(theta, 1000f)
         val t850 = dryAdiabatTempC(theta, 850f)
         val t700 = dryAdiabatTempC(theta, 700f)
-        assertTrue("Temperature should decrease with altitude", t1000 > t850)
-        assertTrue("Temperature should decrease with altitude", t850 > t700)
+        assertTrue(t1000 > t850, "Temperature should decrease with altitude")
+        assertTrue(t850 > t700, "Temperature should decrease with altitude")
     }
 
     @Test
@@ -62,15 +62,15 @@ class ParcelAnalysisTest {
         val mr10 = satMixingRatioGKg(10f, 1000f)
         val mr20 = satMixingRatioGKg(20f, 1000f)
         val mr30 = satMixingRatioGKg(30f, 1000f)
-        assertTrue("Mixing ratio should increase with T", mr20 > mr10)
-        assertTrue("Mixing ratio should increase with T", mr30 > mr20)
+        assertTrue(mr20 > mr10, "Mixing ratio should increase with T")
+        assertTrue(mr30 > mr20, "Mixing ratio should increase with T")
     }
 
     @Test
     fun satMixingRatio_realisticValues() {
         val mr = satMixingRatioGKg(15f, 1000f)
         // At 15°C, 1000 hPa: expect ~10.5 g/kg
-        assertTrue("Sat mixing ratio should be ~10 g/kg at 15°C", mr in 8f..14f)
+        assertTrue(mr in 8f..14f, "Sat mixing ratio should be ~10 g/kg at 15°C")
     }
 
     @Test
@@ -93,8 +93,10 @@ class ParcelAnalysisTest {
         val theta = potentialTemperatureK(20f, 1000f)
         val dryTemp = dryAdiabatTempC(theta, 600f)
         val moistTemp = moistAdiabatTempC(theta, 600f)
-        assertTrue("Moist adiabat should be warmer than dry at same pressure",
-            moistTemp > dryTemp)
+        assertTrue(
+            moistTemp > dryTemp,
+            "Moist adiabat should be warmer than dry at same pressure",
+        )
     }
 
     @Test
@@ -106,7 +108,7 @@ class ParcelAnalysisTest {
     @Test
     fun estimateSurfacePressure_highElevation() {
         val p = estimateSurfacePressure(1500.0)
-        assertTrue("Surface pressure at 1500m should be ~850 hPa", p in 830f..860f)
+        assertTrue(p in 830f..860f, "Surface pressure at 1500m should be ~850 hPa")
     }
 
     // ── Surface heating ──
@@ -123,8 +125,8 @@ class ParcelAnalysisTest {
             isDay = true,
         )
         val heating = estimateSurfaceHeating(input)
-        assertTrue("Peak sunny midday heating should be >4°C", heating >= 4f)
-        assertTrue("Heating should not exceed 8°C", heating <= 8f)
+        assertTrue(heating >= 4f, "Peak sunny midday heating should be >4°C")
+        assertTrue(heating <= 8f, "Heating should not exceed 8°C")
     }
 
     @Test
@@ -156,7 +158,7 @@ class ParcelAnalysisTest {
         val overcast = clear.copy(cloudCoverLowPercent = 80f)
         val heatingClear = estimateSurfaceHeating(clear)
         val heatingOvercast = estimateSurfaceHeating(overcast)
-        assertTrue("Heavy low cloud should reduce heating", heatingOvercast < heatingClear)
+        assertTrue(heatingOvercast < heatingClear, "Heavy low cloud should reduce heating")
     }
 
     @Test
@@ -178,7 +180,7 @@ class ParcelAnalysisTest {
         val heatingClear = estimateSurfaceHeating(clear)
         val heatingCloudy = estimateSurfaceHeating(thinHighMidCloud)
 
-        assertTrue("Strong radiation should still produce strong heating", heatingCloudy >= 4f)
+        assertTrue(heatingCloudy >= 4f, "Strong radiation should still produce strong heating")
         assertEquals(heatingClear, heatingCloudy, 0.001f)
     }
 
@@ -196,7 +198,7 @@ class ParcelAnalysisTest {
         val rainy = dry.copy(precipitationMm = 2f)
         val heatingDry = estimateSurfaceHeating(dry)
         val heatingRainy = estimateSurfaceHeating(rainy)
-        assertTrue("Rain should reduce heating", heatingRainy < heatingDry)
+        assertTrue(heatingRainy < heatingDry, "Rain should reduce heating")
     }
 
     @Test
@@ -211,8 +213,8 @@ class ParcelAnalysisTest {
             isDay = true,
         )
         val heating = estimateSurfaceHeating(input)
-        assertTrue("Should still provide some heating", heating > 0f)
-        assertTrue("Should be conservative", heating < 5f)
+        assertTrue(heating > 0f, "Should still provide some heating")
+        assertTrue(heating < 5f, "Should be conservative")
     }
 
     // ── Full parcel analysis ──
@@ -229,18 +231,17 @@ class ParcelAnalysisTest {
             modelCapeJKg = 300f,
         )
 
-        assertNotNull("Should produce analysis", result)
-        result!!
+        assertNotNull(result, "Should produce analysis")
 
-        assertTrue("Should have thermal cells", result.thermalCells.isNotEmpty())
-        assertTrue("Dry top should be above elevation", result.dryThermalTopKm > 0.58f)
-        assertTrue("LCL should be above elevation", result.lclKm > 0.58f)
-        assertNotNull("CCL should be available", result.cclKm)
-        assertTrue("CCL should be above elevation", result.cclKm!! > 0.58f)
-        assertTrue("LCL pressure should be below the surface", result.lclPressureHpa < 955f)
-        assertNotNull("CCL pressure should be available", result.cclPressureHpa)
-        assertTrue("CCL pressure should be below the surface", result.cclPressureHpa!! < 955f)
-        assertNotNull("TCON should be available for the standard profile", result.tconC)
+        assertTrue(result.thermalCells.isNotEmpty(), "Should have thermal cells")
+        assertTrue(result.dryThermalTopKm > 0.58f, "Dry top should be above elevation")
+        assertTrue(result.lclKm > 0.58f, "LCL should be above elevation")
+        assertNotNull(result.cclKm, "CCL should be available")
+        assertTrue(result.cclKm > 0.58f, "CCL should be above elevation")
+        assertTrue(result.lclPressureHpa < 955f, "LCL pressure should be below the surface")
+        assertNotNull(result.cclPressureHpa, "CCL pressure should be available")
+        assertTrue(result.cclPressureHpa < 955f, "CCL pressure should be below the surface")
+        assertNotNull(result.tconC, "TCON should be available for the standard profile")
     }
 
     @Test
@@ -264,11 +265,12 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
         // With a strong inversion, cloud base may be null (dry top below LCL)
         // This is acceptable - we're testing the logic handles it correctly
-        assertTrue("Dry top should be below 2 km in this stable profile",
-            result.dryThermalTopKm < 2f)
+        assertTrue(
+            result.dryThermalTopKm < 2f,
+            "Dry top should be below 2 km in this stable profile",
+        )
     }
 
     @Test
@@ -284,8 +286,7 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
-        assertTrue("Computed CAPE should be positive", result.computedCapeJKg > 0f)
+        assertTrue(result.computedCapeJKg > 0f, "Computed CAPE should be positive")
     }
 
     @Test
@@ -300,12 +301,11 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
 
         result.thermalCells.forEach { cell ->
             assertTrue(
-                "Cell top ${cell.endAltitudeKm} should be <= dry top ${result.dryThermalTopKm}",
                 cell.endAltitudeKm <= result.dryThermalTopKm + 0.01f,
+                "Cell top ${cell.endAltitudeKm} should be <= dry top ${result.dryThermalTopKm}",
             )
         }
     }
@@ -322,16 +322,15 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
         val cells = result.thermalCells
         if (cells.size >= 2) {
             val sorted = cells.sortedBy { it.startAltitudeKm }
             for (i in 0 until sorted.size - 1) {
                 assertEquals(
-                    "Cell end should equal next cell start",
                     sorted[i].endAltitudeKm,
                     sorted[i + 1].startAltitudeKm,
                     0.02f,
+                    "Cell end should equal next cell start",
                 )
             }
         }
@@ -350,7 +349,7 @@ class ParcelAnalysisTest {
             elevationKm = 0.58f,
             heatingInput = standardHeatingInput,
         )
-        assertNull("Single-level profile should return null", result)
+        assertNull(result, "Single-level profile should return null")
     }
 
     @Test
@@ -363,7 +362,7 @@ class ParcelAnalysisTest {
             elevationKm = 0.58f,
             heatingInput = standardHeatingInput,
         )
-        assertNull("Empty profile should return null", result)
+        assertNull(result, "Empty profile should return null")
     }
 
     @Test
@@ -380,7 +379,7 @@ class ParcelAnalysisTest {
             elevationKm = 1.5f,
             heatingInput = standardHeatingInput,
         )
-        assertNull("Profile below elevation should return null", result)
+        assertNull(result, "Profile below elevation should return null")
     }
 
     @Test
@@ -407,8 +406,8 @@ class ParcelAnalysisTest {
         assertNotNull(resultNoModel)
         assertNotNull(resultWithModel)
         // Both should produce the same thermic cells; model CAPE is carried as a diagnostic only.
-        assertTrue(resultNoModel!!.thermalCells.isNotEmpty())
-        assertTrue(resultWithModel!!.thermalCells.isNotEmpty())
+        assertTrue(resultNoModel.thermalCells.isNotEmpty())
+        assertTrue(resultWithModel.thermalCells.isNotEmpty())
         resultNoModel.thermalCells.zip(resultWithModel.thermalCells).forEach { (withoutCape, withCape) ->
             assertEquals(withoutCape.strengthMps, withCape.strengthMps, 0.0001f)
         }
@@ -426,14 +425,13 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
 
         val cloudBase = result.cloudBaseKm
         if (cloudBase != null) {
-            assertNotNull("Cloud base should be tied to an available CCL", result.cclKm)
+            assertNotNull(result.cclKm, "Cloud base should be tied to an available CCL")
             assertTrue(
+                kotlin.math.abs(cloudBase - result.cclKm) <= 0.05f,
                 "Cloud base should come from the reachable CCL",
-                kotlin.math.abs(cloudBase - result.cclKm!!) <= 0.05f,
             )
         }
     }
@@ -450,13 +448,16 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
 
         result.thermalCells.forEach { cell ->
-            assertTrue("Strength should be positive: ${cell.strengthMps}",
-                cell.strengthMps > 0f)
-            assertTrue("Strength should be <= 10 m/s: ${cell.strengthMps}",
-                cell.strengthMps <= 10f)
+            assertTrue(
+                cell.strengthMps > 0f,
+                "Strength should be positive: ${cell.strengthMps}",
+            )
+            assertTrue(
+                cell.strengthMps <= 10f,
+                "Strength should be <= 10 m/s: ${cell.strengthMps}",
+            )
         }
     }
 
@@ -467,8 +468,8 @@ class ParcelAnalysisTest {
         val f13 = solarElevationFactor(13)
         val f8 = solarElevationFactor(8)
         val f18 = solarElevationFactor(18)
-        assertTrue("Peak should be at 13", f13 >= f8)
-        assertTrue("Peak should be at 13", f13 >= f18)
+        assertTrue(f13 >= f8, "Peak should be at 13")
+        assertTrue(f13 >= f18, "Peak should be at 13")
         assertEquals(1f, f13, 0.01f)
     }
 
@@ -495,7 +496,6 @@ class ParcelAnalysisTest {
         )
 
         assertNotNull(result)
-        result!!
 
         // The discrepancy arises from:
         // 1. Surface heating (+2 to +8°C) boosts parcel θ above model's T2m-based CAPE
@@ -505,15 +505,15 @@ class ParcelAnalysisTest {
         // 5. Model likely uses mixed-layer CAPE (avg lowest 100 hPa) vs our surface-based parcel
         //
         assertTrue(
-            "Computed CAPE (${result.computedCapeJKg}) should be positive",
             result.computedCapeJKg > 0f,
+            "Computed CAPE (${result.computedCapeJKg}) should be positive",
         )
 
         // Surface heating shifts the parcel significantly warmer, typically resulting
         // in computed CAPE exceeding model CAPE when radiation is strong.
         assertTrue(
-            "Surface heating should be > 0",
             result.surfaceHeatingC > 0f,
+            "Surface heating should be > 0",
         )
     }
 }

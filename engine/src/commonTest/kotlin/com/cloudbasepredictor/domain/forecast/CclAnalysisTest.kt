@@ -1,12 +1,12 @@
 package com.cloudbasepredictor.domain.forecast
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class CclAnalysisTest {
 
@@ -32,8 +32,8 @@ class CclAnalysisTest {
         ).first { it.method == CclMethod.SURFACE }
 
         assertNotNull(result.cclPressureHpa)
-        assertTrue("CCL pressure must be above terrain pressure levels", result.cclPressureHpa!! < 850f)
-        assertTrue("CCL height must remain above grid elevation", result.cclHeightMslM!! > 1500f)
+        assertTrue(result.cclPressureHpa < 850f, "CCL pressure must be above terrain pressure levels")
+        assertTrue(result.cclHeightMslM!! > 1500f, "CCL height must remain above grid elevation")
         assertTrue(result.intersections.all { it.pressureHpa < 850f && it.heightMslM > 1500f })
     }
 
@@ -87,7 +87,7 @@ class CclAnalysisTest {
             ) / 50f
 
         assertNotNull(actual)
-        assertEquals(expected, actual!!, 0.000001f)
+        assertEquals(expected, actual, 0.000001f)
     }
 
     @Test
@@ -107,7 +107,7 @@ class CclAnalysisTest {
         val real850W = mixingRatioFromDewPointKgKg(850f, 10f)
         val expected = (surfaceW + real850W) / 2f
         assertNotNull(actual)
-        assertEquals(expected, actual!!, 0.000001f)
+        assertEquals(expected, actual, 0.000001f)
     }
 
     @Test
@@ -138,7 +138,7 @@ class CclAnalysisTest {
         ).first { it.method == CclMethod.SURFACE }
 
         assertNotNull(result.cclPressureHpa)
-        assertEquals(expectedPressure, result.cclPressureHpa!!, 0.001f)
+        assertEquals(expectedPressure, result.cclPressureHpa, 0.001f)
     }
 
     @Test
@@ -227,7 +227,7 @@ class CclAnalysisTest {
 
         assertNotNull(result.convectiveTemperatureC)
         assertNotNull(result.heatingMarginC)
-        assertEquals(12f - result.convectiveTemperatureC!!, result.heatingMarginC!!, 0.001f)
+        assertEquals(12f - result.convectiveTemperatureC, result.heatingMarginC, 0.001f)
         assertFalse(result.reachable)
         assertTrue(result.warnings.any { it.contains("theoretical only") })
     }

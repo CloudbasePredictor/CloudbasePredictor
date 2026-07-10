@@ -71,6 +71,9 @@ jobs:
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
 
+      - name: Run engine tests (JVM and Wasm)
+        run: ./gradlew :engine:allTests
+
       - name: Compile androidTest sources
         run: ./gradlew :app:compileDebugAndroidTestKotlin
 

@@ -21,9 +21,11 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Exports a golden fixture that locks the Kotlin forecast pipeline (Phase 1
- * conversion plus the Phase 2 engine) so the TypeScript web port can be verified
- * against it. See `web/src/engine/__fixtures__/` and the Vitest golden tests.
+ * Exports the golden fixture that locks the Kotlin forecast pipeline (the
+ * conversion plus the engine). The canonical copy lives in
+ * `engine/src/commonTest/resources/` and backs the `:engine` golden tests on
+ * every target; while `web/` still exists, the TypeScript port's copy in
+ * `web/src/engine/__fixtures__/` is kept in sync as well.
  *
  * The exported JSON contains:
  * - the converted [HourlyForecastData] (including synthesized pressure levels),
@@ -31,11 +33,11 @@ import java.io.File
  * - the [analyzeParcel] output for every daytime hour.
  *
  * All numeric values are widened to `Double` and serialized with full precision
- * so the TypeScript float32-emulating engine can match them exactly.
+ * so the float32 engine outputs can be matched exactly.
  *
  * The test also asserts the committed fixture is up to date, doubling as a
  * regression guard: if the Kotlin engine changes, this test fails until the
- * fixture (and then the TypeScript port) is regenerated. To regenerate after an
+ * fixture (and the ports consuming it) is regenerated. To regenerate after an
  * intentional change, delete the fixture file or run with
  * `-DupdateEngineFixtures=true`.
  */
@@ -72,28 +74,33 @@ class EngineFixtureExportTest {
         )
 
         val actualJson = writerJson.encodeToString(fixture)
-        val outFile = resolveFixtureOutputFile()
-        val shouldUpdate =
-            !outFile.exists() || System.getProperty("updateEngineFixtures")?.toBoolean() == true
-        if (shouldUpdate) {
-            outFile.parentFile?.mkdirs()
-            outFile.writeText(actualJson + "\n")
+        val outFiles = resolveFixtureOutputFiles()
+        val forceUpdate = System.getProperty("updateEngineFixtures")?.toBoolean() == true
+        outFiles.forEach { outFile ->
+            if (forceUpdate || !outFile.exists()) {
+                outFile.parentFile?.mkdirs()
+                outFile.writeText(actualJson + "\n")
+            }
         }
 
-        val expected = outFile.readText()
-        assertEquals(
-            "Engine golden fixture is out of date. Delete ${outFile.path} or run with " +
-                "-DupdateEngineFixtures=true to regenerate, then update the TypeScript port.",
-            expected.trim(),
-            actualJson.trim(),
-        )
+        outFiles.forEach { outFile ->
+            val expected = outFile.readText()
+            assertEquals(
+                "Engine golden fixture is out of date. Delete ${outFile.path} or run with " +
+                    "-DupdateEngineFixtures=true to regenerate, then rerun the :engine " +
+                    "golden tests (and the TypeScript port while web/ exists).",
+                expected.trim(),
+                actualJson.trim(),
+            )
+        }
     }
 
     // ── Pipeline drivers: mirror ForecastChartBuilders.buildThermicChartFromData ──
 
     private fun buildThermalForecasts(hourlyData: HourlyForecastData): List<ThermalForecastEntry> {
         val entries = mutableListOf<ThermalForecastEntry>()
-        forEachDaytimeHour(hourlyData) { hp, profile, surfaceTemp, surfaceDew, surfacePressure, elevationKm, heatingInput ->
+        forEachDaytimeHour(hourlyData) {
+            hp, profile, surfaceTemp, surfaceDew, surfacePressure, elevationKm, heatingInput ->
             val forecast = ThermalForecastEngine.analyze(
                 ThermalForecastInput(
                     profile = profile,
@@ -115,7 +122,8 @@ class EngineFixtureExportTest {
 
     private fun buildParcelAnalyses(hourlyData: HourlyForecastData): List<ParcelAnalysisEntry> {
         val entries = mutableListOf<ParcelAnalysisEntry>()
-        forEachDaytimeHour(hourlyData) { hp, profile, surfaceTemp, surfaceDew, surfacePressure, elevationKm, heatingInput ->
+        forEachDaytimeHour(hourlyData) {
+            hp, profile, surfaceTemp, surfaceDew, surfacePressure, elevationKm, heatingInput ->
             val parcel = analyzeParcel(
                 profile = profile,
                 surfaceTemperatureC = surfaceTemp,
@@ -217,11 +225,17 @@ class EngineFixtureExportTest {
             ?: error("Could not locate simulated asset $assetName from ${File(".").absolutePath}")
     }
 
-    private fun resolveFixtureOutputFile(): File {
+    /**
+     * The engine commonTest resource is the canonical output; the TypeScript
+     * fixture is included only while the frozen `web/` directory still exists.
+     */
+    private fun resolveFixtureOutputFiles(): List<File> {
         val repoRoot = generateSequence(File(".").absoluteFile) { it.parentFile }
-            .firstOrNull { File(it, "web/src/engine").exists() || File(it, "web").exists() }
-            ?: error("Could not locate the web/ directory from ${File(".").absolutePath}")
-        return File(repoRoot, "web/src/engine/__fixtures__/brauneck_icon_seamless.json")
+            .firstOrNull { File(it, "engine/src/commonTest").exists() }
+            ?: error("Could not locate the engine/ module from ${File(".").absolutePath}")
+        val engineCopy = File(repoRoot, "engine/src/commonTest/resources/brauneck_icon_seamless.json")
+        val webCopy = File(repoRoot, "web/src/engine/__fixtures__/brauneck_icon_seamless.json")
+        return if (webCopy.parentFile.exists()) listOf(engineCopy, webCopy) else listOf(engineCopy)
     }
 }
 

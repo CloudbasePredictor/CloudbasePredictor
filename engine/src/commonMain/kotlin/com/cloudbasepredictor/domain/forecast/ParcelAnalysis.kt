@@ -401,8 +401,10 @@ fun moistAdiabatTempC(thetaWK: Float, pressureHpa: Float): Float {
  * This is the path that parcel guides and parcel analysis should follow above the LCL. Using the
  * dry parcel theta as a proxy here keeps the path too close to a dry adiabat, which is exactly
  * the regression reported on the Stuve interaction.
+ *
+ * Public because the Stuve chart UI renders parcel guide curves with the same integration.
  */
-internal fun moistAdiabatTempFromPointC(
+fun moistAdiabatTempFromPointC(
     startTemperatureC: Float,
     startPressureHpa: Float,
     targetPressureHpa: Float,

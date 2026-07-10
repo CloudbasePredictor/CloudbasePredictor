@@ -1,5 +1,7 @@
 package com.cloudbasepredictor.domain.forecast
 
+import kotlin.jvm.JvmInline
+
 /**
  * Shared domain contract for one processed local forecast day that is ready to be mapped into
  * forecast UI states.
