@@ -129,7 +129,9 @@ internal fun DrawScope.drawSkewTProfile(
     for (index in 0 until offsets.size - 1) {
         val start = offsets[index]
         val end = offsets[index + 1]
-        if (start.y in plotTop..plotBottom || end.y in plotTop..plotBottom) {
+        if (start.x.isFinite() && end.x.isFinite() &&
+            segmentIntersectsVerticalRange(start.y, end.y, plotTop, plotBottom)
+        ) {
             drawLine(
                 color = color,
                 start = start,
@@ -155,6 +157,14 @@ internal fun DrawScope.drawSkewTProfile(
         }
     }
 }
+
+internal fun segmentIntersectsVerticalRange(
+    startY: Float,
+    endY: Float,
+    plotTop: Float,
+    plotBottom: Float,
+): Boolean = startY.isFinite() && endY.isFinite() &&
+    minOf(startY, endY) <= plotBottom && maxOf(startY, endY) >= plotTop
 
 internal fun DrawScope.drawWindBarb(
     centerX: Float,

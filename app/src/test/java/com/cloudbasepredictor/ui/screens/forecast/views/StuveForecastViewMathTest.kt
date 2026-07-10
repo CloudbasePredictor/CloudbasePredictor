@@ -13,72 +13,66 @@ import org.junit.Test
 class StuveForecastViewMathTest {
 
     @Test
-    fun buildVisibleTemperatureAxisRange_ignores_upperLevel_cold_outliers_for_initial_view() {
+    fun buildSkewTTemperatureAxisRange_sameVisibleEnvelope_isIndependentOfVerticalSpan() {
+        val pressures = listOf(1000f, 900f, 800f, 700f, 600f, 500f)
         val chart = sampleChart(
-            temperaturePoints = listOf(
-                point(850f, 14f),
-                point(800f, 12f),
-                point(700f, 7f),
-                point(600f, 2f),
-                point(500f, -2f),
-                point(400f, -8f),
-                point(300f, -15f),
-                point(250f, -20f),
-            ),
-            dewpointPoints = listOf(
-                point(850f, 10f),
-                point(800f, 7f),
-                point(700f, 1f),
-                point(600f, -6f),
-                point(500f, -14f),
-                point(400f, -25f),
-                point(300f, -39f),
-                point(250f, -48f),
-            ),
+            temperaturePoints = pressures.map { pressure -> point(pressure, 20f) },
+            dewpointPoints = pressures.map { pressure -> point(pressure, 10f) },
+            parcelPoints = pressures.map { pressure -> point(pressure, 26f) },
+            surfacePressureHpa = 1000f,
         )
 
-        val range = buildVisibleTemperatureAxisRange(
+        val fullColumnRange = buildSkewTTemperatureAxisRange(
             chart = chart,
-            topPressure = 250f,
-            bottomPressure = 870f,
+            topPressure = 500f,
+            bottomPressure = 1000f,
+        )
+        val nearSurfaceRange = buildSkewTTemperatureAxisRange(
+            chart = chart,
+            topPressure = 800f,
+            bottomPressure = 1000f,
         )
 
-        assertTrue(range.minC in -20f..0f)
-        assertTrue(range.maxC in 20f..40f)
-        assertTrue(range.maxC - range.minC <= 50f)
+        assertEquals(fullColumnRange.minC, nearSurfaceRange.minC, 0.01f)
+        assertEquals(fullColumnRange.maxC, nearSurfaceRange.maxC, 0.01f)
     }
 
     @Test
-    fun buildVisibleTemperatureAxisRange_zoomed_upper_view_tracks_current_slice() {
-        val chart = sampleChart(
-            temperaturePoints = listOf(
-                point(850f, 14f),
-                point(700f, 7f),
-                point(600f, 2f),
-                point(500f, -2f),
-                point(400f, -8f),
-                point(300f, -15f),
-                point(250f, -20f),
-            ),
-            dewpointPoints = listOf(
-                point(850f, 10f),
-                point(700f, 1f),
-                point(600f, -6f),
-                point(500f, -14f),
-                point(400f, -25f),
-                point(300f, -30f),
-                point(250f, -33f),
-            ),
+    fun buildSkewTTemperatureAxisRange_ignoresPointsAboveVisibleTop() {
+        val sharedTemperatures = listOf(
+            point(1000f, 20f),
+            point(900f, 15f),
+            point(800f, 10f),
+        )
+        val sharedDewpoints = listOf(
+            point(1000f, 10f),
+            point(900f, 5f),
+            point(800f, 0f),
+        )
+        val referenceChart = sampleChart(
+            temperaturePoints = sharedTemperatures + listOf(point(700f, 5f), point(500f, -10f)),
+            dewpointPoints = sharedDewpoints + listOf(point(700f, -5f), point(500f, -20f)),
+            surfacePressureHpa = 1000f,
+        )
+        val chartWithHiddenOutliers = sampleChart(
+            temperaturePoints = sharedTemperatures + listOf(point(700f, 80f), point(500f, 120f)),
+            dewpointPoints = sharedDewpoints + listOf(point(700f, -80f), point(500f, -120f)),
+            surfacePressureHpa = 1000f,
         )
 
-        val range = buildVisibleTemperatureAxisRange(
-            chart = chart,
-            topPressure = 500f,
-            bottomPressure = 700f,
+        val referenceRange = buildSkewTTemperatureAxisRange(
+            chart = referenceChart,
+            topPressure = 800f,
+            bottomPressure = 1000f,
+        )
+        val outlierRange = buildSkewTTemperatureAxisRange(
+            chart = chartWithHiddenOutliers,
+            topPressure = 800f,
+            bottomPressure = 1000f,
         )
 
-        assertTrue(range.minC in -30f..0f)
-        assertTrue(range.maxC in 10f..30f)
+        assertEquals(referenceRange.minC, outlierRange.minC, 0.01f)
+        assertEquals(referenceRange.maxC, outlierRange.maxC, 0.01f)
     }
 
     @Test
@@ -108,64 +102,163 @@ class StuveForecastViewMathTest {
     }
 
     @Test
-    fun buildSkewTProjection_keepsAdiabatAndCurveAnglesFixedAcrossZoom() {
+    fun buildSkewTProjection_fitsVisibleProfilesAndUsesHorizontalSpaceAcrossZoom() {
         val chart = sampleChart(
             temperaturePoints = listOf(
-                point(1000f, 20f, 120f),
-                point(950f, 17f, 560f),
-                point(900f, 14f, 1000f),
-                point(850f, 11f, 1460f),
-                point(700f, 1f, 3010f),
-                point(500f, -13f, 5570f),
+                point(1000f, 25f, 120f),
+                point(900f, 18f, 1000f),
+                point(800f, 10f, 1950f),
+                point(700f, 0f, 3010f),
+                point(500f, -18f, 5570f),
             ),
             dewpointPoints = listOf(
-                point(1000f, 12f, 120f),
-                point(950f, 9f, 560f),
-                point(900f, 6f, 1000f),
-                point(850f, 3f, 1460f),
-                point(700f, -8f, 3010f),
-                point(500f, -27f, 5570f),
+                point(1000f, 5f, 120f),
+                point(900f, -2f, 1000f),
+                point(800f, -10f, 1950f),
+                point(700f, -20f, 3010f),
+                point(500f, -35f, 5570f),
             ),
-            surfacePressureHpa = 980f,
+            parcelPoints = listOf(
+                point(1000f, 35f, 120f),
+                point(900f, 28f, 1000f),
+                point(800f, 20f, 1950f),
+                point(700f, 10f, 3010f),
+                point(500f, -5f, 5570f),
+            ),
+            surfacePressureHpa = 1000f,
         )
         val bottomPressure = 1000f
+        val plotLeft = 40f
+        val plotRight = 340f
 
-        // Three different vertical zoom levels: full column, mid zoom, tight zoom near the ground.
-        // The °C span scales with the visible pressure span, so every line angle must stay constant.
-        val projections = listOf(500f, 650f, 800f).map { topPressure ->
+        listOf(500f, 800f).forEach { topPressure ->
+            val visiblePoints = listOf(
+                chart.temperatureProfile,
+                chart.dewpointProfile,
+                chart.parcelAscentPath,
+            ).flatten().filter { point -> point.pressureHpa in topPressure..bottomPressure }
             buildSkewTProjection(
                 chart = chart,
                 topPressure = topPressure,
                 bottomPressure = bottomPressure,
-                plotLeft = 40f,
-                plotRight = 340f,
+                plotLeft = plotLeft,
+                plotRight = plotRight,
                 plotTop = 16f,
                 plotBottom = 616f,
             )
-        }
-        val reference = projections.first()
-        val dryThetaK = potentialTemperatureK(18f, 980f)
+                .also { projection ->
+                    val visibleXs = visiblePoints.map { point ->
+                        projection.temperatureToX(point.temperatureC, point.pressureHpa)
+                    }
+                    val plotWidth = plotRight - plotLeft
 
-        val referenceAdiabatSlope = dryAdiabatScreenSlope(reference, dryThetaK)
-        val referenceProfileSlope = profileSegmentScreenSlope(reference)
-        projections.forEach { projection ->
-            // A background dry-adiabat must keep the same on-screen angle at every zoom level.
-            assertEquals(
-                referenceAdiabatSlope,
-                dryAdiabatScreenSlope(projection, dryThetaK),
-                0.01f,
-            )
-            // A segment of the plotted temperature profile must keep its on-screen angle too.
-            assertEquals(
-                referenceProfileSlope,
-                profileSegmentScreenSlope(projection),
-                0.01f,
-            )
+                    visibleXs.forEach { x ->
+                        assertTrue("Visible profile point must stay inside the plot: x=$x", x in plotLeft..plotRight)
+                    }
+                    assertTrue(
+                        "Visible profiles should reach the left fit padding",
+                        visibleXs.min() <= plotLeft + plotWidth * 0.10f,
+                    )
+                    assertTrue(
+                        "Visible profiles should reach the right fit padding",
+                        visibleXs.max() >= plotRight - plotWidth * 0.10f,
+                    )
+                }
+        }
+    }
+
+    @Test
+    fun buildSkewTProjection_narrowVisibleProfilesStillUseHorizontalSpace() {
+        val chart = sampleChart(
+            temperaturePoints = listOf(point(1000f, 20f), point(800f, 8f)),
+            dewpointPoints = listOf(point(1000f, 19f), point(800f, 7f)),
+            parcelPoints = listOf(point(1000f, 22f), point(800f, 10f)),
+            surfacePressureHpa = 1000f,
+        )
+        val projection = buildSkewTProjection(
+            chart = chart,
+            topPressure = 800f,
+            bottomPressure = 1000f,
+            plotLeft = 40f,
+            plotRight = 340f,
+            plotTop = 16f,
+            plotBottom = 616f,
+        )
+        val xs = listOf(
+            chart.temperatureProfile,
+            chart.dewpointProfile,
+            chart.parcelAscentPath,
+        ).flatten().map { point ->
+            projection.temperatureToX(point.temperatureC, point.pressureHpa)
         }
 
-        // The °C window does crop with zoom (the accepted trade-off for fixed angles): zooming in
-        // toward the ground shows a narrower span than the full-column view.
-        assertTrue(projections.last().temperatureRange.spanC < reference.temperatureRange.spanC)
+        assertTrue(xs.min() <= projection.plotLeft + projection.plotWidth * 0.10f)
+        assertTrue(xs.max() >= projection.plotRight - projection.plotWidth * 0.10f)
+    }
+
+    @Test
+    fun buildSkewTProjection_fitsInterpolatedViewportEdgesWhenNoSamplesAreInside() {
+        val chart = sampleChart(
+            temperaturePoints = listOf(point(1000f, 100f), point(800f, -100f)),
+            dewpointPoints = listOf(point(1000f, 80f), point(800f, -120f)),
+            parcelPoints = listOf(point(1000f, 120f), point(800f, -80f)),
+            surfacePressureHpa = 1000f,
+        )
+        val topPressure = 850f
+        val bottomPressure = 950f
+        val projection = buildSkewTProjection(
+            chart = chart,
+            topPressure = topPressure,
+            bottomPressure = bottomPressure,
+            plotLeft = 40f,
+            plotRight = 340f,
+            plotTop = 16f,
+            plotBottom = 616f,
+        )
+
+        listOf(chart.temperatureProfile, chart.dewpointProfile, chart.parcelAscentPath).forEach { profile ->
+            assertTrue(profile.none { point -> point.pressureHpa in topPressure..bottomPressure })
+            listOf(topPressure, bottomPressure).forEach { pressure ->
+                val start = profile.first()
+                val end = profile.last()
+                val startY = projection.pressureToY(start.pressureHpa)
+                val endY = projection.pressureToY(end.pressureHpa)
+                val boundaryY = projection.pressureToY(pressure)
+                val segmentFraction = (boundaryY - startY) / (endY - startY)
+                val x = projection.temperatureToX(start.temperatureC, start.pressureHpa) +
+                    segmentFraction *
+                    (projection.temperatureToX(end.temperatureC, end.pressureHpa) -
+                        projection.temperatureToX(start.temperatureC, start.pressureHpa))
+                assertTrue("Interpolated viewport edge must stay inside the plot: x=$x", x in 40f..340f)
+            }
+        }
+        assertTrue(
+            segmentIntersectsVerticalRange(
+                startY = projection.pressureToY(1000f),
+                endY = projection.pressureToY(800f),
+                plotTop = projection.plotTop,
+                plotBottom = projection.plotBottom,
+            ),
+        )
+    }
+
+    @Test
+    fun buildSkewTTemperatureAxisRange_emptyProfilesUsesFiniteFallback() {
+        val chart = sampleChart(
+            temperaturePoints = emptyList(),
+            dewpointPoints = emptyList(),
+            parcelPoints = emptyList(),
+        )
+
+        val range = buildSkewTTemperatureAxisRange(
+            chart = chart,
+            topPressure = 500f,
+            bottomPressure = 1000f,
+        )
+
+        assertTrue(range.minC.isFinite())
+        assertTrue(range.maxC.isFinite())
+        assertTrue(range.spanC > 0f)
     }
 
     @Test
@@ -357,12 +450,15 @@ class StuveForecastViewMathTest {
     private fun sampleChart(
         temperaturePoints: List<StuveProfilePoint>,
         dewpointPoints: List<StuveProfilePoint>,
+        parcelPoints: List<StuveProfilePoint> = temperaturePoints.map {
+            it.copy(temperatureC = it.temperatureC + 1.5f)
+        },
         surfacePressureHpa: Float = 850f,
     ) = StuveForecastChartUiModel(
         pressureLevels = listOf(850f, 800f, 700f, 600f, 500f, 400f, 300f, 250f),
         temperatureProfile = temperaturePoints,
         dewpointProfile = dewpointPoints,
-        parcelAscentPath = temperaturePoints.map { it.copy(temperatureC = it.temperatureC + 1.5f) },
+        parcelAscentPath = parcelPoints,
         windBarbs = emptyList(),
         cclPressureHpa = 760f,
         tconC = 18f,
@@ -392,37 +488,4 @@ class StuveForecastViewMathTest {
         directionDeg = directionDeg,
         barbSize = 20f,
     )
-
-    private fun dryAdiabatScreenSlope(
-        projection: SkewTProjection,
-        thetaK: Float,
-    ): Float = screenSlopeBetweenPressures(
-        projection = projection,
-        lowerPressure = 950f,
-        upperPressure = 900f,
-        temperatureAt = { pressure -> dryAdiabatTempC(thetaK, pressure) },
-    )
-
-    private fun profileSegmentScreenSlope(
-        projection: SkewTProjection,
-    ): Float = screenSlopeBetweenPressures(
-        projection = projection,
-        lowerPressure = 950f,
-        upperPressure = 900f,
-        // A straight 950→900 hPa segment with a fixed lapse: 17 °C at 950, 14 °C at 900.
-        temperatureAt = { pressure -> 17f + (14f - 17f) * (950f - pressure) / (950f - 900f) },
-    )
-
-    private fun screenSlopeBetweenPressures(
-        projection: SkewTProjection,
-        lowerPressure: Float,
-        upperPressure: Float,
-        temperatureAt: (Float) -> Float,
-    ): Float {
-        val lowerX = projection.temperatureToX(temperatureAt(lowerPressure), lowerPressure)
-        val upperX = projection.temperatureToX(temperatureAt(upperPressure), upperPressure)
-        val lowerY = projection.pressureToY(lowerPressure)
-        val upperY = projection.pressureToY(upperPressure)
-        return (upperX - lowerX) / (upperY - lowerY)
-    }
 }

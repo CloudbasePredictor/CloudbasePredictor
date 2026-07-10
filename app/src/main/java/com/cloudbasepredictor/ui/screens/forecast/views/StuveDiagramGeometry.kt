@@ -12,14 +12,13 @@ import com.cloudbasepredictor.ui.screens.forecast.interpolateProfileHeightMeters
 import com.cloudbasepredictor.ui.screens.forecast.interpolateProfileTemperature
 import com.cloudbasepredictor.ui.screens.forecast.pressureToApproxHeightMeters
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.pow
 
 internal const val SKEWT_MIN_TOP_PRESSURE = 250f
 internal const val SKEWT_BOTTOM_PRESSURE = 1050f
 internal const val SKEWT_SKEW_RATIO = 0.45f
-private const val STUVE_TEMP_AXIS_HALF_WIDTH_C = 20f
+private const val SKEWT_VISIBLE_DATA_PADDING_FRACTION = 0.075f
 
 internal val STUVE_DRY_REFERENCE_PRESSURES = listOf(
     1050f, 1000f, 975f, 950f, 925f, 900f, 875f, 850f, 825f, 800f, 775f, 750f, 725f, 700f,
@@ -74,12 +73,11 @@ internal data class SkewTProjection(
     }
 
     private fun pressureHeightFraction(pressureHpa: Float): Float {
-        val logPressure = ln(pressureHpa)
-        val logBottom = ln(bottomPressure)
-        val logTop = ln(topPressure)
-        val logSpan = logBottom - logTop
-        if (logSpan <= 0f) return 0f
-        return ((logBottom - logPressure) / logSpan).coerceIn(0f, 1f)
+        return skewTPressureHeightFraction(
+            pressureHpa = pressureHpa,
+            topPressure = topPressure,
+            bottomPressure = bottomPressure,
+        )
     }
 }
 
@@ -189,64 +187,6 @@ internal data class TempAxisRange(
     val maxC: Float,
 ) {
     val spanC: Float get() = maxC - minC
-    val centerC: Float get() = (minC + maxC) / 2f
-}
-
-internal fun buildVisibleTemperatureAxisRange(
-    chart: StuveForecastChartUiModel,
-    topPressure: Float,
-    bottomPressure: Float,
-): TempAxisRange {
-    val visibleTemperatures = collectProfileTemperatures(
-        profile = chart.temperatureProfile,
-        topPressure = topPressure,
-        bottomPressure = bottomPressure,
-    )
-    val visibleDewpoints = collectProfileTemperatures(
-        profile = chart.dewpointProfile,
-        topPressure = topPressure,
-        bottomPressure = bottomPressure,
-    )
-
-    if (visibleTemperatures.isEmpty() && visibleDewpoints.isEmpty()) {
-        return TempAxisRange(TEMP_MIN, TEMP_MAX)
-    }
-
-    val focusTopPressure = maxOf(topPressure, TEMP_AXIS_FOCUS_TOP_PRESSURE_HPA)
-    val focusedTemperatures = collectProfileTemperatures(
-        profile = chart.temperatureProfile,
-        topPressure = focusTopPressure,
-        bottomPressure = bottomPressure,
-    )
-    val focusedDewpoints = collectProfileTemperatures(
-        profile = chart.dewpointProfile,
-        topPressure = focusTopPressure,
-        bottomPressure = bottomPressure,
-    )
-    val temperatureReference = (focusedTemperatures.ifEmpty { visibleTemperatures }).maxOrNull()
-        ?: visibleTemperatures.maxOrNull()
-        ?: TEMP_MAX
-    val lowerReferenceTemperatures = focusedTemperatures.ifEmpty { visibleTemperatures }
-    val lowerReferenceDewpoints = focusedDewpoints.ifEmpty { visibleDewpoints }
-    val temperatureMin = lowerReferenceTemperatures.minOrNull() ?: temperatureReference
-    val boundedDewpointMin = lowerReferenceDewpoints.minOrNull()
-        ?.coerceAtLeast(temperatureMin - TEMP_AXIS_MAX_DEWPOINT_EXTENSION_C)
-        ?: temperatureMin
-    val heatedSurfaceMax = maxOf(
-        chart.temperatureProfile.firstOrNull()?.temperatureC ?: temperatureReference,
-        chart.parcelAscentPath.firstOrNull()?.temperatureC ?: temperatureReference,
-        chart.tconC ?: temperatureReference,
-        temperatureReference,
-    )
-
-    val rawMin = minOf(temperatureMin, boundedDewpointMin) - TEMP_AXIS_LEFT_PADDING_C
-    val rawMax = heatedSurfaceMax + TEMP_AXIS_RIGHT_PADDING_C
-    val span = (rawMax - rawMin).coerceIn(TEMP_AXIS_MIN_SPAN_C, TEMP_AXIS_MAX_SPAN_C)
-    val center = (rawMin + rawMax) / 2f
-    return TempAxisRange(
-        minC = floorToStep(center - span / 2f, TEMP_STEP),
-        maxC = ceilToStep(center + span / 2f, TEMP_STEP),
-    )
 }
 
 internal fun buildSkewTTemperatureAxisRange(
@@ -254,32 +194,76 @@ internal fun buildSkewTTemperatureAxisRange(
     topPressure: Float,
     bottomPressure: Float,
 ): TempAxisRange {
-    // Deliberate product choice: the on-screen angle of every adiabat and curve stays constant across
-    // zoom. That requires the temperature span to scale together with the visible log-pressure span
-    // (span ∝ V holds the ratio °C-per-pixel : decade-per-pixel — and thus every line angle — fixed).
-    // The accepted trade-off is that the bottom °C scale crops in when zooming in and widens when
-    // zooming out. The center is anchored once from the auto-fit view so the diagram crops without
-    // sliding sideways; at that reference zoom the width is ±[STUVE_TEMP_AXIS_HALF_WIDTH_C].
-    val referenceTopPressure = altitudeKmToApproxPressureHpa(recommendedStuveTopAltitudeKm(chart))
-        .coerceIn(SKEWT_MIN_TOP_PRESSURE, bottomPressure - 50f)
-    val referenceRange = buildVisibleTemperatureAxisRange(
-        chart = chart,
-        topPressure = referenceTopPressure,
-        bottomPressure = bottomPressure,
-    )
-    val referenceLogSpan = logPressureSpan(bottomPressure = bottomPressure, topPressure = referenceTopPressure)
-    val visibleLogSpan = logPressureSpan(bottomPressure = bottomPressure, topPressure = topPressure)
-    val referenceSpanC = STUVE_TEMP_AXIS_HALF_WIDTH_C * 2f
-    val span = if (referenceLogSpan > 0f) {
-        referenceSpanC * (visibleLogSpan / referenceLogSpan)
-    } else {
-        referenceSpanC
-    }.coerceAtLeast(TEMP_AXIS_MIN_STABLE_SPAN_C)
+    if (!topPressure.isFinite() || !bottomPressure.isFinite() ||
+        topPressure <= 0f || bottomPressure <= topPressure
+    ) {
+        return TempAxisRange(TEMP_MIN, TEMP_MAX)
+    }
+    val visiblePoints = buildList {
+        // Keep the fit stable during pointer interaction: only the chart's persistent data lines
+        // participate, not a temporary cursor- or heating-driven parcel path.
+        addAll(collectVisibleProfilePoints(chart.temperatureProfile, topPressure, bottomPressure))
+        addAll(collectVisibleProfilePoints(chart.dewpointProfile, topPressure, bottomPressure))
+        addAll(collectVisibleProfilePoints(chart.parcelAscentPath, topPressure, bottomPressure))
+    }
+    if (visiblePoints.isEmpty()) return TempAxisRange(TEMP_MIN, TEMP_MAX)
 
-    return TempAxisRange(
-        minC = referenceRange.centerC - span / 2f,
-        maxC = referenceRange.centerC + span / 2f,
+    // Fit the lines in their projected coordinate space. A point's X position contains both its
+    // temperature and the pressure-dependent Skew-T shift, so fitting raw temperatures alone can
+    // still clip upper points. The span is solved independently from the visible pressure span: the
+    // pressure viewport only decides which curve points participate in the fit.
+    val usableWidthFraction = 1f - 2f * SKEWT_VISIBLE_DATA_PADDING_FRACTION
+    val rawTemperatureSpan = visiblePoints.maxOf { it.baseTemperatureC } -
+        visiblePoints.minOf { it.baseTemperatureC }
+    if (!rawTemperatureSpan.isFinite()) return TempAxisRange(TEMP_MIN, TEMP_MAX)
+    val minimumSpan = TEMP_AXIS_MIN_SPAN_C
+    val guaranteedFitSpan = maxOf(
+        minimumSpan,
+        rawTemperatureSpan / (usableWidthFraction - SKEWT_SKEW_RATIO) *
+            TEMP_AXIS_GUARANTEED_FIT_MULTIPLIER,
     )
+    if (!guaranteedFitSpan.isFinite()) return TempAxisRange(TEMP_MIN, TEMP_MAX)
+
+    fun fits(spanC: Float): Boolean {
+        val bounds = projectedTemperatureBounds(
+            points = visiblePoints,
+            spanC = spanC,
+        )
+        return bounds.spanC <= spanC * usableWidthFraction
+    }
+
+    val fittedSpan = if (fits(minimumSpan)) {
+        minimumSpan
+    } else {
+        var lower = minimumSpan
+        var upper = guaranteedFitSpan
+        repeat(TEMP_AXIS_FIT_SEARCH_ITERATIONS) {
+            val candidate = lower + (upper - lower) / 2f
+            if (fits(candidate)) {
+                upper = candidate
+            } else {
+                lower = candidate
+            }
+        }
+        upper
+    }
+    val projectedBounds = projectedTemperatureBounds(
+        points = visiblePoints,
+        spanC = fittedSpan,
+    )
+    if (!projectedBounds.minC.isFinite() || !projectedBounds.maxC.isFinite()) {
+        return TempAxisRange(TEMP_MIN, TEMP_MAX)
+    }
+    val horizontalSlack = (fittedSpan - projectedBounds.spanC).coerceAtLeast(0f)
+    val fittedRange = TempAxisRange(
+        minC = projectedBounds.minC - horizontalSlack / 2f,
+        maxC = projectedBounds.maxC + horizontalSlack / 2f,
+    )
+    return if (fittedRange.minC.isFinite() && fittedRange.maxC.isFinite() && fittedRange.spanC > 0f) {
+        fittedRange
+    } else {
+        TempAxisRange(TEMP_MIN, TEMP_MAX)
+    }
 }
 
 /**
@@ -288,26 +272,113 @@ internal fun buildSkewTTemperatureAxisRange(
  */
 internal fun shouldDrawDefaultParcelGuide(isCursorActive: Boolean): Boolean = !isCursorActive
 
-private fun collectProfileTemperatures(
+private data class VisibleTemperaturePoint(
+    val baseTemperatureC: Float,
+    val skewFraction: Float,
+)
+
+private fun collectVisibleProfilePoints(
     profile: List<StuveProfilePoint>,
     topPressure: Float,
     bottomPressure: Float,
-): List<Float> = buildList {
-    profile
-        .filter { it.pressureHpa in topPressure..bottomPressure }
-        .forEach { point -> add(point.temperatureC) }
-    interpolateProfileTemperature(profile, topPressure)?.let(::add)
-    interpolateProfileTemperature(profile, bottomPressure)?.let(::add)
+): List<VisibleTemperaturePoint> = buildList {
+    fun StuveProfilePoint.isRenderable(): Boolean =
+        pressureHpa.isFinite() && pressureHpa > 0f && temperatureC.isFinite()
+
+    profile.forEach { point ->
+        if (point.isRenderable()) {
+            val heightFraction = skewTUnclampedPressureHeightFraction(
+                pressureHpa = point.pressureHpa,
+                topPressure = topPressure,
+                bottomPressure = bottomPressure,
+            )
+            if (heightFraction in 0f..1f) {
+                add(
+                    VisibleTemperaturePoint(
+                        baseTemperatureC = point.temperatureC,
+                        skewFraction = heightFraction,
+                    ),
+                )
+            }
+        }
+    }
+
+    profile.zipWithNext().forEach { (start, end) ->
+        if (!start.isRenderable() || !end.isRenderable()) return@forEach
+        val startHeight = skewTUnclampedPressureHeightFraction(
+            pressureHpa = start.pressureHpa,
+            topPressure = topPressure,
+            bottomPressure = bottomPressure,
+        )
+        val endHeight = skewTUnclampedPressureHeightFraction(
+            pressureHpa = end.pressureHpa,
+            topPressure = topPressure,
+            bottomPressure = bottomPressure,
+        )
+        val heightDelta = endHeight - startHeight
+        if (heightDelta == 0f || !heightDelta.isFinite()) return@forEach
+        val startSkewFraction = startHeight.coerceIn(0f, 1f)
+        val endSkewFraction = endHeight.coerceIn(0f, 1f)
+
+        listOf(0f, 1f).forEach { boundaryHeight ->
+            val segmentFraction = (boundaryHeight - startHeight) / heightDelta
+            if (segmentFraction in 0f..1f) {
+                add(
+                    VisibleTemperaturePoint(
+                        baseTemperatureC = start.temperatureC +
+                            segmentFraction * (end.temperatureC - start.temperatureC),
+                        skewFraction = (startSkewFraction +
+                            segmentFraction * (endSkewFraction - startSkewFraction))
+                            .coerceIn(0f, 1f),
+                    ),
+                )
+            }
+        }
+    }
 }
 
-private fun logPressureSpan(
-    bottomPressure: Float,
+private fun projectedTemperatureBounds(
+    points: List<VisibleTemperaturePoint>,
+    spanC: Float,
+): TempAxisRange {
+    var minC = Float.POSITIVE_INFINITY
+    var maxC = Float.NEGATIVE_INFINITY
+    points.forEach { point ->
+        val projectedTemperature = point.baseTemperatureC +
+            point.skewFraction * SKEWT_SKEW_RATIO * spanC
+        minC = minOf(minC, projectedTemperature)
+        maxC = maxOf(maxC, projectedTemperature)
+    }
+    return TempAxisRange(minC = minC, maxC = maxC)
+}
+
+private fun skewTPressureHeightFraction(
+    pressureHpa: Float,
     topPressure: Float,
+    bottomPressure: Float,
+): Float = skewTUnclampedPressureHeightFraction(
+    pressureHpa = pressureHpa,
+    topPressure = topPressure,
+    bottomPressure = bottomPressure,
+).coerceIn(0f, 1f)
+
+private fun skewTUnclampedPressureHeightFraction(
+    pressureHpa: Float,
+    topPressure: Float,
+    bottomPressure: Float,
 ): Float {
-    if (bottomPressure <= 0f || topPressure <= 0f || bottomPressure <= topPressure) {
+    if (!pressureHpa.isFinite() || pressureHpa <= 0f ||
+        !topPressure.isFinite() || topPressure <= 0f ||
+        !bottomPressure.isFinite() || bottomPressure <= topPressure
+    ) {
         return 0f
     }
-    return ln(bottomPressure) - ln(topPressure)
+    val logPressure = ln(pressureHpa)
+    val logBottom = ln(bottomPressure)
+    val logTop = ln(topPressure)
+    val logSpan = logBottom - logTop
+    if (logSpan <= 0f) return 0f
+    return (logBottom - logPressure) / logSpan
 }
 
 internal fun buildTemperatureAxisLabels(range: TempAxisRange): List<Float> {
@@ -321,11 +392,17 @@ internal fun buildTemperatureAxisLabels(range: TempAxisRange): List<Float> {
     return labels.ifEmpty { listOf(range.minC, range.maxC) }
 }
 
-private fun temperatureAxisStep(spanC: Float): Float = when {
-    spanC <= 8f -> 1f
-    spanC <= 18f -> 2f
-    spanC <= 34f -> 5f
-    else -> TEMP_STEP
+private fun temperatureAxisStep(spanC: Float): Float {
+    if (!spanC.isFinite() || spanC <= 0f) return TEMP_STEP
+    return when {
+        spanC <= 8f -> 1f
+        spanC <= 18f -> 2f
+        spanC <= 34f -> 5f
+        else -> maxOf(
+            TEMP_STEP,
+            ceil(spanC / TEMP_AXIS_MAX_LABEL_INTERVALS / TEMP_STEP) * TEMP_STEP,
+        )
+    }
 }
 
 /**
@@ -409,9 +486,6 @@ internal fun buildInteractiveParcelFromSurface(
     )
 }
 
-internal fun floorToStep(value: Float, step: Float): Float =
-    floor(value / step) * step
-
 private fun ceilToStep(value: Float, step: Float): Float =
     ceil(value / step) * step
 
@@ -419,13 +493,10 @@ private const val TEMP_MIN = -30f
 private const val TEMP_MAX = 40f
 internal const val TEMP_STEP = 10f
 private const val STUVE_AUTO_FIT_MARGIN_KM = 0.35f
-private const val TEMP_AXIS_FOCUS_TOP_PRESSURE_HPA = 650f
-private const val TEMP_AXIS_LEFT_PADDING_C = 6f
-private const val TEMP_AXIS_RIGHT_PADDING_C = 10f
-private const val TEMP_AXIS_MIN_SPAN_C = 34f
-private const val TEMP_AXIS_MIN_STABLE_SPAN_C = 6f
-private const val TEMP_AXIS_MAX_SPAN_C = 48f
-private const val TEMP_AXIS_MAX_DEWPOINT_EXTENSION_C = 14f
+private const val TEMP_AXIS_MIN_SPAN_C = 6f
+private const val TEMP_AXIS_FIT_SEARCH_ITERATIONS = 24
+private const val TEMP_AXIS_GUARANTEED_FIT_MULTIPLIER = 1.001f
+private const val TEMP_AXIS_MAX_LABEL_INTERVALS = 12f
 private const val STUVE_INITIAL_AUTO_FIT_MAX_KM = 6.5f
 
 private val ISOBAR_LABELS = listOf(
