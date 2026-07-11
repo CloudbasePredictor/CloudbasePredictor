@@ -2,24 +2,23 @@ package com.cloudbasepredictor
 
 import android.app.Application
 import android.os.Build
-import com.cloudbasepredictor.data.forecast.ForecastCacheMaintenance
+import com.cloudbasepredictor.di.AppGraph
 import com.cloudbasepredictor.di.cloudbasePredictorUserAgentInterceptor
-import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
+import dev.zacsweers.metro.createGraphFactory
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.maplibre.android.MapLibre
 import org.maplibre.android.module.http.HttpRequestUtil
 import timber.log.Timber
 
-@HiltAndroidApp
 class CloudbasePredictorApplication : Application() {
 
-    @Inject
-    lateinit var forecastCacheMaintenance: ForecastCacheMaintenance
+    lateinit var appGraph: AppGraph
+        private set
 
     override fun onCreate() {
         super.onCreate()
+        appGraph = createGraphFactory<AppGraph.Factory>().create(applicationContext)
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
@@ -42,7 +41,7 @@ class CloudbasePredictorApplication : Application() {
                 },
             )
 
-        forecastCacheMaintenance.scheduleStartupCleanup()
+        appGraph.forecastCacheMaintenance.scheduleStartupCleanup()
     }
 
     private fun configureMapLibreHttpClient() {

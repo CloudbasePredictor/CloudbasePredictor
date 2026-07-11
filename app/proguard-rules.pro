@@ -5,7 +5,7 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Keep kotlinx-serialization models used by Retrofit
+# Keep kotlinx-serialization models used by Ktor content negotiation
 -keepattributes Signature, InnerClasses, EnclosingMethod
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
 -keepattributes AnnotationDefault

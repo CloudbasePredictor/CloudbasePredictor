@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -26,6 +27,7 @@ import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.components.MapTestTags
+import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -563,4 +565,21 @@ private fun View.findMapView(): MapView? {
     }
 
     return null
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun MapScreenTestPreview() {
+    CloudbasePredictorTheme {
+        MapScreen(
+            uiState = PreviewData.mapUiState,
+            onMapTapped = { _, _ -> },
+            onFavoriteTapped = {},
+            onLaunchSiteTapped = {},
+            onOpenForecast = {},
+            onFavoriteClick = {},
+            onSaveCameraPosition = { _, _, _ -> },
+            autoOpenFavoritesOnStartup = false,
+        )
+    }
 }

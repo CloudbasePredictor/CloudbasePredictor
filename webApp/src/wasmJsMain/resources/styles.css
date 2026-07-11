@@ -1,0 +1,263 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #fbfdff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#cloudbase-app {
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+noscript {
+  display: block;
+  max-width: 42rem;
+  margin: 4rem auto;
+  padding: 1rem;
+  color: #10202e;
+}
+
+.cloudbase-map-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 20rem;
+  overflow: hidden;
+  background: #d9e8ef;
+}
+
+.cloudbase-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.cloudbase-map-layer-toolbar {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  max-width: calc(100% - 5rem);
+  overflow-x: auto;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+  transform: translateX(-50%);
+}
+
+.cloudbase-map-layer-button,
+.cloudbase-map-geolocate,
+.cloudbase-map-confirm,
+.cloudbase-map-attribution-button {
+  min-height: 2.75rem;
+  border: 0;
+  color: #163044;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cloudbase-map-layer-button {
+  padding: 0.45rem 0.8rem;
+  white-space: nowrap;
+}
+
+.cloudbase-map-layer-button.active {
+  color: white;
+  background: #176b87;
+}
+
+.cloudbase-map-geolocate {
+  position: absolute;
+  top: 4.25rem;
+  right: 0.75rem;
+  z-index: 4;
+  width: 2.75rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+  font-size: 1.35rem;
+}
+
+.cloudbase-map-search {
+  position: absolute;
+  top: 4.25rem;
+  left: 0.75rem;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(10rem, 20rem) auto;
+  max-width: calc(100% - 5rem);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+}
+
+.cloudbase-map-search-input,
+.cloudbase-map-search-button,
+.cloudbase-map-search-result {
+  min-height: 2.75rem;
+  border: 0;
+  color: #163044;
+  background: transparent;
+  font: inherit;
+}
+
+.cloudbase-map-search-input {
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.cloudbase-map-search-button {
+  padding: 0.5rem 0.8rem;
+  border-left: 1px solid rgb(0 0 0 / 14%);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.cloudbase-map-search-results {
+  grid-column: 1 / -1;
+  max-height: min(18rem, 45vh);
+  overflow-y: auto;
+  border-top: 1px solid rgb(0 0 0 / 14%);
+}
+
+.cloudbase-map-search-result {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgb(0 0 0 / 9%);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cloudbase-map-search-result:hover {
+  background: #e7f3f8;
+}
+
+.cloudbase-map-status {
+  position: absolute;
+  top: 4.25rem;
+  left: 50%;
+  z-index: 4;
+  max-width: min(30rem, calc(100% - 6rem));
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.65rem;
+  color: #163044;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+  transform: translateX(-50%);
+}
+
+.cloudbase-map-status.error {
+  color: #79000b;
+  background: #ffe9eb;
+}
+
+.cloudbase-map-selection-card {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 3.25rem;
+  left: 0.75rem;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.9rem;
+  color: #163044;
+  background: rgb(255 255 255 / 95%);
+  box-shadow: 0 3px 14px rgb(0 0 0 / 24%);
+}
+
+.cloudbase-map-selection-label {
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cloudbase-map-confirm {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  color: white;
+  background: #176b87;
+  font-weight: 650;
+}
+
+.cloudbase-map-attribution {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.35rem;
+  z-index: 4;
+  max-width: min(30rem, calc(100% - 0.9rem));
+  color: #26333c;
+  background: rgb(255 255 255 / 88%);
+  font-size: 0.72rem;
+}
+
+.cloudbase-map-attribution-button {
+  min-height: 1.7rem;
+  padding: 0.2rem 0.45rem;
+  font-size: inherit;
+}
+
+.cloudbase-map-attribution-detail {
+  padding: 0.35rem 0.5rem;
+  border-top: 1px solid rgb(0 0 0 / 15%);
+  white-space: pre-line;
+}
+
+.cloudbase-map-layer-button:focus-visible,
+.cloudbase-map-geolocate:focus-visible,
+.cloudbase-map-confirm:focus-visible,
+.cloudbase-map-attribution-button:focus-visible,
+.cloudbase-map-search-input:focus-visible,
+.cloudbase-map-search-button:focus-visible,
+.cloudbase-map-search-result:focus-visible {
+  outline: 3px solid #ffb000;
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .cloudbase-map-layer-toolbar {
+    left: 0.5rem;
+    max-width: calc(100% - 4.25rem);
+    transform: none;
+  }
+
+  .cloudbase-map-layer-button {
+    padding-inline: 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .cloudbase-map-search {
+    right: 4.25rem;
+    left: 0.5rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    max-width: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background: #0a2236;
+  }
+
+  noscript {
+    color: #eaf3fa;
+  }
+}

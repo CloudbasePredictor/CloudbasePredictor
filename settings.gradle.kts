@@ -58,3 +58,5 @@ dependencyResolutionManagement {
 rootProject.name = "Cloudbase predictor"
 include(":app")
 include(":engine")
+include(":shared")
+include(":webApp")

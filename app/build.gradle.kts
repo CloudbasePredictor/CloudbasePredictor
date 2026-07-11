@@ -3,10 +3,10 @@ import com.android.build.gradle.internal.tasks.FinalizeBundleTask
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.metro)
 }
 
 val requestedTasks = gradle.startParameter.taskNames
@@ -58,7 +58,7 @@ android {
         versionCode = 16
         versionName = "1.8.1"
 
-        testInstrumentationRunner = "com.cloudbasepredictor.HiltTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         when {
             requestedTasks.any { it.endsWith("connectedE2eTest") } ->
@@ -213,15 +213,13 @@ ksp {
 }
 
 dependencies {
-    implementation(project(":engine"))
+    implementation(project(":shared"))
 
     implementation(platform(libs.androidx.compose.bom))
-    implementation(platform(libs.retrofit.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -242,15 +240,10 @@ dependencies {
     implementation(libs.net.sqlcipher)
     implementation(libs.androidx.sqlite)
     implementation(libs.androidx.security.crypto)
-
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
+    implementation(libs.metrox.viewmodel.compose)
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.timber)
 
     testImplementation(libs.junit)
@@ -258,8 +251,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.hilt.android.testing)
-    kspAndroidTest(libs.hilt.compiler)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

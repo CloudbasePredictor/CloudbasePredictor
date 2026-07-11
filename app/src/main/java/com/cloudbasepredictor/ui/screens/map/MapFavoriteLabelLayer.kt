@@ -1,6 +1,11 @@
 package com.cloudbasepredictor.ui.screens.map
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -18,6 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -172,3 +178,27 @@ private val FAVORITE_LABEL_GAP = 2.dp
 private const val FAVORITE_LABEL_PILL_ALPHA = 0.85f
 private const val FAVORITE_LABEL_BORDER_ALPHA = 0.6f
 private const val FAVORITE_LABEL_BORDER_FRACTION = 0.04f
+private const val FAVORITE_LABEL_CORNER_PERCENT = 50
+
+@Preview(showBackground = true)
+@Composable
+@Suppress("FunctionNaming")
+private fun FavoriteLabelLayerPreview() {
+    MaterialTheme {
+        Box(
+            modifier = androidx.compose.ui.Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = FAVORITE_LABEL_PILL_ALPHA),
+                    shape = RoundedCornerShape(FAVORITE_LABEL_CORNER_PERCENT),
+                )
+                .padding(horizontal = FAVORITE_LABEL_PILL_PADDING_H, vertical = FAVORITE_LABEL_PILL_PADDING_V),
+        ) {
+            Text(
+                text = "Brauneck launch",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = FAVORITE_LABEL_TEXT_SIZE,
+                maxLines = 1,
+            )
+        }
+    }
+}

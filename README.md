@@ -10,6 +10,8 @@ Weather forecast app for soaring and free-flight pilots (paragliding, hang-glidi
 
 Built with Jetpack Compose, it visualises atmospheric sounding data from [Open-Meteo](https://open-meteo.com/) so you can quickly assess thermic conditions, wind profiles, and cloud cover for your flying site.
 
+Web app: [cloudbasepredictor.github.io/CloudbasePredictor/](https://cloudbasepredictor.github.io/CloudbasePredictor/)
+
 ## Preview
 
 <p align="center">
@@ -42,10 +44,10 @@ Built with Jetpack Compose, it visualises atmospheric sounding data from [Open-M
 
 ## Tech Stack
 
-- Kotlin and Jetpack Compose for the Android UI
+- Kotlin Multiplatform and Compose Multiplatform for shared Android and web forecast UI
 - Material 3 for app theming and components
-- MapLibre Compose for interactive map rendering
-- Retrofit, OkHttp, and Kotlinx Serialization for forecast API access
+- MapLibre Compose on Android and DOM-hosted MapLibre GL JS on web
+- Ktor and Kotlinx Serialization for forecast API access
 - Room for local forecast and place storage
 
 ## Building
@@ -54,6 +56,9 @@ Built with Jetpack Compose, it visualises atmospheric sounding data from [Open-M
 git clone https://github.com/CloudbasePredictor/CloudbasePredictor.git
 cd CloudbasePredictor
 ./gradlew :app:assembleDebug
+
+# Production Kotlin/Wasm site
+BINARYEN_CORES=1 ./gradlew :webApp:wasmJsBrowserDistribution
 ```
 
 ## Testing
@@ -62,9 +67,17 @@ cd CloudbasePredictor
 # Unit tests (JVM)
 ./gradlew :app:testDebugUnitTest --rerun
 
+# Shared JVM/browser-Wasm tests and web browser tests
+./gradlew :engine:allTests
+./gradlew :shared:allTests
+./gradlew :webApp:wasmJsBrowserTest
+
 # Instrumentation tests (requires emulator)
 ./gradlew :app:connectedInstrumentationTest --rerun
 ```
+
+Production bundle, Chromium parity, and mobile WebKit input checks are
+documented in [Web release gates](docs/web-release-gates.md).
 
 ## Data Sources and Maps
 
@@ -72,7 +85,7 @@ cd CloudbasePredictor
 - Paragliding launch site data is provided by [ParaglidingEarth](https://paragliding.earth/) and licensed under Creative Commons Attribution-ShareAlike 3.0. Launch-site loading can be disabled in Settings.
 - Map layers include the [OpenFreeMap](https://openfreemap.org/) Liberty style, [OpenTopoMap](https://opentopomap.org/about), [NASA GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api) true-colour imagery, and [Esri World Imagery](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer).
 - OpenFreeMap uses [OpenMapTiles](https://openmaptiles.org/) and data from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). OpenTopoMap uses data from OpenStreetMap contributors and SRTM, with map style by OpenTopoMap (CC-BY-SA).
-- Maps are rendered in the app with [MapLibre Compose](https://maplibre.org/maplibre-compose/) and MapLibre for Android.
+- Maps use [MapLibre Compose](https://maplibre.org/maplibre-compose/) and MapLibre for Android; the web app embeds MapLibre GL JS in a DOM host.
 
 ## License
 

@@ -1,8 +1,9 @@
 package com.cloudbasepredictor.data.launch
 
 import android.content.SharedPreferences
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +14,7 @@ interface LaunchSiteDisplayRepository {
     fun setShowLaunchSites(showLaunchSites: Boolean)
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class SharedPrefsLaunchSiteDisplayRepository @Inject constructor(
     private val prefs: SharedPreferences,
 ) : LaunchSiteDisplayRepository {

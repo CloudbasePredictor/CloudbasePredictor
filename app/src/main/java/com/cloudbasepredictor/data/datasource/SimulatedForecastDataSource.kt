@@ -4,9 +4,9 @@ import android.content.Context
 import com.cloudbasepredictor.data.remote.HourlyForecastData
 import com.cloudbasepredictor.data.remote.OpenMeteoHourlyForecastResponse
 import com.cloudbasepredictor.data.remote.toHourlyForecastData
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.serialization.json.Json
 
 /**
@@ -18,9 +18,9 @@ import kotlinx.serialization.json.Json
  * This data source ignores location/model parameters and always returns the same snapshot,
  * making it suitable for deterministic tests and screenshots.
  */
-@Singleton
+@SingleIn(AppScope::class)
 class SimulatedForecastDataSource @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val context: Context,
     private val json: Json,
 ) {
     private var cached: HourlyForecastData? = null

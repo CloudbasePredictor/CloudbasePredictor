@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.ui.screens.forecast
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -51,7 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.model.ForecastMode
@@ -65,6 +65,7 @@ import com.cloudbasepredictor.ui.screens.forecast.views.StuveForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.ThermicForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.WindForecastView
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -72,7 +73,7 @@ fun ForecastRoute(
     placeLocation: PlaceLocation,
     onOpenMap: () -> Unit,
     onPlaceLocationChanged: (PlaceLocation) -> Unit,
-    viewModel: ForecastViewModel = hiltViewModel(),
+    viewModel: ForecastViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -322,6 +323,7 @@ private fun ForecastErrorContent(
     }
 }
 
+@Suppress("LongMethod", "FunctionNaming")
 @Composable
 private fun ForecastReadyContent(
     uiState: ForecastReadyUiState,
@@ -350,6 +352,10 @@ private fun ForecastReadyContent(
                     ThermicForecastView(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
+                        noThermalsMessage = stringResource(R.string.forecast_no_thermals),
+                        overlayBackHandler = { enabled, onBack ->
+                            BackHandler(enabled = enabled, onBack = onBack)
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -358,6 +364,9 @@ private fun ForecastReadyContent(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
                         onStuveHourChanged = onStuveHourChanged,
+                        overlayBackHandler = { enabled, onBack ->
+                            BackHandler(enabled = enabled, onBack = onBack)
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -365,6 +374,9 @@ private fun ForecastReadyContent(
                     WindForecastView(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
+                        overlayBackHandler = { enabled, onBack ->
+                            BackHandler(enabled = enabled, onBack = onBack)
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

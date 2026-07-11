@@ -11,12 +11,15 @@ import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.theme.ThemeRepository
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 class SettingsViewModel @Inject constructor(
     private val dataSourceRepository: DataSourceRepository,
     private val themeRepository: ThemeRepository,

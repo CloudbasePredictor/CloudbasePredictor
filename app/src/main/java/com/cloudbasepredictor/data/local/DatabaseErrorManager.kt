@@ -2,16 +2,16 @@ package com.cloudbasepredictor.data.local
 
 import android.content.Context
 import android.content.Intent
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import timber.log.Timber
 
-@Singleton
+@SingleIn(AppScope::class)
 class DatabaseErrorManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val context: Context,
 ) {
     private val _showError = MutableStateFlow(false)
     val showError: StateFlow<Boolean> = _showError

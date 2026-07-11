@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
@@ -47,12 +46,13 @@ import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun SettingsRoute(
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel(),
+    viewModel: SettingsViewModel = metroViewModel(),
 ) {
     val dataSource by viewModel.dataSourcePreference.collectAsStateWithLifecycle()
     val theme by viewModel.themePreference.collectAsStateWithLifecycle()

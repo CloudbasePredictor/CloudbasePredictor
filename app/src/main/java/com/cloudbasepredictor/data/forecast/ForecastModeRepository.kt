@@ -1,8 +1,9 @@
 package com.cloudbasepredictor.data.forecast
 
 import com.cloudbasepredictor.model.ForecastMode
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +14,7 @@ interface ForecastModeRepository {
     fun selectMode(mode: ForecastMode)
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class InMemoryForecastModeRepository @Inject constructor() : ForecastModeRepository {
     private val mutableSelectedMode = MutableStateFlow(ForecastMode.THERMIC)
 

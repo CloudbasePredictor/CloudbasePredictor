@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.ui.screens.forecast.views
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -37,6 +38,9 @@ class ForecastOverlayBackDismissInstrumentedTest {
                         composeRule.activity,
                         mode = ForecastMode.THERMIC,
                     ),
+                    overlayBackHandler = { enabled, onBack ->
+                        BackHandler(enabled = enabled, onBack = onBack)
+                    },
                 )
             }
         }
@@ -65,6 +69,9 @@ class ForecastOverlayBackDismissInstrumentedTest {
                         composeRule.activity,
                         mode = ForecastMode.WIND,
                     ),
+                    overlayBackHandler = { enabled, onBack ->
+                        BackHandler(enabled = enabled, onBack = onBack)
+                    },
                 )
             }
         }

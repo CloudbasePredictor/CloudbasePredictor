@@ -4,30 +4,25 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.cloudbasepredictor.data.local.DatabaseErrorManager
-import com.cloudbasepredictor.data.theme.ThemeRepository
+import androidx.compose.runtime.CompositionLocalProvider
 import com.cloudbasepredictor.ui.CloudbasePredictorApp
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 
-@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
-    @Inject
-    lateinit var databaseErrorManager: DatabaseErrorManager
-
-    @Inject
-    lateinit var themeRepository: ThemeRepository
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val appGraph = (application as CloudbasePredictorApplication).appGraph
 
         setContent {
-            CloudbasePredictorApp(
-                databaseErrorManager = databaseErrorManager,
-                themeRepository = themeRepository,
-            )
+            CompositionLocalProvider(
+                LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+            ) {
+                CloudbasePredictorApp(
+                    databaseErrorManager = appGraph.databaseErrorManager,
+                    themeRepository = appGraph.themeRepository,
+                )
+            }
         }
     }
 }

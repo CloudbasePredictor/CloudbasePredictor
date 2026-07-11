@@ -1,0 +1,96 @@
+{
+  "distDirectory": "webApp/build/dist/wasmJs/productionExecutable",
+  "basePath": "/CloudbasePredictor/",
+  "bundle": {
+    "maximumDistributionBytes": 20000000,
+    "maximumDistributionGzipBytes": 6500000,
+    "maximumInitialTransferBytes": 13000000,
+    "maximumInitialTransferGzipBytes": 5500000,
+    "forbiddenInitialJavaScriptMarkers": [
+      "MapLibre GL JS"
+    ]
+  },
+  "browser": {
+    "startupBudgetMillis": 8000,
+    "forecastReadyTimeoutMillis": 20000,
+    "interactionTimeoutMillis": 10000,
+    "mapMountTimeoutMillis": 15000,
+    "mapLazyAssetPattern": "(?:^|/)maplibre(?:[.-]|$)",
+    "mapLazyAssetMarkers": [
+      "MapLibre GL JS",
+      "maplibregl"
+    ],
+    "minimumNamedInteractiveNodes": 5,
+    "maximumUnnamedInteractiveNodes": 0,
+    "chartVisual": {
+      "minimumWidthCssPixels": 100,
+      "minimumHeightCssPixels": 60,
+      "minimumQuantizedColors": 8,
+      "minimumNonDominantPixelRatio": 0.02,
+      "minimumEdgePixelRatio": 0.005,
+      "minimumPairwiseFingerprintDifferenceRatio": 0.08
+    },
+    "requiredNavigationNames": [
+      "Forecast",
+      "Map",
+      "Favorites",
+      "Settings"
+    ],
+    "locationSearchNamePattern": "location|place|search",
+    "requiredMapLayerNames": [
+      "Streets",
+      "Topo",
+      "Satellite (GIBS)",
+      "Satellite (Esri)"
+    ],
+    "forecastModes": [
+      {
+        "controlName": "Stüve",
+        "routeValue": "stuve",
+        "rendererName": "Stüve forecast chart renderer"
+      },
+      {
+        "controlName": "Wind",
+        "routeValue": "wind",
+        "rendererName": "Wind forecast chart renderer"
+      },
+      {
+        "controlName": "Cloud",
+        "routeValue": "cloud",
+        "rendererName": "Cloud forecast chart renderer"
+      },
+      {
+        "controlName": "Thermic",
+        "routeValue": "thermic",
+        "rendererName": "Thermic forecast chart renderer"
+      }
+    ],
+    "persistenceSelections": [
+      {
+        "id": "unit",
+        "controlName": "Display units option: Imperial",
+        "expectedState": "selected"
+      },
+      {
+        "id": "theme",
+        "controlName": "Theme option: Dark",
+        "expectedState": "selected"
+      },
+      {
+        "id": "map-layer",
+        "controlName": "Map layer option: Topo",
+        "expectedState": "selected"
+      },
+      {
+        "id": "startup",
+        "controlName": "Start the map with favorite locations",
+        "expectedState": "unchecked"
+      },
+      {
+        "id": "forecast-model",
+        "controlName": "Forecast model option: Best Effort",
+        "expectedState": "selected"
+      }
+    ]
+  }
+}

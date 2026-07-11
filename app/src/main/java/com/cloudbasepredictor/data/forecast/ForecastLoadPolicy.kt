@@ -1,11 +1,12 @@
 package com.cloudbasepredictor.data.forecast
 
+import com.cloudbasepredictor.model.DEFAULT_FORECAST_DAYS
 import kotlin.math.max
 import kotlin.math.min
 
 internal const val INITIAL_FORECAST_DAYS = 5
 internal const val FORECAST_DAY_BATCH_SIZE = 2
-internal const val MAX_FORECAST_DAYS = 14
+internal const val MAX_FORECAST_DAYS = DEFAULT_FORECAST_DAYS
 
 internal fun requestedForecastDaysForDayIndex(
     dayIndex: Int,

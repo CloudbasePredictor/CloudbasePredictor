@@ -6,8 +6,9 @@ import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.di.FavoritePlacesBackupPreferences
 import com.cloudbasepredictor.model.SavedPlace
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -24,7 +25,7 @@ object FavoritePlacesBackupContract {
     const val PREFS_FILE_NAME = "$PREFS_NAME.xml"
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class FavoritePlacesBackupStore @Inject constructor(
     @param:FavoritePlacesBackupPreferences private val prefs: SharedPreferences,
     private val json: Json,

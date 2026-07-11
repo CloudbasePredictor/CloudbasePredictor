@@ -157,9 +157,10 @@ internal fun HelpButtonOverlay(
 
 @Composable
 private fun ForecastHelpModelInfo(uiState: ForecastReadyUiState) {
-    val resolvedModel = uiState.resolvedModel ?: uiState.selectedModel
-    val modelText = if (uiState.resolvedModel != null && uiState.selectedModel != uiState.resolvedModel) {
-        "${uiState.selectedModel.displayName} -> ${uiState.resolvedModel.displayName}"
+    val actualResolvedModel = uiState.resolvedModel
+    val resolvedModel = actualResolvedModel ?: uiState.selectedModel
+    val modelText = if (actualResolvedModel != null && uiState.selectedModel != actualResolvedModel) {
+        "${uiState.selectedModel.displayName} -> ${actualResolvedModel.displayName}"
     } else {
         resolvedModel.displayName
     }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -29,6 +30,7 @@ import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.testutil.SimulatedTestData
 import com.cloudbasepredictor.ui.CloudbasePredictorApp
 import com.cloudbasepredictor.ui.navigation.CloudbaseNavGraph
+import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.screens.forecast.ForecastScreen
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.CLOUD_MODE_TAB
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.CLOUD_VIEW
@@ -39,6 +41,7 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_MODE_
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_MODE_TAB
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
+import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -202,5 +205,17 @@ private fun TestMapDestination(
         ) {
             Text(text = "Open forecast")
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TestMapDestinationPreview() {
+    CloudbasePredictorTheme {
+        TestMapDestination(
+            selectedPlace = PreviewData.savedPlace,
+            onSelectLocation = {},
+            onOpenForecast = {},
+        )
     }
 }

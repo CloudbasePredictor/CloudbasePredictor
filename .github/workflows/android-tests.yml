@@ -34,7 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run detekt
-        run: ./gradlew :app:detekt :engine:detekt
+        run: ./gradlew :app:detekt :engine:detekt :shared:detekt
 
       - name: Run Android Lint
         run: ./gradlew :app:lintDebug
@@ -47,6 +47,7 @@ jobs:
           path: |
             app/build/reports/detekt/
             engine/build/reports/detekt/
+            shared/build/reports/detekt/
             app/build/reports/lint-results-*.html
             app/build/reports/lint-results-*.xml
           if-no-files-found: ignore

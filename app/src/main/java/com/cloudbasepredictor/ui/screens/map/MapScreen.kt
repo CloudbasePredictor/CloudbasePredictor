@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cloudbasepredictor.BuildConfig
 import com.cloudbasepredictor.R
@@ -47,6 +46,7 @@ import com.cloudbasepredictor.ui.map.mapLayerAttributionDetailRes
 import com.cloudbasepredictor.ui.map.mapLayerAttributionRes
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -71,7 +71,7 @@ private val LOCATION_PERMISSIONS = arrayOf(
 fun MapRoute(
     onOpenForecast: (PlaceLocation) -> Unit,
     onOpenSettings: () -> Unit,
-    viewModel: MapViewModel = hiltViewModel(),
+    viewModel: MapViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

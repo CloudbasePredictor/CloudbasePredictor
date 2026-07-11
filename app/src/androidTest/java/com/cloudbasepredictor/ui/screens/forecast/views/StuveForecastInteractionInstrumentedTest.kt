@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.ui.screens.forecast.views
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
@@ -101,6 +102,9 @@ class StuveForecastInteractionInstrumentedTest {
                         topAltitudeKm = visibleTopAltitudeKm,
                     ),
                     onVisibleTopAltitudeChange = { visibleTopAltitudeKm = it },
+                    overlayBackHandler = { enabled, onBack ->
+                        BackHandler(enabled = enabled, onBack = onBack)
+                    },
                 )
             }
         }

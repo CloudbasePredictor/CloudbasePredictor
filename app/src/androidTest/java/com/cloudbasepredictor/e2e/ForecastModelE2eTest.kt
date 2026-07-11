@@ -1,5 +1,6 @@
 package com.cloudbasepredictor.e2e
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -7,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.cloudbasepredictor.CloudbasePredictorApplication
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
@@ -15,8 +17,8 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.MODEL_OPTION_
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.MODEL_SELECTOR_BUTTON
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
+import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,15 +32,11 @@ import org.junit.runner.RunWith
  *
  * Run with: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.cloudbasepredictor.e2e.ForecastModelE2eTest
  */
-@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class ForecastModelE2eTest {
 
-    @get:Rule(order = 0)
-    val hiltRule = HiltAndroidRule(this)
-
-    @get:Rule(order = 1)
-    val composeRule = createAndroidComposeRule<HiltTestActivity>()
+    @get:Rule
+    val composeRule = createAndroidComposeRule<ForecastTestActivity>()
 
     /** Innsbruck, Austria — Central Europe, covered by ICON D2 and AROME fallback chain. */
     private val testPlace = SavedPlace(
@@ -53,14 +51,22 @@ class ForecastModelE2eTest {
 
     @Before
     fun setUp() {
-        hiltRule.inject()
+        val appGraph = (composeRule.activity.application as CloudbasePredictorApplication).appGraph
+        assertSame(
+            appGraph.openMeteoRemoteDataSource,
+            appGraph.openMeteoRemoteDataSource,
+        )
         composeRule.setContent {
-            CloudbasePredictorTheme {
-                ForecastRoute(
-                    placeLocation = PlaceLocation.fromSavedPlace(testPlace),
-                    onOpenMap = {},
-                    onPlaceLocationChanged = {},
-                )
+            CompositionLocalProvider(
+                LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+            ) {
+                CloudbasePredictorTheme {
+                    ForecastRoute(
+                        placeLocation = PlaceLocation.fromSavedPlace(testPlace),
+                        onOpenMap = {},
+                        onPlaceLocationChanged = {},
+                    )
+                }
             }
         }
     }
