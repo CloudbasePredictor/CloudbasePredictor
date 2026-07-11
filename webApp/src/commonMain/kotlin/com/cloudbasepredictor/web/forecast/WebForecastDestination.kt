@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package com.cloudbasepredictor.web.forecast
 
 import androidx.compose.foundation.horizontalScroll
@@ -149,6 +151,7 @@ fun WebForecastDestination(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun WebForecastReadyContent(
     routeState: WebRouteState,
@@ -162,117 +165,137 @@ private fun WebForecastReadyContent(
     onVisibleTopAltitudeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = uiState.selectedPlace?.name ?: "Forecast",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    text = buildString {
-                        append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
-                        append(if (fromCache) " · saved forecast" else " · live forecast")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onShareRequested) {
-                    Text("Copy link")
-                }
-                OutlinedButton(onClick = onFavoriteToggle) {
-                    Text(if (isFavorite) "Remove favorite" else "Save favorite")
-                }
-            }
-        }
+    var showModelSheet by remember(routeState.location) { mutableStateOf(false) }
+    var visibleDayCount by remember(uiState.dayChips.size) {
+        mutableIntStateOf(INITIAL_VISIBLE_DAY_CHIPS)
+    }
+    // Keep the selected day visible even when it is beyond the progressive window (e.g. deep links).
+    val shownDayCount = maxOf(visibleDayCount, uiState.selectedDayIndex + 1)
+        .coerceAtMost(uiState.dayChips.size)
 
-        ScrollableChipRow {
-            ForecastModel.entries.forEach { model ->
-                val isSelected = model == routeState.model
-                FilterChip(
-                    selected = isSelected,
-                    onClick = {
-                        onForecastModelSelected(model)
-                        onRouteChanged(routeState.copy(model = model, dayIndex = 0))
-                    },
-                    label = { Text(model.displayName) },
-                )
-            }
-        }
-        ScrollableChipRow {
-            ForecastMode.entries.forEach { mode ->
-                val isSelected = mode == routeState.mode
-                val selectMode = { onRouteChanged(routeState.copy(mode = mode)) }
-                WebForecastModeChoice(
-                    mode = mode,
-                    selected = isSelected,
-                    onSelected = selectMode,
-                )
-            }
-        }
-        ScrollableChipRow {
-            uiState.dayChips.forEachIndexed { index, day ->
-                val isSelected = index == uiState.selectedDayIndex
-                val label = "${day.title} ${day.subtitle}"
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onRouteChanged(routeState.copy(dayIndex = index)) },
-                    label = { Text(label) },
-                )
-            }
-        }
-
-        Box(
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            when (routeState.mode) {
-                ForecastMode.THERMIC -> ThermicForecastView(
-                    uiState = uiState,
-                    onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                    noThermalsMessage = "No usable thermals are forecast for this period.",
-                    modifier = Modifier.fillMaxSize(),
-                )
-                ForecastMode.STUVE -> StuveForecastView(
-                    uiState = uiState,
-                    onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                    onStuveHourChanged = { hour ->
-                        onRouteChanged(routeState.copy(hour = hour))
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
-                ForecastMode.WIND -> WindForecastView(
-                    uiState = uiState,
-                    onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                ForecastMode.CLOUD -> CloudForecastView(
-                    uiState = uiState,
-                    onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = uiState.selectedPlace?.name ?: "Forecast",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        text = buildString {
+                            append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
+                            append(if (fromCache) " · saved forecast" else " · live forecast")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onShareRequested) {
+                        Text("Copy link")
+                    }
+                    OutlinedButton(onClick = onFavoriteToggle) {
+                        Text(if (isFavorite) "Remove favorite" else "Save favorite")
+                    }
+                }
             }
+
+            WebForecastModePicker(
+                selectedMode = routeState.mode,
+                onModeSelected = { mode -> onRouteChanged(routeState.copy(mode = mode)) },
+            )
+            WebForecastModelPill(
+                selectedModel = routeState.model,
+                resolvedModel = uiState.resolvedModel,
+                onClick = { showModelSheet = true },
+            )
+            ScrollableChipRow {
+                uiState.dayChips.take(shownDayCount).forEachIndexed { index, day ->
+                    val isSelected = index == uiState.selectedDayIndex
+                    val label = "${day.title} ${day.subtitle}"
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onRouteChanged(routeState.copy(dayIndex = index)) },
+                        label = { Text(label) },
+                    )
+                }
+                if (shownDayCount < uiState.dayChips.size) {
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            visibleDayCount = (shownDayCount + DAY_CHIP_INCREMENT)
+                                .coerceAtMost(uiState.dayChips.size)
+                        },
+                        label = { Text("More days") },
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                when (routeState.mode) {
+                    ForecastMode.THERMIC -> ThermicForecastView(
+                        uiState = uiState,
+                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
+                        noThermalsMessage = "No usable thermals are forecast for this period.",
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    ForecastMode.STUVE -> StuveForecastView(
+                        uiState = uiState,
+                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
+                        onStuveHourChanged = { hour ->
+                            onRouteChanged(routeState.copy(hour = hour))
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    ForecastMode.WIND -> WindForecastView(
+                        uiState = uiState,
+                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    ForecastMode.CLOUD -> CloudForecastView(
+                        uiState = uiState,
+                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            Text(
+                text = "${uiState.forecastText} · Forecast data by Open-Meteo.com",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        Text(
-            text = "${uiState.forecastText} · Forecast data by Open-Meteo.com",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+
+        if (showModelSheet) {
+            WebForecastModelSheet(
+                selectedModel = routeState.model,
+                onModelSelected = { model ->
+                    onForecastModelSelected(model)
+                    onRouteChanged(routeState.copy(model = model, dayIndex = 0))
+                    visibleDayCount = INITIAL_VISIBLE_DAY_CHIPS
+                },
+                onDismiss = { showModelSheet = false },
+            )
+        }
     }
 }
+
+private const val INITIAL_VISIBLE_DAY_CHIPS = 5
+private const val DAY_CHIP_INCREMENT = 2
 
 @Composable
 private fun ScrollableChipRow(content: @Composable () -> Unit) {

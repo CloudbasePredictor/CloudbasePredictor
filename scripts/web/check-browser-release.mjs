@@ -308,6 +308,22 @@ try {
 
   const forecastModeResults = await exerciseForecastModes(browser);
 
+  // Forecast model selector: pill opens an in-canvas sheet listing every model with Best Effort
+  // last (mirrors Android's ModelSelectorOverlay). Opened and closed without changing the model so
+  // the deterministic forecast request contract (icon_seamless) is preserved.
+  await clickAccessibleControl(browser, "Forecast model: ICON Seamless", config.browser.interactionTimeoutMillis);
+  await waitForAccessibleControl(
+    browser,
+    "Forecast model option: ICON Seamless selected",
+    config.browser.interactionTimeoutMillis,
+    "forecast model sheet",
+  );
+  const modelSheetNodes = await accessibilitySnapshot(browser);
+  const modelSheetListsBestEffort =
+    findAccessibleControl(modelSheetNodes, "Forecast model option: Best Effort not selected") !== undefined;
+  check("forecast model sheet lists all models including Best Effort", modelSheetListsBestEffort);
+  await clickAccessibleControl(browser, "Close", config.browser.interactionTimeoutMillis);
+
   await clickAccessibleControl(browser, "Map", config.browser.interactionTimeoutMillis);
   await waitForExpression(
     browser,
@@ -335,6 +351,22 @@ try {
     mapState.geolocationLabel,
   );
   check("MapLibre canvas mounts", mapState.mapCanvasCount > 0, String(mapState.mapCanvasCount));
+
+  // The map camera is written to the durable user-state document on load, so it can be restored
+  // (default Berlin) on the next open/reload, matching Android's SharedPreferencesMapCameraStore.
+  let cameraPersisted = false;
+  try {
+    await waitForExpression(
+      browser,
+      `(localStorage.getItem(${JSON.stringify(USER_STATE_STORAGE_KEY)}) ?? "").includes("map_camera_latitude")`,
+      config.browser.interactionTimeoutMillis,
+      "map camera persistence",
+    );
+    cameraPersisted = true;
+  } catch {
+    cameraPersisted = false;
+  }
+  check("map camera is persisted to durable storage after opening the map", cameraPersisted);
 
   const mapAccessibility = await accessibilitySnapshot(browser);
   const geolocationControl = findAccessibleControl(mapAccessibility, "Use my location");
@@ -482,28 +514,33 @@ try {
   const favoriteStorageBeforeReload = await localStorageHas(browser, FAVORITES_STORAGE_KEY);
   check("favorite is written to durable browser storage", favoriteStorageBeforeReload);
 
-  await clickAccessibleControl(browser, "Favorites", config.browser.interactionTimeoutMillis);
+  // Favorites are now reached from the top-app-bar star (a dialog), not a navigation tab, so the
+  // web navigation matches the Android app's four destinations (Map, Forecast, Settings, About).
   const favoriteOpenControlName = `Open forecast for ${MOCK_LOCATION.name}`;
+  await clickAccessibleControl(browser, "Favorite locations", config.browser.interactionTimeoutMillis);
   await waitForAccessibleControl(
     browser,
     favoriteOpenControlName,
     config.browser.interactionTimeoutMillis,
-    "Favorites UI",
+    "Favorites dialog",
   );
   const favoriteBeforeReload = await accessibilityContainsName(browser, MOCK_LOCATION.name);
-  check("Favorites UI displays the saved location", favoriteBeforeReload, MOCK_LOCATION.name);
+  check("Favorites dialog displays the saved location", favoriteBeforeReload, MOCK_LOCATION.name);
+  await clickAccessibleControl(browser, "Close", config.browser.interactionTimeoutMillis);
 
   await reloadCurrentPage(browser);
+  await clickAccessibleControl(browser, "Favorite locations", config.browser.interactionTimeoutMillis);
   await waitForAccessibleControl(
     browser,
     favoriteOpenControlName,
     config.browser.interactionTimeoutMillis,
-    "Favorites UI after reload",
+    "Favorites dialog after reload",
   );
   const favoriteAfterReload = await accessibilityContainsName(browser, MOCK_LOCATION.name);
   const favoriteStorageAfterReload = await localStorageHas(browser, FAVORITES_STORAGE_KEY);
   check("favorite remains visible after reload", favoriteAfterReload, MOCK_LOCATION.name);
   check("favorite storage remains present after reload", favoriteStorageAfterReload);
+  await clickAccessibleControl(browser, "Close", config.browser.interactionTimeoutMillis);
 
   await clickAccessibleControl(browser, "Settings", config.browser.interactionTimeoutMillis);
   await waitForAccessibility(
@@ -535,6 +572,21 @@ try {
     check(`${result.id} preference survives reload`, result.matches, result.state);
   }
   check("preference storage remains present after reload", preferenceStorageAfterReload);
+
+  await clickAccessibleControl(browser, "About", config.browser.interactionTimeoutMillis);
+  const aboutSourceControl = await waitForAccessibleControl(
+    browser,
+    "Source code on GitHub",
+    config.browser.interactionTimeoutMillis,
+    "About screen",
+  );
+  const aboutForecastAttribution = findAccessibleControl(
+    await accessibilitySnapshot(browser),
+    "Open-Meteo",
+  );
+  check("About screen exposes the source-code link", aboutSourceControl !== undefined);
+  check("About screen exposes data-source attribution", aboutForecastAttribution !== undefined);
+
   check(
     "deterministic API interception has no failures",
     apiMocks.failures.length === 0,
@@ -1294,8 +1346,12 @@ async function reloadCurrentPage(client) {
 }
 
 function isCompleteForecastHash(hash, location) {
-  if (!hash.startsWith("#/?")) return false;
-  const parameters = new URLSearchParams(hash.substring(hash.indexOf("?") + 1));
+  const marker = hash.indexOf("?");
+  if (marker < 0) return false;
+  // Forecasts now encode to "#/forecast?…"; legacy share links used the bare "#/?…" form.
+  const prefix = hash.slice(0, marker);
+  if (prefix !== "#/forecast" && prefix !== "#/") return false;
+  const parameters = new URLSearchParams(hash.substring(marker + 1));
   const latitude = Number(parameters.get("lat"));
   const longitude = Number(parameters.get("lon"));
   return Math.abs(latitude - location.latitude) < 0.000001 &&

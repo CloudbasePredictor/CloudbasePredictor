@@ -34,9 +34,11 @@ internal expect fun WebMapDestination(
     routeState: WebRouteState,
     preferences: WebPreferencesState,
     favoritePlaces: List<SavedPlace>,
+    savedCamera: MapCameraPosition?,
     searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
+    onCameraChanged: (MapCameraPosition) -> Unit,
     modifier: Modifier = Modifier,
 )
 
@@ -47,8 +49,10 @@ private fun WebMapModelsPreview() {
         routeState = WebPreviewData.mapRoute,
         preferences = WebPreviewData.preferences,
         favoritePlaces = WebPreviewData.favoritePlaces,
+        savedCamera = null,
         searchLocations = { emptyList() },
         onMapLayerSelected = {},
         onLocationConfirmed = {},
+        onCameraChanged = {},
     )
 }

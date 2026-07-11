@@ -8,6 +8,7 @@ import com.cloudbasepredictor.data.remote.OpenMeteoGeocodingDataSource
 import com.cloudbasepredictor.data.remote.createCloudbaseHttpClient
 import com.cloudbasepredictor.web.forecast.WebForecastRepository
 import com.cloudbasepredictor.web.forecast.WebForecastSource
+import com.cloudbasepredictor.web.map.WebMapCameraStore
 import com.cloudbasepredictor.web.preferences.WebPreferences
 import com.cloudbasepredictor.web.storage.BrowserIndexedDbForecastCacheStore
 import com.cloudbasepredictor.web.storage.BrowserLocalStorageFavoritePlaceStore
@@ -40,6 +41,7 @@ actual fun createWebAppEnvironment(): WebAppEnvironment {
         ),
         preferences = WebPreferences(keyValueStorage),
         favoritePlaceStore = BrowserLocalStorageFavoritePlaceStore(),
+        mapCameraStore = WebMapCameraStore(keyValueStorage),
         searchLocations = geocodingDataSource::search,
         closeAction = httpClient::close,
     )

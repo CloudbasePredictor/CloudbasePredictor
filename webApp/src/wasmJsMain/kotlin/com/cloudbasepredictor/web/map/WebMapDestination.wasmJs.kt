@@ -37,15 +37,15 @@ internal actual fun WebMapDestination(
     routeState: WebRouteState,
     preferences: WebPreferencesState,
     favoritePlaces: List<SavedPlace>,
+    savedCamera: MapCameraPosition?,
     searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
+    onCameraChanged: (MapCameraPosition) -> Unit,
     modifier: Modifier,
 ) {
     var selectedLocation by remember(routeState.location) { mutableStateOf(routeState.location) }
-    val initialLocation = routeState.location
-        ?: favoritePlaces.firstOrNull()?.takeIf { preferences.startWithFavorites }?.toLocation()
-        ?: DEFAULT_WEB_LOCATION
+    val initialCamera = resolveInitialCamera(routeState, preferences, favoritePlaces, savedCamera)
     val favoriteMarkers = favoritePlaces.map { place ->
         WebMapMarker(
             id = place.id,
@@ -55,11 +55,7 @@ internal actual fun WebMapDestination(
         )
     }
     val renderState = WebMapRenderState(
-        initialCamera = MapCameraPosition(
-            latitude = initialLocation.latitude,
-            longitude = initialLocation.longitude,
-            zoom = INITIAL_MAP_ZOOM,
-        ),
+        initialCamera = initialCamera,
         layer = preferences.mapLayer,
         markers = favoriteMarkers + selectedLocation?.let { location ->
             listOf(
@@ -76,11 +72,36 @@ internal actual fun WebMapDestination(
     WebMapSurface(
         state = renderState,
         searchLocations = searchLocations,
-        onMapTap = { selectedLocation = it },
+        onMapTap = { tapped ->
+            // Tapping within ~200 m of a favorite selects the favorite (like Android).
+            val nearbyFavorite = favoritePlaces.firstOrNull { favorite ->
+                favorite.isNearby(tapped.latitude, tapped.longitude)
+            }
+            selectedLocation = nearbyFavorite?.toLocation() ?: tapped
+        },
         onLayerSelected = onMapLayerSelected,
         onLocationConfirmed = onLocationConfirmed,
+        onCameraChanged = onCameraChanged,
         modifier = modifier,
     )
+}
+
+private fun resolveInitialCamera(
+    routeState: WebRouteState,
+    preferences: WebPreferencesState,
+    favoritePlaces: List<SavedPlace>,
+    savedCamera: MapCameraPosition?,
+): MapCameraPosition {
+    val location = routeState.location
+    val favorite = favoritePlaces.firstOrNull()?.takeIf { preferences.startWithFavorites }
+    return when {
+        location != null ->
+            MapCameraPosition(location.latitude, location.longitude, INITIAL_MAP_ZOOM)
+        savedCamera != null -> savedCamera
+        favorite != null ->
+            MapCameraPosition(favorite.latitude, favorite.longitude, INITIAL_MAP_ZOOM)
+        else -> DEFAULT_MAP_CAMERA
+    }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -91,12 +112,14 @@ private fun WebMapSurface(
     onMapTap: (PlaceLocation) -> Unit,
     onLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
+    onCameraChanged: (MapCameraPosition) -> Unit,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
     val currentMapTap = rememberUpdatedState(onMapTap)
     val currentLayerSelected = rememberUpdatedState(onLayerSelected)
     val currentLocationConfirmed = rememberUpdatedState(onLocationConfirmed)
+    val currentCameraChanged = rememberUpdatedState(onCameraChanged)
     val binding = remember {
         MapLibreBinding(
             scope = scope,
@@ -104,6 +127,7 @@ private fun WebMapSurface(
             onMapTap = { currentMapTap.value(it) },
             onLayerSelected = { currentLayerSelected.value(it) },
             onLocationConfirmed = { currentLocationConfirmed.value(it) },
+            onCameraChanged = { currentCameraChanged.value(it) },
         )
     }
 
@@ -130,6 +154,7 @@ private class MapLibreBinding(
     private val onMapTap: (PlaceLocation) -> Unit,
     private val onLayerSelected: (MapLayerPreference) -> Unit,
     private val onLocationConfirmed: (PlaceLocation) -> Unit,
+    private val onCameraChanged: (MapCameraPosition) -> Unit,
 ) {
     private var disposed = false
     private var latestState: WebMapRenderState? = null
@@ -318,6 +343,10 @@ private class MapLibreBinding(
         subscriptions += createdMap.on("load") {
             showStatus("", isError = false)
             createdMap.resize()
+            saveCamera(createdMap)
+        }
+        subscriptions += createdMap.on("moveend") {
+            saveCamera(createdMap)
         }
         subscriptions += createdMap.on("click") { event ->
             onMapTap(
@@ -389,6 +418,17 @@ private class MapLibreBinding(
         confirmButton?.disabled = selected == null
         attributionButton?.textContent = state.layer.attributionCompact
         attributionDetail?.textContent = state.layer.attributionFull
+    }
+
+    private fun saveCamera(currentMap: MapLibreMap) {
+        val center = currentMap.getCenter()
+        onCameraChanged(
+            MapCameraPosition(
+                latitude = center.lat,
+                longitude = center.lng,
+                zoom = currentMap.getZoom(),
+            ),
+        )
     }
 
     private fun requestDeviceLocation() {
@@ -518,16 +558,19 @@ private fun SavedPlace.toLocation(): PlaceLocation {
     return PlaceLocation(latitude = latitude, longitude = longitude, name = name)
 }
 
-private val DEFAULT_WEB_LOCATION = PlaceLocation(
-    latitude = 47.3769,
-    longitude = 8.5417,
-    name = "Zürich",
+// Default camera matches the Android app: Berlin at zoom 5.5 when no location, saved camera, or
+// favorite is available.
+private val DEFAULT_MAP_CAMERA = MapCameraPosition(
+    latitude = 52.5200,
+    longitude = 13.4050,
+    zoom = DEFAULT_MAP_ZOOM,
 )
 
 private const val SELECTED_MARKER_ID = "selected-location"
 private const val SELECTED_MARKER_COLOR = "#e64a5b"
 private const val FAVORITE_MARKER_COLOR = "#ffc107"
 private const val INITIAL_MAP_ZOOM = 10.0
+private const val DEFAULT_MAP_ZOOM = 5.5
 private const val DEVICE_LOCATION_ZOOM = 12.0
 private const val MINIMUM_SEARCH_LENGTH = 2
 
@@ -538,8 +581,10 @@ private fun WebMapDestinationPreview() {
         routeState = WebPreviewData.mapRoute,
         preferences = WebPreviewData.preferences,
         favoritePlaces = WebPreviewData.favoritePlaces,
+        savedCamera = null,
         searchLocations = { emptyList() },
         onMapLayerSelected = {},
         onLocationConfirmed = {},
+        onCameraChanged = {},
     )
 }

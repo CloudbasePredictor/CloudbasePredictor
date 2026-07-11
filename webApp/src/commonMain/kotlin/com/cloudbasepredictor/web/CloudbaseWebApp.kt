@@ -1,10 +1,21 @@
+@file:Suppress("FunctionNaming")
+
 package com.cloudbasepredictor.web
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,14 +26,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
-import com.cloudbasepredictor.web.favorites.WebFavoritesDestination
+import com.cloudbasepredictor.web.about.WebAboutDestination
+import com.cloudbasepredictor.web.favorites.WebFavoritesDialog
 import com.cloudbasepredictor.web.forecast.WebForecastDestination
 import com.cloudbasepredictor.web.map.WebMapDestination
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
@@ -32,7 +49,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("FunctionNaming")
+@Suppress("LongMethod")
 @Composable
 fun CloudbaseWebApp(
     environment: WebAppEnvironment,
@@ -51,12 +68,36 @@ fun CloudbaseWebApp(
         ThemePreference.LIGHT -> false
         ThemePreference.DARK -> true
     }
+    var showFavorites by remember { mutableStateOf(false) }
+    var autoOpenHandled by remember { mutableStateOf(false) }
+
+    // Auto-open the favorites dialog on the map when the user opted in and has at least two saved
+    // locations, once per app load — matching the Android app's startup behavior.
+    LaunchedEffect(favoritePlaces, routeState.destination, preferences.startWithFavorites) {
+        val shouldAutoOpen = routeState.destination == WebDestination.Map &&
+            preferences.startWithFavorites &&
+            favoritePlaces.size >= AUTO_OPEN_FAVORITE_THRESHOLD
+        if (!autoOpenHandled && shouldAutoOpen) {
+            autoOpenHandled = true
+            showFavorites = true
+        }
+    }
 
     MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
         Surface(modifier = modifier.fillMaxSize()) {
             Scaffold(
                 topBar = {
-                    TopAppBar(title = { Text("Cloudbase Predictor") })
+                    TopAppBar(
+                        title = { Text("Cloudbase Predictor") },
+                        actions = {
+                            IconButton(onClick = { showFavorites = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Star,
+                                    contentDescription = "Favorite locations",
+                                )
+                            }
+                        },
+                    )
                 },
                 bottomBar = {
                     WebNavigationBar(
@@ -67,28 +108,46 @@ fun CloudbaseWebApp(
                     )
                 },
             ) { contentPadding ->
-                DestinationContent(
-                    environment = environment,
-                    routeState = routeState,
-                    preferences = preferences,
-                    favoritePlaces = favoritePlaces,
-                    onNavigate = onNavigate,
-                    onFavoriteToggle = { location, isFavorite ->
-                        scope.launch {
-                            val place = location.toSavedPlace().copy(isFavorite = true)
-                            if (isFavorite) {
-                                environment.favoritePlaceStore.delete(place.id)
-                            } else {
-                                environment.favoritePlaceStore.upsert(place)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    DestinationContent(
+                        environment = environment,
+                        routeState = routeState,
+                        preferences = preferences,
+                        favoritePlaces = favoritePlaces,
+                        onNavigate = onNavigate,
+                        onFavoriteToggle = { location, isFavorite ->
+                            scope.launch {
+                                val place = location.toSavedPlace().copy(isFavorite = true)
+                                if (isFavorite) {
+                                    environment.favoritePlaceStore.delete(place.id)
+                                } else {
+                                    environment.favoritePlaceStore.upsert(place)
+                                }
                             }
-                        }
-                    },
-                    onShareRequested = { copyWebShareUrl(routeState) },
-                    onFavoriteDeleted = { place ->
-                        scope.launch { environment.favoritePlaceStore.delete(place.id) }
-                    },
-                    contentPadding = contentPadding,
-                )
+                        },
+                        onShareRequested = { copyWebShareUrl(routeState) },
+                        contentPadding = contentPadding,
+                    )
+
+                    if (showFavorites) {
+                        WebFavoritesDialog(
+                            savedPlaces = favoritePlaces,
+                            onPlaceSelected = { place ->
+                                showFavorites = false
+                                onNavigate(
+                                    routeState.copy(
+                                        destination = WebDestination.Forecast,
+                                        location = place.toLocation(),
+                                    ),
+                                )
+                            },
+                            onPlaceDeleted = { place ->
+                                scope.launch { environment.favoritePlaceStore.delete(place.id) }
+                            },
+                            onDismiss = { showFavorites = false },
+                        )
+                    }
+                }
             }
         }
     }
@@ -104,14 +163,22 @@ private fun WebNavigationBar(
             NavigationBarItem(
                 selected = destination == selectedDestination,
                 onClick = { onDestinationSelected(destination) },
-                icon = { Text(destination.label.take(1)) },
+                icon = { Icon(imageVector = destination.icon, contentDescription = null) },
                 label = { Text(destination.label) },
             )
         }
     }
 }
 
-@Suppress("LongMethod", "LongParameterList")
+private val WebDestination.icon: ImageVector
+    get() = when (this) {
+        WebDestination.Map -> Icons.Outlined.Map
+        WebDestination.Forecast -> Icons.Outlined.WbCloudy
+        WebDestination.Settings -> Icons.Outlined.Settings
+        WebDestination.About -> Icons.Outlined.Info
+    }
+
+@Suppress("LongParameterList")
 @Composable
 private fun DestinationContent(
     environment: WebAppEnvironment,
@@ -121,7 +188,6 @@ private fun DestinationContent(
     onNavigate: (WebRouteState) -> Unit,
     onFavoriteToggle: (PlaceLocation, Boolean) -> Unit,
     onShareRequested: () -> Unit,
-    onFavoriteDeleted: (SavedPlace) -> Unit,
     contentPadding: PaddingValues,
 ) {
     val contentModifier = Modifier
@@ -143,8 +209,10 @@ private fun DestinationContent(
             routeState = routeState,
             preferences = preferences,
             favoritePlaces = favoritePlaces,
+            savedCamera = environment.mapCameraStore.read(),
             searchLocations = environment.searchLocations,
             onMapLayerSelected = environment.preferences::selectMapLayer,
+            onCameraChanged = environment.mapCameraStore::write,
             onLocationConfirmed = { location ->
                 onNavigate(
                     routeState.copy(
@@ -153,19 +221,6 @@ private fun DestinationContent(
                     ),
                 )
             },
-            modifier = contentModifier,
-        )
-        WebDestination.Favorites -> WebFavoritesDestination(
-            savedPlaces = favoritePlaces,
-            onPlaceSelected = { place ->
-                onNavigate(
-                    routeState.copy(
-                        destination = WebDestination.Forecast,
-                        location = place.toLocation(),
-                    ),
-                )
-            },
-            onPlaceDeleted = onFavoriteDeleted,
             modifier = contentModifier,
         )
         WebDestination.Settings -> WebSettingsDestination(
@@ -180,6 +235,7 @@ private fun DestinationContent(
             },
             modifier = contentModifier,
         )
+        WebDestination.About -> WebAboutDestination(modifier = contentModifier)
     }
 }
 
@@ -187,14 +243,17 @@ private fun SavedPlace.toLocation(): PlaceLocation {
     return PlaceLocation(latitude = latitude, longitude = longitude, name = name)
 }
 
-@Preview(name = "Web favorites shell content", showBackground = true, widthDp = 1024, heightDp = 760)
+private const val AUTO_OPEN_FAVORITE_THRESHOLD = 2
+
+@Preview(name = "Web about shell content", showBackground = true, widthDp = 1024, heightDp = 760)
 @Composable
 private fun CloudbaseWebAppPreview() {
     MaterialTheme {
-        WebFavoritesDestination(
+        WebFavoritesDialog(
             savedPlaces = WebDestinationPreviewData.favoritePlaces,
             onPlaceSelected = {},
             onPlaceDeleted = {},
+            onDismiss = {},
         )
     }
 }

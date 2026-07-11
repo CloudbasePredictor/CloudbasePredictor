@@ -31,10 +31,10 @@
       "minimumPairwiseFingerprintDifferenceRatio": 0.08
     },
     "requiredNavigationNames": [
-      "Forecast",
       "Map",
-      "Favorites",
-      "Settings"
+      "Forecast",
+      "Settings",
+      "About"
     ],
     "locationSearchNamePattern": "location|place|search",
     "requiredMapLayerNames": [
@@ -55,14 +55,14 @@
         "rendererName": "Wind forecast chart renderer"
       },
       {
-        "controlName": "Cloud",
-        "routeValue": "cloud",
-        "rendererName": "Cloud forecast chart renderer"
-      },
-      {
         "controlName": "Thermic",
         "routeValue": "thermic",
         "rendererName": "Thermic forecast chart renderer"
+      },
+      {
+        "controlName": "Cloud",
+        "routeValue": "cloud",
+        "rendererName": "Cloud forecast chart renderer"
       }
     ],
     "persistenceSelections": [

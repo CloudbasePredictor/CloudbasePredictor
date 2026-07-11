@@ -28,12 +28,41 @@ class WebRouteStateCodecTest {
     }
 
     @Test
-    fun rootAndUnknownFragmentsFallBackToForecast() {
-        val forecast = WebRouteState(WebDestination.Forecast)
+    fun rootAndUnknownFragmentsFallBackToMap() {
+        val map = WebRouteState(WebDestination.Map)
 
-        assertEquals(forecast, WebRouteStateCodec.decode(null))
-        assertEquals(forecast, WebRouteStateCodec.decode("#/"))
-        assertEquals(forecast, WebRouteStateCodec.decode("#/not-a-route"))
+        assertEquals(map, WebRouteStateCodec.decode(null))
+        assertEquals(map, WebRouteStateCodec.decode("#/"))
+        assertEquals(map, WebRouteStateCodec.decode("#/not-a-route"))
+    }
+
+    @Test
+    fun emptyFragmentOpensMapButLegacyLocationLinksOpenForecast() {
+        assertEquals(WebDestination.Map, WebRouteStateCodec.decode("").destination)
+        assertEquals(WebDestination.Map, WebRouteStateCodec.decode("#/").destination)
+
+        val legacy = WebRouteStateCodec.decode("#/?lat=47.6631&lon=11.5217&name=Brauneck")
+        assertEquals(WebDestination.Forecast, legacy.destination)
+        assertEquals(PlaceLocation(47.6631, 11.5217, "Brauneck"), legacy.location)
+    }
+
+    @Test
+    fun forecastAndMapEncodeToExplicitSlugs() {
+        assertEquals("#/map", WebRouteStateCodec.encodeFragment(WebRouteState(WebDestination.Map)))
+        assertEquals(
+            "#/forecast",
+            WebRouteStateCodec.encodeFragment(WebRouteState(WebDestination.Forecast)),
+        )
+    }
+
+    @Test
+    fun mapStateWithLocationRoundTripsWithoutBecomingForecast() {
+        val state = WebRouteState(
+            destination = WebDestination.Map,
+            location = PlaceLocation(47.0, 11.0, "Test"),
+        )
+
+        assertEquals(state, WebRouteStateCodec.decode(WebRouteStateCodec.encodeFragment(state)))
     }
 
     @Test
@@ -48,9 +77,9 @@ class WebRouteStateCodecTest {
     }
 
     @Test
-    fun decoderAcceptsQueriesAndTrailingSlashes() {
+    fun legacyFavoritesRouteRedirectsToMapAcceptingQueriesAndTrailingSlashes() {
         assertEquals(
-            WebRouteState(WebDestination.Favorites),
+            WebRouteState(WebDestination.Map),
             WebRouteStateCodec.decode("#/favorites/?from=forecast"),
         )
     }

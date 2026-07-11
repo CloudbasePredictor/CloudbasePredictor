@@ -8,10 +8,11 @@ enum class WebDestination(
     val slug: String,
     val label: String,
 ) {
-    Forecast(slug = "forecast", label = "Forecast"),
+    // Order mirrors the Android app's bottom navigation (Map, Forecast, Settings, About).
     Map(slug = "map", label = "Map"),
-    Favorites(slug = "favorites", label = "Favorites"),
+    Forecast(slug = "forecast", label = "Forecast"),
     Settings(slug = "settings", label = "Settings"),
+    About(slug = "about", label = "About"),
 }
 
 data class WebRouteState(
@@ -35,8 +36,6 @@ object WebRouteStateCodec {
             .substringAfter('#')
             .trim()
         val slug = normalized.substringBefore('?').trim('/')
-        val destination = WebDestination.entries.firstOrNull { it.slug == slug }
-            ?: WebDestination.Forecast
         val parameters = normalized.substringAfter('?', missingDelimiterValue = "")
             .split('&')
             .mapNotNull { entry ->
@@ -47,6 +46,7 @@ object WebRouteStateCodec {
             }
             .toMap()
         val location = decodeLocation(parameters)
+        val destination = resolveDestination(slug, location)
         val model = parameters["model"]
             ?.let(ForecastModel::fromApiName)
             ?: defaultModel
@@ -67,10 +67,7 @@ object WebRouteStateCodec {
     }
 
     fun encodeFragment(state: WebRouteState): String {
-        val path = when (state.destination) {
-            WebDestination.Forecast -> "#/"
-            else -> "#/${state.destination.slug}"
-        }
+        val path = "#/${state.destination.slug}"
         val location = state.location ?: return path
         val parameters = buildList {
             add("lat" to location.latitude.toString())
@@ -143,6 +140,19 @@ object WebRouteStateCodec {
             this == '-' || this == '_' || this == '.' || this == '~'
     }
 
+    /**
+     * The empty fragment (`#/`) opens the Map, matching the Android app's start destination.
+     * Legacy share links used the empty slug with `lat`/`lon` parameters to encode a forecast
+     * (`#/?lat=…`); those keep resolving to the forecast so existing links do not break. The old
+     * `#/favorites` route is redirected to the Map (favorites are now surfaced from the Map, not a
+     * dedicated tab).
+     */
+    private fun resolveDestination(slug: String, location: PlaceLocation?): WebDestination = when {
+        slug.isEmpty() -> if (location != null) WebDestination.Forecast else WebDestination.Map
+        slug == LEGACY_FAVORITES_SLUG -> WebDestination.Map
+        else -> WebDestination.entries.firstOrNull { it.slug == slug } ?: WebDestination.Map
+    }
+
     private fun decodeLocation(parameters: Map<String, String>): PlaceLocation? {
         val latitude = parameters["lat"]?.toDoubleOrNull() ?: Double.NaN
         val longitude = parameters["lon"]?.toDoubleOrNull() ?: Double.NaN
@@ -161,6 +171,7 @@ object WebRouteStateCodec {
 
     private fun Double.isValidLongitude(): Boolean = isFinite() && this in MIN_LONGITUDE..MAX_LONGITUDE
 
+    private const val LEGACY_FAVORITES_SLUG = "favorites"
     private const val MAX_DAY_INDEX = 13
     private const val HEX_RADIX = 16
     private const val BYTE_MASK = 0xFF
