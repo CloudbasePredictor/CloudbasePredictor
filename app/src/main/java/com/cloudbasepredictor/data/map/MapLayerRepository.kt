@@ -2,18 +2,12 @@ package com.cloudbasepredictor.data.map
 
 import android.content.SharedPreferences
 import com.cloudbasepredictor.data.place.FavoritePlacesBackupStore
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-enum class MapLayerPreference {
-    OPENFREEMAP,
-    OPENTOPOMAP,
-    NASA_GIBS,
-    ESRI_WORLD_IMAGERY,
-}
 
 interface MapLayerRepository {
     val selectedLayer: StateFlow<MapLayerPreference>
@@ -21,7 +15,7 @@ interface MapLayerRepository {
     fun selectLayer(layer: MapLayerPreference)
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class SharedPrefsMapLayerRepository @Inject constructor(
     private val prefs: SharedPreferences,
     private val backupStore: FavoritePlacesBackupStore,

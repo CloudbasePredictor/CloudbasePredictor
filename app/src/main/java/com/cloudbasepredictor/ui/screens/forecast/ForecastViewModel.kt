@@ -13,12 +13,9 @@ import com.cloudbasepredictor.data.forecast.requestedForecastDaysForDayIndex
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.map.MapLayerRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
-import com.cloudbasepredictor.data.remote.HourlyForecastData
-import com.cloudbasepredictor.data.remote.HourlyPoint
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
-import com.cloudbasepredictor.data.units.resolveDisplayUnits
 import com.cloudbasepredictor.model.DailyForecast
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
@@ -26,13 +23,14 @@ import com.cloudbasepredictor.model.ForecastSnapshot
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.model.WeatherCode
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
-import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -53,110 +51,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-data class ForecastDayChipUiModel(
-    val title: String,
-    val subtitle: String,
-)
-
-/**
- * Screen-level forecast state.
- *
- * Loading and error states intentionally do not carry chart data. Chart models are
- * created only for [ForecastReadyUiState], after the forecast snapshot contains
- * hourly data for the selected place and model.
- */
-sealed interface ForecastUiState {
-    /** Currently selected place, or null while the app has no forecast location. */
-    val selectedPlace: SavedPlace?
-    /** Active forecast visualisation mode (thermic / stuve / wind / cloud). */
-    val selectedForecastMode: ForecastMode
-    /** Zero-based index of the selected forecast day (0 = today). */
-    val selectedDayIndex: Int
-    /** Weather model requested by the user. */
-    val selectedModel: ForecastModel
-    /** Model actually used after fallback (may differ from [selectedModel]). */
-    val resolvedModel: ForecastModel?
-    /** Favorite places to show on the forecast map panel. */
-    val favoritePlaces: List<SavedPlace>
-    /** Selected map base layer shared with the main map screen. */
-    val mapLayer: MapLayerPreference
-    /** Unit preset selected in Settings. */
-    val unitPreset: UnitPreset
-    /** Resolved display units for the active preset. */
-    val displayUnits: DisplayUnits
-}
-
-data class ForecastLoadingUiState(
-    override val selectedPlace: SavedPlace? = null,
-    override val selectedForecastMode: ForecastMode = ForecastMode.THERMIC,
-    override val selectedDayIndex: Int = 0,
-    override val selectedModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
-    override val resolvedModel: ForecastModel? = null,
-    override val favoritePlaces: List<SavedPlace> = emptyList(),
-    override val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
-    override val unitPreset: UnitPreset = UnitPreset.METRIC_KMH,
-    override val displayUnits: DisplayUnits = UnitPreset.METRIC_KMH.resolveDisplayUnits(),
-) : ForecastUiState
-
-data class ForecastNoPlaceUiState(
-    override val selectedPlace: SavedPlace? = null,
-    override val selectedForecastMode: ForecastMode = ForecastMode.THERMIC,
-    override val selectedDayIndex: Int = 0,
-    override val selectedModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
-    override val resolvedModel: ForecastModel? = null,
-    override val favoritePlaces: List<SavedPlace> = emptyList(),
-    override val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
-    override val unitPreset: UnitPreset = UnitPreset.METRIC_KMH,
-    override val displayUnits: DisplayUnits = UnitPreset.METRIC_KMH.resolveDisplayUnits(),
-) : ForecastUiState
-
-data class ForecastErrorUiState(
-    val errorMessage: String,
-    override val selectedPlace: SavedPlace? = null,
-    override val selectedForecastMode: ForecastMode = ForecastMode.THERMIC,
-    override val selectedDayIndex: Int = 0,
-    override val selectedModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
-    override val resolvedModel: ForecastModel? = null,
-    override val favoritePlaces: List<SavedPlace> = emptyList(),
-    override val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
-    override val unitPreset: UnitPreset = UnitPreset.METRIC_KMH,
-    override val displayUnits: DisplayUnits = UnitPreset.METRIC_KMH.resolveDisplayUnits(),
-) : ForecastUiState
-
-data class ForecastReadyUiState(
-    override val selectedPlace: SavedPlace? = null,
-    override val selectedForecastMode: ForecastMode = ForecastMode.THERMIC,
-    override val selectedDayIndex: Int = 0,
-    /** Visible altitude range controlled by pinch-to-zoom. */
-    val chartViewport: ForecastChartViewport = ForecastChartViewport(),
-    /** Thermic updraft strength chart data. */
-    val thermicChart: ThermicForecastChartUiModel,
-    /** Stüve thermodynamic diagram data for the selected hour. */
-    val stuveChart: StuveForecastChartUiModel,
-    /** Wind speed & direction chart data. */
-    val windChart: WindForecastChartUiModel,
-    /** Cloud coverage & precipitation chart data. */
-    val cloudChart: CloudForecastChartUiModel,
-    /** Day chips for the date picker (title + subtitle). */
-    val dayChips: List<ForecastDayChipUiModel>,
-    /** Summary text shown at the bottom of the chart. */
-    val forecastText: String,
-    override val selectedModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
-    override val resolvedModel: ForecastModel? = null,
-    /** Timestamp (UTC millis) when the forecast data was last updated from the server. */
-    val forecastUpdatedAtMillis: Long? = null,
-    /** Estimated UTC millis of the model run that produced this forecast. */
-    val modelGeneratedAtMillis: Long? = null,
-    /** Terrain elevation in km ASL for the selected place. */
-    val elevationKm: Float = 0f,
-    override val favoritePlaces: List<SavedPlace> = emptyList(),
-    override val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
-    override val unitPreset: UnitPreset = UnitPreset.METRIC_KMH,
-    override val displayUnits: DisplayUnits = UnitPreset.METRIC_KMH.resolveDisplayUnits(),
-) : ForecastUiState
-
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 class ForecastViewModel @Inject constructor(
     private val forecastRepository: ForecastRepository,
     private val placeRepository: PlaceRepository,
@@ -391,39 +288,30 @@ class ForecastViewModel @Inject constructor(
             )
         }
 
-        ForecastReadyUiState(
-            selectedPlace = place,
-            selectedForecastMode = currentChartContext.selectedForecastMode,
-            selectedDayIndex = safeDayIndex,
-            chartViewport = currentChartContext.chartViewport,
-            thermicChart = buildThermicChartFromData(hourlyData, dayIndex = safeDayIndex),
-            stuveChart = buildStuveChartFromData(
+        buildForecastReadyUiState(
+            ForecastRenderInput(
                 hourlyData = hourlyData,
-                dayIndex = safeDayIndex,
-                hour = currentChartContext.stuveHour,
-            ),
-            windChart = buildWindChartFromData(
-                hourlyData = hourlyData,
-                dayIndex = safeDayIndex,
-                maxAltitudeKm = currentChartContext.chartViewport.visibleTopAltitudeKm,
-            ),
-            cloudChart = buildCloudChartFromData(hourlyData, dayIndex = safeDayIndex),
-            dayChips = dayChips,
-            forecastText = buildForecastText(
-                mode = currentChartContext.selectedForecastMode,
                 place = place,
-                snapshot = snapshot,
+                requestedModel = currentModel,
+                resolvedModel = snapshot.resolvedModel,
+                selectedForecastMode = currentChartContext.selectedForecastMode,
                 selectedDayIndex = safeDayIndex,
+                stuveHour = currentChartContext.stuveHour,
+                chartViewport = currentChartContext.chartViewport,
+                unitPreset = preferences.unitPreset,
+                displayUnits = preferences.displayUnits,
+                fetchedAtMillis = snapshot.updatedAtUtcMillis,
+                modelGeneratedAtMillis = snapshot.modelGeneratedAtMillis,
+                favoritePlaces = favorites,
+                mapLayer = preferences.mapLayer,
+                dayChips = dayChips,
+                forecastText = buildForecastText(
+                    mode = currentChartContext.selectedForecastMode,
+                    place = place,
+                    snapshot = snapshot,
+                    selectedDayIndex = safeDayIndex,
+                ),
             ),
-            selectedModel = currentModel,
-            resolvedModel = snapshot.resolvedModel,
-            forecastUpdatedAtMillis = snapshot.updatedAtUtcMillis,
-            modelGeneratedAtMillis = snapshot.modelGeneratedAtMillis,
-            elevationKm = (hourlyData.elevation ?: 0.0).toFloat() / 1000f,
-            favoritePlaces = favorites,
-            mapLayer = preferences.mapLayer,
-            unitPreset = preferences.unitPreset,
-            displayUnits = preferences.displayUnits,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -726,39 +614,6 @@ internal fun PlaceLocation.resolveForecastPlace(favoritePlaces: List<SavedPlace>
     } ?: favoritePlaces.find { favorite ->
         favorite.isNearby(latitude, longitude)
     } ?: routePlace
-}
-
-private fun HourlyForecastData.hasRequiredForecastInputs(
-    dayIndex: Int,
-    stuveHour: Int,
-): Boolean {
-    val pointsByDate = pointsByDate()
-    val dateKey = pointsByDate.keys.sorted().getOrNull(dayIndex) ?: return false
-    val dayPoints = pointsByDate[dateKey].orEmpty()
-    val daytimePoints = dayPoints.filter { it.hour in 6..22 }
-    if (daytimePoints.isEmpty()) return false
-
-    val hasThermicSurfaceInputs = daytimePoints.any { point ->
-        point.temperature2mC != null && point.dewPoint2mC != null
-    }
-    if (!hasThermicSurfaceInputs) return false
-
-    val stuvePoint = dayPoints.firstOrNull { it.hour == stuveHour }
-        ?: dayPoints.minByOrNull { point -> abs(point.hour - stuveHour) }
-        ?: return false
-    if (stuvePoint.temperature2mC == null || stuvePoint.dewPoint2mC == null) return false
-
-    return daytimePoints.any { point -> point.hasRenderableWindInputs() }
-}
-
-private fun HourlyPoint.hasRenderableWindInputs(): Boolean {
-    val hasSurfaceWind = windSpeed10mKmh != null && windDirection10mDeg != null
-    val hasPressureLevelWind = pressureLevels.any { level ->
-        level.geopotentialHeightM != null &&
-            level.windSpeedKmh != null &&
-            level.windDirectionDeg != null
-    }
-    return hasSurfaceWind || hasPressureLevelWind
 }
 
 private fun buildForecastText(

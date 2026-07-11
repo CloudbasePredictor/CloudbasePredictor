@@ -5,9 +5,10 @@ import com.cloudbasepredictor.data.local.SavedPlaceEntity
 import com.cloudbasepredictor.di.ApplicationScope
 import com.cloudbasepredictor.di.IoDispatcher
 import com.cloudbasepredictor.model.SavedPlace
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.util.Locale
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -37,7 +38,7 @@ interface PlaceRepository {
     suspend fun selectPlace(place: SavedPlace)
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class DefaultPlaceRepository @Inject constructor(
     private val savedPlaceDao: SavedPlaceDao,
     private val favoritePlacesBackupStore: FavoritePlacesBackupStore,

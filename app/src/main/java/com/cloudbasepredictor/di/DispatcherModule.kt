@@ -1,11 +1,10 @@
 package com.cloudbasepredictor.di
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Qualifier
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.BindingContainer
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.Qualifier
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +18,7 @@ annotation class IoDispatcher
 @Retention(AnnotationRetention.BINARY)
 annotation class ApplicationScope
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 object DispatcherModule {
     @IoDispatcher
     @Provides
@@ -28,7 +26,7 @@ object DispatcherModule {
 
     @ApplicationScope
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideApplicationScope(
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
     ): CoroutineScope = CoroutineScope(SupervisorJob() + ioDispatcher)

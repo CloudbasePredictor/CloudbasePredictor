@@ -24,8 +24,7 @@ import java.io.File
  * Exports the golden fixture that locks the Kotlin forecast pipeline (the
  * conversion plus the engine). The canonical copy lives in
  * `engine/src/commonTest/resources/` and backs the `:engine` golden tests on
- * every target; while `web/` still exists, the TypeScript port's copy in
- * `web/src/engine/__fixtures__/` is kept in sync as well.
+ * every target.
  *
  * The exported JSON contains:
  * - the converted [HourlyForecastData] (including synthesized pressure levels),
@@ -43,6 +42,8 @@ import java.io.File
  */
 class EngineFixtureExportTest {
 
+    private val readerJson = Json { ignoreUnknownKeys = true }
+
     private val writerJson = Json {
         prettyPrint = true
         prettyPrintIndent = "  "
@@ -53,8 +54,7 @@ class EngineFixtureExportTest {
     fun exportBrauneckFixtureAndAssertUpToDate() {
         val assetName = "brauneck_icon_seamless_20260418.json"
         val assetFile = resolveAssetFile(assetName)
-        val response = Json { ignoreUnknownKeys = true }
-            .decodeFromString<OpenMeteoHourlyForecastResponse>(assetFile.readText())
+        val response = readerJson.decodeFromString<OpenMeteoHourlyForecastResponse>(assetFile.readText())
         val hourlyData = response.toHourlyForecastData()
 
         val fixture = EngineFixture(
@@ -74,25 +74,20 @@ class EngineFixtureExportTest {
         )
 
         val actualJson = writerJson.encodeToString(fixture)
-        val outFiles = resolveFixtureOutputFiles()
+        val outFile = resolveFixtureOutputFile()
         val forceUpdate = System.getProperty("updateEngineFixtures")?.toBoolean() == true
-        outFiles.forEach { outFile ->
-            if (forceUpdate || !outFile.exists()) {
-                outFile.parentFile?.mkdirs()
-                outFile.writeText(actualJson + "\n")
-            }
+        if (forceUpdate || !outFile.exists()) {
+            outFile.parentFile?.mkdirs()
+            outFile.writeText(actualJson + "\n")
         }
 
-        outFiles.forEach { outFile ->
-            val expected = outFile.readText()
-            assertEquals(
-                "Engine golden fixture is out of date. Delete ${outFile.path} or run with " +
-                    "-DupdateEngineFixtures=true to regenerate, then rerun the :engine " +
-                    "golden tests (and the TypeScript port while web/ exists).",
-                expected.trim(),
-                actualJson.trim(),
-            )
-        }
+        val expected = outFile.readText()
+        assertEquals(
+            "Engine golden fixture is out of date. Delete ${outFile.path} or run with " +
+                "-DupdateEngineFixtures=true to regenerate, then rerun the :engine golden tests.",
+            expected.trim(),
+            actualJson.trim(),
+        )
     }
 
     // ── Pipeline drivers: mirror ForecastChartBuilders.buildThermicChartFromData ──
@@ -225,17 +220,12 @@ class EngineFixtureExportTest {
             ?: error("Could not locate simulated asset $assetName from ${File(".").absolutePath}")
     }
 
-    /**
-     * The engine commonTest resource is the canonical output; the TypeScript
-     * fixture is included only while the frozen `web/` directory still exists.
-     */
-    private fun resolveFixtureOutputFiles(): List<File> {
+    /** The engine commonTest resource is the canonical output. */
+    private fun resolveFixtureOutputFile(): File {
         val repoRoot = generateSequence(File(".").absoluteFile) { it.parentFile }
             .firstOrNull { File(it, "engine/src/commonTest").exists() }
             ?: error("Could not locate the engine/ module from ${File(".").absolutePath}")
-        val engineCopy = File(repoRoot, "engine/src/commonTest/resources/brauneck_icon_seamless.json")
-        val webCopy = File(repoRoot, "web/src/engine/__fixtures__/brauneck_icon_seamless.json")
-        return if (webCopy.parentFile.exists()) listOf(engineCopy, webCopy) else listOf(engineCopy)
+        return File(repoRoot, "engine/src/commonTest/resources/brauneck_icon_seamless.json")
     }
 }
 

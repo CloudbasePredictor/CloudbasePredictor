@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:BrowserLocalStorageKeyValueStorage.kt:BrowserLocalStorageKeyValueStorage$private fun migrateLegacySettingsIfNeeded</ID>
+    <ID>CyclomaticComplexMethod:WebMapDestination.wasmJs.kt:MapLibreBinding$private fun buildDom</ID>
+    <ID>FunctionNaming:CloudbaseWebApp.kt:@Composable private fun WebNavigationBar</ID>
+    <ID>FunctionNaming:CloudbaseWebApp.kt:@Preview(name = "Web favorites shell content", showBackground = true, widthDp = 1024, heightDp = 760) @Composable private fun CloudbaseWebAppPreview</ID>
+    <ID>FunctionNaming:CloudbaseWebApp.kt:@Suppress("LongMethod", "LongParameterList") @Composable private fun DestinationContent</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable fun WebForecastDestination</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun CenteredMessage</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun ScrollableChipRow</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun WebForecastError</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun WebForecastLoading</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun WebForecastNoLocation</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Composable private fun WebForecastReadyContent</ID>
+    <ID>FunctionNaming:WebForecastDestination.kt:@Preview(name = "Web forecast", showBackground = true, widthDp = 1024, heightDp = 760) @Composable private fun WebForecastReadyContentPreview</ID>
+    <ID>FunctionNaming:WebMapDestination.wasmJs.kt:@Composable internal actual fun WebMapDestination</ID>
+    <ID>FunctionNaming:WebMapDestination.wasmJs.kt:@OptIn(ExperimentalComposeUiApi::class) @Composable private fun WebMapSurface</ID>
+    <ID>FunctionNaming:WebMapDestination.wasmJs.kt:@Preview @Composable private fun WebMapDestinationPreview</ID>
+    <ID>FunctionNaming:WebMapModels.kt:@Composable internal expect fun WebMapDestination</ID>
+    <ID>FunctionNaming:WebMapModels.kt:@Preview @Composable private fun WebMapModelsPreview</ID>
+    <ID>LongMethod:WebForecastDestination.kt:@Composable fun WebForecastDestination</ID>
+    <ID>LongMethod:WebForecastDestination.kt:@Composable private fun WebForecastReadyContent</ID>
+    <ID>LongMethod:WebMapDestination.wasmJs.kt:MapLibreBinding$private fun buildDom</ID>
+    <ID>MatchingDeclarationName:WebForecastPresentation.kt:WebForecastPresentationInput</ID>
+    <ID>MatchingDeclarationName:WebMapStyles.kt:WebMapStyle</ID>
+    <ID>ReturnCount:WebForecastRepository.kt:WebForecastRepository$private suspend fun readUsableCache: WebForecastResult?</ID>
+    <ID>ThrowsCount:BrowserLocalStorageKeyValueStorage.kt:DurableLocalStorageKeyValueStorage$private fun writeState</ID>
+    <ID>ThrowsCount:BrowserLocalStorageKeyValueStorage.kt:private fun decodeUserState: UserState</ID>
+    <ID>TooGenericExceptionCaught:WebForecastDestination.kt:exception: Exception</ID>
+    <ID>TooManyFunctions:MapLibreInterop.kt:com.cloudbasepredictor.web.map.MapLibreInterop.kt</ID>
+    <ID>TooManyFunctions:WebMapDestination.wasmJs.kt:MapLibreBinding</ID>
+  </CurrentIssues>
+</SmellBaseline>

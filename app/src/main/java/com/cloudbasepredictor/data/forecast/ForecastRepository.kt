@@ -3,9 +3,7 @@ package com.cloudbasepredictor.data.forecast
 import com.cloudbasepredictor.data.datasource.DataSourcePreference
 import com.cloudbasepredictor.data.datasource.DataSourceRepository
 import com.cloudbasepredictor.data.datasource.SimulatedForecastDataSource
-import com.cloudbasepredictor.data.local.CachedForecastEntity
 import com.cloudbasepredictor.data.local.DatabaseErrorManager
-import com.cloudbasepredictor.data.local.ForecastCacheDao
 import com.cloudbasepredictor.data.remote.HourlyForecastData
 import com.cloudbasepredictor.data.remote.OpenMeteoRemoteDataSource
 import com.cloudbasepredictor.di.IoDispatcher
@@ -13,11 +11,12 @@ import com.cloudbasepredictor.model.DailyForecast
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.ForecastSnapshot
 import com.cloudbasepredictor.model.SavedPlace
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -54,12 +53,12 @@ interface ForecastRepository {
     suspend fun clearAllCaches()
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class InMemoryForecastRepository @Inject constructor(
     private val openMeteoRemoteDataSource: OpenMeteoRemoteDataSource,
     private val dataSourceRepository: DataSourceRepository,
     private val simulatedForecastDataSource: SimulatedForecastDataSource,
-    private val forecastCacheDao: ForecastCacheDao,
+    private val forecastCacheStore: ForecastCacheStore,
     private val databaseErrorManager: DatabaseErrorManager,
     private val json: Json,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -179,7 +178,7 @@ class InMemoryForecastRepository @Inject constructor(
 
     override suspend fun cleanupOldForecasts(cutoffMillis: Long) = withContext(ioDispatcher) {
         try {
-            val deleted = forecastCacheDao.deleteOlderThan(cutoffMillis)
+            val deleted = forecastCacheStore.deleteOlderThan(cutoffMillis)
             if (deleted > 0) {
                 Timber.d("Cleaned up %d old cached forecasts", deleted)
             }
@@ -194,7 +193,7 @@ class InMemoryForecastRepository @Inject constructor(
     override suspend fun clearAllCaches() = withContext(ioDispatcher) {
         cachedForecasts.value = emptyMap()
         try {
-            forecastCacheDao.deleteAll()
+            forecastCacheStore.deleteAll()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -209,7 +208,7 @@ class InMemoryForecastRepository @Inject constructor(
         minForecastDays: Int,
     ): ForecastSnapshot? {
         return try {
-            val entity = forecastCacheDao.getCachedForecast(placeId, model.apiName)
+            val entity = forecastCacheStore.read(placeId, model.apiName)
                 ?: return null
 
             val now = System.currentTimeMillis()
@@ -257,16 +256,16 @@ class InMemoryForecastRepository @Inject constructor(
     ) {
         try {
             val hourlyJson = json.encodeToString(HourlyForecastData.serializer(), hourlyData)
-            val entity = CachedForecastEntity(
+            val entity = ForecastCacheRecord(
                 placeId = placeId,
-                modelApiName = requestedModel.apiName,
+                requestedModelApiName = requestedModel.apiName,
                 resolvedModelApiName = resolvedModel.apiName,
                 forecastDays = forecastDays,
                 hourlyDataJson = hourlyJson,
                 fetchedAtMillis = fetchedAtMillis,
                 nextExpectedUpdateMillis = nextExpectedModelUpdateMillis(fetchedAtMillis, resolvedModel),
             )
-            forecastCacheDao.upsertForecast(entity)
+            forecastCacheStore.upsert(entity)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

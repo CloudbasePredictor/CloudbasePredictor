@@ -6,12 +6,12 @@ import com.cloudbasepredictor.data.local.LaunchSiteBoundsSiteEntity
 import com.cloudbasepredictor.data.local.LaunchSiteCacheDao
 import com.cloudbasepredictor.data.remote.ParaglidingEarthApi
 import com.cloudbasepredictor.data.remote.ParaglidingEarthFeature
-import com.cloudbasepredictor.data.remote.ParaglidingEarthProperties
+import com.cloudbasepredictor.data.remote.toDomainModel
 import com.cloudbasepredictor.di.IoDispatcher
-import com.cloudbasepredictor.model.LaunchSiteOrientation
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -24,7 +24,7 @@ interface LaunchSiteRepository {
     suspend fun getLaunchSites(bounds: LaunchSiteBounds): List<ParaglidingLaunchSite>
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class DefaultLaunchSiteRepository @Inject constructor(
     private val api: ParaglidingEarthApi,
     private val launchSiteCacheDao: LaunchSiteCacheDao,
@@ -144,38 +144,6 @@ class DefaultLaunchSiteRepository @Inject constructor(
     }
 }
 
-internal fun ParaglidingEarthFeature.toDomainModel(): ParaglidingLaunchSite? {
-    val coordinates = geometry?.coordinates.orEmpty()
-    val longitude = coordinates.getOrNull(0)?.takeIf { it.isFinite() } ?: return null
-    val latitude = coordinates.getOrNull(1)?.takeIf { it.isFinite() } ?: return null
-    if (latitude !in -90.0..90.0 || longitude !in -180.0..180.0) return null
-
-    val props = properties ?: return null
-    val siteId = props.pgeSiteId.orSanitizedNull() ?: id.orSanitizedNull() ?: return null
-    val siteName = props.name.orSanitizedNull() ?: return null
-
-    return ParaglidingLaunchSite(
-        id = siteId,
-        name = siteName,
-        latitude = latitude,
-        longitude = longitude,
-        altitudeMeters = props.takeoffAltitude?.toIntOrNull(),
-        countryCode = props.countryCode.orSanitizedNull(),
-        description = props.takeoffDescription.compactMultilineText(),
-        flightRules = props.flightRules.compactMultilineText(),
-        access = props.goingThere.compactMultilineText(),
-        comments = props.comments.compactMultilineText(),
-        weather = props.weather.compactMultilineText(),
-        lastEdit = props.lastEdit.orSanitizedNull(),
-        link = props.pgeLink.orSanitizedNull()?.replace("http://", "https://"),
-        orientations = props.launchSiteOrientations(),
-        activities = props.launchSiteActivities(),
-        landingName = props.landing?.landingName.orSanitizedNull(),
-        landingLatitude = props.landing?.landingLat?.toDoubleOrNull(),
-        landingLongitude = props.landing?.landingLng?.toDoubleOrNull(),
-    )
-}
-
 private fun ParaglidingLaunchSite.toEntity(
     json: Json,
     fetchedAtMillis: Long,
@@ -239,56 +207,4 @@ private inline fun <reified T> decodeCacheList(
         Timber.w(error, "Ignoring invalid cached ParaglidingEarth list")
         emptyList()
     }
-}
-
-private fun ParaglidingEarthProperties.launchSiteOrientations(): List<LaunchSiteOrientation> {
-    return listOf(
-        "N" to north,
-        "NE" to northEast,
-        "E" to east,
-        "SE" to southEast,
-        "S" to south,
-        "SW" to southWest,
-        "W" to west,
-        "NW" to northWest,
-    ).mapNotNull { (direction, value) ->
-        val rating = value?.toIntOrNull() ?: return@mapNotNull null
-        if (rating <= 0) return@mapNotNull null
-        LaunchSiteOrientation(
-            direction = direction,
-            rating = rating,
-        )
-    }
-}
-
-private fun ParaglidingEarthProperties.launchSiteActivities(): List<String> {
-    return buildList {
-        addActivity(paragliding, "Paragliding")
-        addActivity(hanggliding, "Hang gliding")
-        addActivity(thermals, "Thermals")
-        addActivity(soaring, "Soaring")
-        addActivity(xc, "XC")
-        addActivity(winch, "Winch")
-        addActivity(hike, "Hike")
-        addActivity(flatland, "Flatland")
-    }
-}
-
-private fun MutableList<String>.addActivity(
-    value: String?,
-    label: String,
-) {
-    if (value == "1") add(label)
-}
-
-private fun String?.orSanitizedNull(): String? {
-    return this
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-}
-
-private fun String?.compactMultilineText(): String? {
-    return orSanitizedNull()
-        ?.replace(Regex("\\s+"), " ")
-        ?.takeIf { it.isNotEmpty() }
 }

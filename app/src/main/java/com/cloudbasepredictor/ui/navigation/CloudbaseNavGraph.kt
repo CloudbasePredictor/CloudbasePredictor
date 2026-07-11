@@ -158,33 +158,6 @@ fun CloudbaseNavGraph(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun CloudbaseNavGraphPreview() {
-    CloudbasePredictorTheme {
-        val navController = rememberNavController()
-        CloudbaseNavGraph(
-            navController = navController,
-            mapDestination = { _, _ ->
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = "Map destination preview")
-                }
-            },
-            forecastDestination = { _, _, _ ->
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = "Forecast destination preview")
-                }
-            },
-        )
-    }
-}
-
 @Composable
 private fun InvalidForecastDestination(
     reason: String,
@@ -256,5 +229,32 @@ private fun NavHostController.replaceCurrentForecastLocation(placeLocation: Plac
                 inclusive = true
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CloudbaseNavGraphPreview() {
+    CloudbasePredictorTheme {
+        val navController = rememberNavController()
+        CloudbaseNavGraph(
+            navController = navController,
+            mapDestination = { _, _ ->
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "Map destination preview")
+                }
+            },
+            forecastDestination = { _, _, _ ->
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "Forecast destination preview")
+                }
+            },
+        )
     }
 }

@@ -1,15 +1,16 @@
 package com.cloudbasepredictor.data.forecast
 
 import com.cloudbasepredictor.di.ApplicationScope
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-@Singleton
+@SingleIn(AppScope::class)
 class ForecastCacheMaintenance @Inject constructor(
     private val forecastRepository: ForecastRepository,
     @param:ApplicationScope private val appScope: CoroutineScope,

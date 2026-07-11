@@ -1,6 +1,5 @@
 package com.cloudbasepredictor.ui.screens.map
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cloudbasepredictor.data.launch.LaunchSiteBounds
@@ -8,14 +7,17 @@ import com.cloudbasepredictor.data.launch.LaunchSiteDisplayRepository
 import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.map.MapLayerRepository
+import com.cloudbasepredictor.data.map.MapCameraPosition
+import com.cloudbasepredictor.data.map.MapCameraStore
 import com.cloudbasepredictor.data.map.MapStartupRepository
 import com.cloudbasepredictor.data.place.PlaceRepository
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,20 +52,20 @@ sealed interface MapEvent {
     data class OpenForecast(val placeLocation: PlaceLocation) : MapEvent
 }
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 class MapViewModel @Inject constructor(
     private val placeRepository: PlaceRepository,
     private val mapLayerRepository: MapLayerRepository,
     private val mapStartupRepository: MapStartupRepository,
     private val launchSiteRepository: LaunchSiteRepository,
     private val launchSiteDisplayRepository: LaunchSiteDisplayRepository,
-    @param:ApplicationContext private val context: Context,
+    private val mapCameraStore: MapCameraStore,
 ) : ViewModel() {
     private val selectedPlaceDraft = MutableStateFlow<SavedPlace?>(null)
     private val selectedLaunchSiteDraft = MutableStateFlow<ParaglidingLaunchSite?>(null)
     private val visibleLaunchSites = MutableStateFlow<List<ParaglidingLaunchSite>>(emptyList())
     private val mutableEvents = MutableSharedFlow<MapEvent>()
-    private val prefs = context.getSharedPreferences("map_camera", Context.MODE_PRIVATE)
     private var launchSiteLoadJob: Job? = null
     private var lastLaunchSiteBoundsKey: String? = null
 
@@ -182,12 +184,13 @@ class MapViewModel @Inject constructor(
     }
 
     fun saveCameraPosition(latitude: Double, longitude: Double, zoom: Double) {
-        prefs.edit()
-            .putLong(KEY_LAT, latitude.toBits())
-            .putLong(KEY_LNG, longitude.toBits())
-            .putLong(KEY_ZOOM, zoom.toBits())
-            .putBoolean(KEY_HAS_POSITION, true)
-            .apply()
+        mapCameraStore.write(
+            MapCameraPosition(
+                latitude = latitude,
+                longitude = longitude,
+                zoom = zoom,
+            ),
+        )
     }
 
     fun selectMapLayer(layer: MapLayerPreference) {
@@ -258,19 +261,12 @@ class MapViewModel @Inject constructor(
     }
 
     private fun loadCameraPosition(): MapCameraData? {
-        if (!prefs.getBoolean(KEY_HAS_POSITION, false)) return null
+        val position = mapCameraStore.read() ?: return null
         return MapCameraData(
-            latitude = Double.fromBits(prefs.getLong(KEY_LAT, 0L)),
-            longitude = Double.fromBits(prefs.getLong(KEY_LNG, 0L)),
-            zoom = Double.fromBits(prefs.getLong(KEY_ZOOM, 0L)),
+            latitude = position.latitude,
+            longitude = position.longitude,
+            zoom = position.zoom,
         )
-    }
-
-    companion object {
-        private const val KEY_HAS_POSITION = "has_position"
-        private const val KEY_LAT = "camera_lat"
-        private const val KEY_LNG = "camera_lng"
-        private const val KEY_ZOOM = "camera_zoom"
     }
 }
 

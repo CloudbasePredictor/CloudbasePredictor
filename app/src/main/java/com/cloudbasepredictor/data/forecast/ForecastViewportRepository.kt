@@ -3,8 +3,9 @@ package com.cloudbasepredictor.data.forecast
 import android.content.SharedPreferences
 import com.cloudbasepredictor.ui.screens.forecast.DEFAULT_TOP_ALTITUDE_KM
 import com.cloudbasepredictor.ui.screens.forecast.sanitizeTopAltitudeKm
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +15,7 @@ interface ForecastViewportRepository {
     fun setVisibleTopAltitudeKm(value: Float)
 }
 
-@Singleton
+@SingleIn(AppScope::class)
 class SharedPrefsForecastViewportRepository @Inject constructor(
     private val prefs: SharedPreferences,
 ) : ForecastViewportRepository {

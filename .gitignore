@@ -8,8 +8,11 @@ agent-local/
 .DS_Store
 /.claude/
 /build
+**/build/
+/node_modules/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 app/screenshots/
+/web/

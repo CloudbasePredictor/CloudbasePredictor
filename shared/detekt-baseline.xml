@@ -1,0 +1,79 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun cloudCoverByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun dewPointsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun geopotentialHeightsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun relativeHumidityByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun temperaturesByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun windDirectionsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$fun windSpeedsByPressure: List&lt;Pair&lt;Int, List&lt;Double?&gt;&gt;&gt;</ID>
+    <ID>LongMethod:ForecastChartBuildersWindTest.kt:ForecastChartBuildersWindTest$private fun openMeteoFozaIconSeamlessWindData: HourlyForecastData</ID>
+    <ID>LongMethod:HourlyForecastConversion.kt:fun OpenMeteoHourlyForecastResponse.toHourlyForecastData: HourlyForecastData</ID>
+    <ID>LongMethod:HourlyForecastConversionTest.kt:HourlyForecastConversionTest$@Test fun toHourlyForecastData_synthesizesMissingUpperPressureLevels</ID>
+    <ID>LongMethod:ThermicChartPressureLevelBoundariesTest.kt:ThermicChartPressureLevelBoundariesTest$@Test fun thermalCells_useUniformAglBinsAndPressureLevelsRemainGridLines</ID>
+    <ID>LongMethod:ThermicForecastChartUiModelTest.kt:ThermicForecastChartUiModelTest$@Test fun aggregatedForDisplay_preservesThermalTopAndCloudHeights</ID>
+    <ID>MagicNumber:DisplayUnits.kt:1000f</ID>
+    <ID>MagicNumber:DisplayUnits.kt:3.6f</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:0.1903</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:1013.25</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:180.0</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:1e-6</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:360.0</ID>
+    <ID>MagicNumber:HourlyForecastConversion.kt:44330.0</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$1000</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$250</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$300</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$350</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$400</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$450</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$500</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$550</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$600</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$650</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$700</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$750</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$800</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$850</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$875</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$900</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$925</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$950</ID>
+    <ID>MagicNumber:OpenMeteoHourlyForecastResponse.kt:OpenMeteoHourlyResponse$975</ID>
+    <ID>MagicNumber:PlaceLocation.kt:PlaceLocation.Companion$180.0</ID>
+    <ID>MagicNumber:PlaceLocation.kt:PlaceLocation.Companion$90.0</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$3</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$45</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$48</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$51</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$53</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$55</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$56</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$57</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$61</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$63</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$65</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$66</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$67</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$71</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$73</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$75</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$77</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$80</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$81</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$82</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$85</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$86</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$95</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$96</ID>
+    <ID>MagicNumber:WeatherCode.kt:WeatherCode$99</ID>
+    <ID>MaxLineLength:OpenMeteoApi.kt:"geopotential_height_1000hPa,geopotential_height_975hPa,geopotential_height_950hPa,geopotential_height_925hPa,geopotential_height_900hPa,"</ID>
+    <ID>MaxLineLength:OpenMeteoApi.kt:"geopotential_height_700hPa,geopotential_height_650hPa,geopotential_height_600hPa,geopotential_height_550hPa,geopotential_height_500hPa,"</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun extrapolateDirection: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun extrapolateField: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun regressLinear: Double?</ID>
+    <ID>ReturnCount:HourlyForecastConversion.kt:private fun synthesizePressureLevel: PressureLevelPoint?</ID>
+    <ID>ReturnCount:PlaceLocation.kt:PlaceLocation.Companion$fun fromRouteValue: PlaceLocation?</ID>
+  </CurrentIssues>
+</SmellBaseline>

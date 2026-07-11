@@ -1,30 +1,22 @@
 package com.cloudbasepredictor.di
 
-import com.cloudbasepredictor.BuildConfig
+import com.cloudbasepredictor.data.remote.KtorOpenMeteoApi
+import com.cloudbasepredictor.data.remote.KtorParaglidingEarthApi
 import com.cloudbasepredictor.data.remote.OpenMeteoApi
+import com.cloudbasepredictor.data.remote.OpenMeteoRemoteDataSource
 import com.cloudbasepredictor.data.remote.ParaglidingEarthApi
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
-import javax.inject.Qualifier
+import com.cloudbasepredictor.data.remote.createCloudbaseHttpClient
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.BindingContainer
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import io.ktor.client.HttpClient
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class ParaglidingEarthRetrofit
-
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 object NetworkModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideJson(): Json {
         return Json {
             ignoreUnknownKeys = true
@@ -33,63 +25,29 @@ object NetworkModule {
     }
 
     @Provides
-    fun provideLoggingInterceptor(): HttpLoggingInterceptor {
-        return HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BASIC
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
+    @SingleIn(AppScope::class)
+    fun provideHttpClient(json: Json): HttpClient {
+        return createCloudbaseHttpClient(
+            jsonConfiguration = json,
+            userAgent = cloudbasePredictorUserAgent(),
+        )
     }
 
     @Provides
-    @Singleton
-    fun provideOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor,
-    ): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(cloudbasePredictorUserAgentInterceptor())
-            .addInterceptor(loggingInterceptor)
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        json: Json,
-    ): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.open-meteo.com/")
-            .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    @ParaglidingEarthRetrofit
-    fun provideParaglidingEarthRetrofit(
-        okHttpClient: OkHttpClient,
-        json: Json,
-    ): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://www.paragliding.earth/api/")
-            .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-    }
-
-    @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideOpenMeteoApi(
-        retrofit: Retrofit,
-    ): OpenMeteoApi = retrofit.create(OpenMeteoApi::class.java)
+        httpClient: HttpClient,
+    ): OpenMeteoApi = KtorOpenMeteoApi(httpClient)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideParaglidingEarthApi(
-        @ParaglidingEarthRetrofit retrofit: Retrofit,
-    ): ParaglidingEarthApi = retrofit.create(ParaglidingEarthApi::class.java)
+        httpClient: HttpClient,
+    ): ParaglidingEarthApi = KtorParaglidingEarthApi(httpClient)
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideOpenMeteoRemoteDataSource(
+        openMeteoApi: OpenMeteoApi,
+    ): OpenMeteoRemoteDataSource = OpenMeteoRemoteDataSource(openMeteoApi)
 }

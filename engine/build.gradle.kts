@@ -1,7 +1,9 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.detekt)
 }
@@ -17,6 +19,15 @@ kotlin {
     jvmToolchain(17)
 
     jvm()
+
+    android {
+        namespace = "com.cloudbasepredictor.engine"
+        compileSdk = 36
+        minSdk = 25
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {

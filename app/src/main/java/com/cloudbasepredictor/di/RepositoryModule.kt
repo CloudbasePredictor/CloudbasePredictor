@@ -24,84 +24,46 @@ import com.cloudbasepredictor.data.theme.SharedPrefsThemeRepository
 import com.cloudbasepredictor.data.theme.ThemeRepository
 import com.cloudbasepredictor.data.units.SharedPrefsUnitSettingsRepository
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
-import dagger.Binds
-import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
+import dev.zacsweers.metro.Binds
+import dev.zacsweers.metro.BindingContainer
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 abstract class RepositoryModule {
     @Binds
-    @Singleton
-    abstract fun bindPlaceRepository(
-        repository: DefaultPlaceRepository,
-    ): PlaceRepository
+    abstract val DefaultPlaceRepository.bindPlaceRepository: PlaceRepository
 
     @Binds
-    @Singleton
-    abstract fun bindForecastRepository(
-        repository: InMemoryForecastRepository,
-    ): ForecastRepository
+    abstract val InMemoryForecastRepository.bindForecastRepository: ForecastRepository
 
     @Binds
-    @Singleton
-    abstract fun bindForecastModeRepository(
-        repository: InMemoryForecastModeRepository,
-    ): ForecastModeRepository
+    abstract val InMemoryForecastModeRepository.bindForecastModeRepository: ForecastModeRepository
 
     @Binds
-    @Singleton
-    abstract fun bindForecastModelRepository(
-        repository: InMemoryForecastModelRepository,
-    ): ForecastModelRepository
+    abstract val InMemoryForecastModelRepository.bindForecastModelRepository: ForecastModelRepository
 
     @Binds
-    @Singleton
-    abstract fun bindDataSourceRepository(
-        repository: InMemoryDataSourceRepository,
-    ): DataSourceRepository
+    abstract val InMemoryDataSourceRepository.bindDataSourceRepository: DataSourceRepository
 
     @Binds
-    @Singleton
-    abstract fun bindThemeRepository(
-        repository: SharedPrefsThemeRepository,
-    ): ThemeRepository
+    abstract val SharedPrefsThemeRepository.bindThemeRepository: ThemeRepository
 
     @Binds
-    @Singleton
-    abstract fun bindUnitSettingsRepository(
-        repository: SharedPrefsUnitSettingsRepository,
-    ): UnitSettingsRepository
+    abstract val SharedPrefsUnitSettingsRepository.bindUnitSettingsRepository: UnitSettingsRepository
 
     @Binds
-    @Singleton
-    abstract fun bindForecastViewportRepository(
-        repository: SharedPrefsForecastViewportRepository,
-    ): ForecastViewportRepository
+    abstract val SharedPrefsForecastViewportRepository.bindForecastViewportRepository:
+        ForecastViewportRepository
 
     @Binds
-    @Singleton
-    abstract fun bindMapLayerRepository(
-        repository: SharedPrefsMapLayerRepository,
-    ): MapLayerRepository
+    abstract val SharedPrefsMapLayerRepository.bindMapLayerRepository: MapLayerRepository
 
     @Binds
-    @Singleton
-    abstract fun bindMapStartupRepository(
-        repository: SharedPrefsMapStartupRepository,
-    ): MapStartupRepository
+    abstract val SharedPrefsMapStartupRepository.bindMapStartupRepository: MapStartupRepository
 
     @Binds
-    @Singleton
-    abstract fun bindLaunchSiteRepository(
-        repository: DefaultLaunchSiteRepository,
-    ): LaunchSiteRepository
+    abstract val DefaultLaunchSiteRepository.bindLaunchSiteRepository: LaunchSiteRepository
 
     @Binds
-    @Singleton
-    abstract fun bindLaunchSiteDisplayRepository(
-        repository: SharedPrefsLaunchSiteDisplayRepository,
-    ): LaunchSiteDisplayRepository
+    abstract val SharedPrefsLaunchSiteDisplayRepository.bindLaunchSiteDisplayRepository:
+        LaunchSiteDisplayRepository
 }

@@ -1,0 +1,14 @@
+{
+  "name": "cloudbase-predictor-release-gates",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:web:webkit-input": "node scripts/web/check-webkit-input.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
