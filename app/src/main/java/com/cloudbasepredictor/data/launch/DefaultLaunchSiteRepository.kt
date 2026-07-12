@@ -20,10 +20,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
-interface LaunchSiteRepository {
-    suspend fun getLaunchSites(bounds: LaunchSiteBounds): List<ParaglidingLaunchSite>
-}
-
 @SingleIn(AppScope::class)
 class DefaultLaunchSiteRepository @Inject constructor(
     private val api: ParaglidingEarthApi,

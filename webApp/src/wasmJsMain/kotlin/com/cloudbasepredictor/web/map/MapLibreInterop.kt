@@ -14,6 +14,7 @@ internal external interface MapLibreMap : JsAny {
     fun setStyle(style: JsAny): MapLibreMap
     fun flyTo(options: JsAny): MapLibreMap
     fun getCenter(): MapLibreLngLat
+    fun getBounds(): MapLibreBounds
     fun getZoom(): Double
     fun resize(): MapLibreMap
     fun remove()
@@ -26,6 +27,13 @@ internal external interface MapLibreSubscription : JsAny {
 internal external interface MapLibreLngLat : JsAny {
     val lng: Double
     val lat: Double
+}
+
+internal external interface MapLibreBounds : JsAny {
+    fun getNorth(): Double
+    fun getSouth(): Double
+    fun getWest(): Double
+    fun getEast(): Double
 }
 
 internal external interface MapLibreMarker : JsAny {

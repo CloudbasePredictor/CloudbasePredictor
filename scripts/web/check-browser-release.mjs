@@ -72,6 +72,7 @@ const runtimeExceptions = [];
 const consoleMessages = [];
 const networkFailures = [];
 const transfers = [];
+const requestedUrls = [];
 let chrome;
 let browser;
 let server;
@@ -159,6 +160,10 @@ try {
   });
   browser.on("Network.loadingFailed", (params) => {
     networkFailures.push(`${params.errorText}: ${params.blockedReason ?? params.type ?? "request"}`);
+  });
+  browser.on("Network.requestWillBeSent", (params) => {
+    const requestedUrl = params.request?.url;
+    if (requestedUrl) requestedUrls.push(requestedUrl);
   });
   const apiMocks = installDeterministicApiMocks(browser);
   await Promise.all([
@@ -572,6 +577,126 @@ try {
     check(`${result.id} preference survives reload`, result.matches, result.state);
   }
   check("preference storage remains present after reload", preferenceStorageAfterReload);
+
+  // --- ParaglidingEarth launch-site snapshot journey ---
+  // The build-time snapshot must be published in the same distribution and be structurally valid.
+  const launchManifestFile = join(distDirectory, "data", "launch-sites", "manifest.json");
+  const launchSnapshotPresent = existsSync(launchManifestFile);
+  check("launch-site snapshot is published in the distribution", launchSnapshotPresent);
+  if (launchSnapshotPresent) {
+    const launchManifest = JSON.parse(readFileSync(launchManifestFile, "utf8"));
+    check(
+      "launch-site manifest declares a positive site count",
+      Number(launchManifest.siteCount) > 0,
+      String(launchManifest.siteCount),
+    );
+    check(
+      "launch-site manifest declares ParaglidingEarth attribution and license",
+      launchManifest.source?.name === "ParaglidingEarth" &&
+        String(launchManifest.source?.license ?? "").length > 0,
+      `${launchManifest.source?.name} / ${launchManifest.source?.license}`,
+    );
+  }
+
+  // Default OFF: nothing under data/launch-sites is requested during startup (before the toggle was
+  // enabled in the persistence journey above).
+  check(
+    "launch-site data is not requested during startup while disabled",
+    initialTransfers.every((transfer) => !transfer.path.startsWith("data/launch-sites")),
+    initialTransfers.filter((transfer) => transfer.path.startsWith("data/launch-sites")).map((transfer) => transfer.path).join(", "),
+  );
+
+  // The persistence journey already enabled "Show paragliding launch sites"; open the map (route is
+  // centered on the deterministic location) and confirm the tiles for the viewport are loaded.
+  const launchTransfersStart = transfers.length;
+  await clickAccessibleControl(browser, "Map", config.browser.interactionTimeoutMillis);
+  await waitForExpression(
+    browser,
+    `document.querySelector(".cloudbase-map-canvas canvas") !== null`,
+    config.browser.mapMountTimeoutMillis,
+    "map re-mount with launch sites enabled",
+  );
+  await waitForExpression(
+    browser,
+    `document.querySelectorAll(".cloudbase-launch-marker").length > 0`,
+    config.browser.mapMountTimeoutMillis,
+    "launch-site markers",
+  );
+  const launchMarkerState = await evaluate(browser, `({
+    markerCount: document.querySelectorAll(".cloudbase-launch-marker").length,
+    attributionVisible: document.querySelector(".cloudbase-map-launch-attribution")?.style.display === "block",
+    attributionText: document.querySelector(".cloudbase-map-launch-attribution")?.textContent ?? ""
+  })`);
+  check(
+    "launch-site markers render after enabling the feature",
+    launchMarkerState.markerCount > 0,
+    String(launchMarkerState.markerCount),
+  );
+  check(
+    "launch-site attribution is visible with ParaglidingEarth and CC BY-SA 3.0",
+    launchMarkerState.attributionVisible &&
+      launchMarkerState.attributionText.includes("ParaglidingEarth") &&
+      launchMarkerState.attributionText.includes("CC BY-SA 3.0"),
+    launchMarkerState.attributionText,
+  );
+
+  await waitForTransferQuiet();
+  const launchDataTransfers = transfers
+    .slice(launchTransfersStart)
+    .filter((transfer) => transfer.path.startsWith("data/launch-sites"));
+  check(
+    "launch-site manifest is fetched from the same-origin snapshot",
+    launchDataTransfers.some((transfer) => transfer.path === "data/launch-sites/manifest.json"),
+    launchDataTransfers.map((transfer) => transfer.path).join(", "),
+  );
+  check(
+    "launch-site tiles are fetched from the same-origin snapshot",
+    launchDataTransfers.some((transfer) => transfer.path.startsWith("data/launch-sites/tiles/")),
+    launchDataTransfers.map((transfer) => transfer.path).join(", "),
+  );
+
+  // Clicking a launch marker opens a detailed selection card with attribution and Show forecast.
+  await evaluate(
+    browser,
+    `document.querySelector(".cloudbase-launch-marker").dispatchEvent(new MouseEvent("click", { bubbles: true }))`,
+  );
+  await waitForExpression(
+    browser,
+    `document.querySelector(".cloudbase-map-selection-detail")?.style.display === "block"`,
+    config.browser.interactionTimeoutMillis,
+    "launch-site selection card",
+  );
+  const launchCard = await evaluate(browser, `({
+    label: document.querySelector(".cloudbase-map-selection-label")?.textContent ?? "",
+    detail: document.querySelector(".cloudbase-map-selection-detail")?.textContent ?? "",
+    source: document.querySelector(".cloudbase-map-selection-source")?.textContent ?? "",
+    confirmLabel: document.querySelector(".cloudbase-map-confirm")?.textContent ?? "",
+    confirmEnabled: document.querySelector(".cloudbase-map-confirm")?.disabled === false
+  })`);
+  check("launch-site selection card shows the site name", launchCard.label.length > 0, launchCard.label);
+  check(
+    "launch-site selection card shows launch details",
+    /Altitude|Wind|Activities/u.test(launchCard.detail),
+    launchCard.detail.replace(/\n/gu, " | "),
+  );
+  check(
+    "launch-site selection card shows ParaglidingEarth attribution",
+    launchCard.source.includes("ParaglidingEarth") && launchCard.source.includes("CC BY-SA 3.0"),
+    launchCard.source,
+  );
+  check(
+    "launch-site selection exposes an enabled Show forecast control",
+    launchCard.confirmLabel === "Show forecast" && launchCard.confirmEnabled,
+    `${launchCard.confirmLabel} (enabled=${launchCard.confirmEnabled})`,
+  );
+
+  // The browser must never contact ParaglidingEarth directly — the snapshot is same-origin only.
+  const paraglidingRequests = requestedUrls.filter((url) => /paragliding\.?earth|paraglidingearth\.com/iu.test(url));
+  check(
+    "browser never requests ParaglidingEarth directly",
+    paraglidingRequests.length === 0,
+    paraglidingRequests.join(", "),
+  );
 
   await clickAccessibleControl(browser, "About", config.browser.interactionTimeoutMillis);
   const aboutSourceControl = await waitForAccessibleControl(

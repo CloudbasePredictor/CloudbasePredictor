@@ -8,6 +8,7 @@ import com.cloudbasepredictor.model.ForecastModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class WebPreferencesTest {
     @Test
@@ -20,6 +21,7 @@ class WebPreferencesTest {
         first.selectMapLayer(MapLayerPreference.NASA_GIBS)
         first.setStartWithFavorites(false)
         first.selectForecastModel(ForecastModel.ECMWF_IFS)
+        first.setShowLaunchSites(true)
 
         val restored = WebPreferences(storage).state.value
         assertEquals(UnitPreset.AVIATION, restored.unitPreset)
@@ -27,5 +29,13 @@ class WebPreferencesTest {
         assertEquals(MapLayerPreference.NASA_GIBS, restored.mapLayer)
         assertFalse(restored.startWithFavorites)
         assertEquals(ForecastModel.ECMWF_IFS, restored.forecastModel)
+        assertTrue(restored.showLaunchSites)
+    }
+
+    @Test
+    fun showLaunchSitesDefaultsToDisabledOnWeb() {
+        val preferences = WebPreferences(InMemoryKeyValueStorage())
+
+        assertFalse(preferences.state.value.showLaunchSites)
     }
 }

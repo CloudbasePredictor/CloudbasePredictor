@@ -280,8 +280,8 @@
     <ID>MagicNumber:HourlyForecastConversion.kt:44330.0</ID>
     <ID>MagicNumber:LaunchSiteBounds.kt:LaunchSiteBounds$180.0</ID>
     <ID>MagicNumber:LaunchSiteBounds.kt:LaunchSiteBounds$90.0</ID>
-    <ID>MagicNumber:LaunchSiteRepository.kt:180.0</ID>
-    <ID>MagicNumber:LaunchSiteRepository.kt:90.0</ID>
+    <ID>MagicNumber:DefaultLaunchSiteRepository.kt:180.0</ID>
+    <ID>MagicNumber:DefaultLaunchSiteRepository.kt:90.0</ID>
     <ID>MagicNumber:ManualFavoriteInput.kt:180.0</ID>
     <ID>MagicNumber:ManualFavoriteInput.kt:3</ID>
     <ID>MagicNumber:ManualFavoriteInput.kt:60.0</ID>
@@ -471,7 +471,7 @@
     <ID>MaxLineLength:ForecastMapPanel.kt:val totalPanelHeight = (panelHeightPx + handleHeightPx).coerceIn(handleHeightPx, maxPanelHeightPx + handleHeightPx)</ID>
     <ID>MaxLineLength:ForecastModelE2eTest.kt:ForecastModelE2eTest$*</ID>
     <ID>MaxLineLength:ForecastViewModelTest.kt:FakePlaceRepository$private</ID>
-    <ID>MaxLineLength:LaunchSiteRepository.kt:DefaultLaunchSiteRepository$override suspend</ID>
+    <ID>MaxLineLength:DefaultLaunchSiteRepository.kt:DefaultLaunchSiteRepository$override suspend</ID>
     <ID>MaxLineLength:ManualFavoriteDialog.kt:ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE -&gt; stringResource(R.string.manual_favorite_error_longitude_range)</ID>
     <ID>MaxLineLength:MapScreen.kt:onVisibleBoundsChanged: (north: Double, south: Double, west: Double, east: Double, zoom: Double) -&gt; Unit = { _, _, _, _, _ -&gt; }</ID>
     <ID>MaxLineLength:OpenMeteoApi.kt:"geopotential_height_1000hPa,geopotential_height_975hPa,geopotential_height_950hPa,geopotential_height_925hPa,geopotential_height_900hPa,"</ID>
@@ -517,7 +517,7 @@
     <ID>ReturnCount:HourlyForecastConversion.kt:private fun regressLinear: Double?</ID>
     <ID>ReturnCount:HourlyForecastConversion.kt:private fun synthesizePressureLevel: PressureLevelPoint?</ID>
     <ID>ReturnCount:LaunchSiteBounds.kt:LaunchSiteBounds.Companion$fun normalizedForMap: LaunchSiteBounds?</ID>
-    <ID>ReturnCount:LaunchSiteRepository.kt:internal fun ParaglidingEarthFeature.toDomainModel: ParaglidingLaunchSite?</ID>
+    <ID>ReturnCount:DefaultLaunchSiteRepository.kt:internal fun ParaglidingEarthFeature.toDomainModel: ParaglidingLaunchSite?</ID>
     <ID>ReturnCount:ManualFavoriteInput.kt:internal fun parseManualFavoriteInput: ManualFavoriteInputResult</ID>
     <ID>ReturnCount:ManualFavoriteInput.kt:private fun dmsToDecimalDegrees: Double?</ID>
     <ID>ReturnCount:ManualFavoriteInput.kt:private fun numbersForCardinal: List&lt;Double&gt;?</ID>
@@ -554,7 +554,7 @@
     <ID>ReturnCount:WindForecastView.kt:private fun interpolateWind: WindSample?</ID>
     <ID>TooGenericExceptionCaught:ForecastCacheMaintenance.kt:ForecastCacheMaintenance$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ForecastRepository.kt:InMemoryForecastRepository$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:LaunchSiteRepository.kt:DefaultLaunchSiteRepository$throwable: Throwable</ID>
+    <ID>TooGenericExceptionCaught:DefaultLaunchSiteRepository.kt:DefaultLaunchSiteRepository$throwable: Throwable</ID>
     <ID>TooGenericExceptionCaught:MapViewModel.kt:MapViewModel$throwable: Throwable</ID>
     <ID>TooManyFunctions:CclAnalysis.kt:com.cloudbasepredictor.domain.forecast.CclAnalysis.kt</ID>
     <ID>TooManyFunctions:CloudForecastView.kt:com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView.kt</ID>

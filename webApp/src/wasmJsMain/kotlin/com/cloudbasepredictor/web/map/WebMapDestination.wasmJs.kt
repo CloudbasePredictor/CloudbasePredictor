@@ -3,6 +3,7 @@
 package com.cloudbasepredictor.web.map
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -12,8 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.HtmlElementView
+import com.cloudbasepredictor.data.launch.LaunchSiteBounds
+import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapCameraPosition
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.model.LaunchSiteDisplay
+import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.web.WebRouteState
@@ -25,6 +30,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
+import org.w3c.dom.HTMLAnchorElement
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
@@ -38,6 +44,7 @@ internal actual fun WebMapDestination(
     preferences: WebPreferencesState,
     favoritePlaces: List<SavedPlace>,
     savedCamera: MapCameraPosition?,
+    launchSiteRepository: LaunchSiteRepository,
     searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
@@ -45,28 +52,34 @@ internal actual fun WebMapDestination(
     modifier: Modifier,
 ) {
     var selectedLocation by remember(routeState.location) { mutableStateOf(routeState.location) }
+    var selectedLaunchSite by remember { mutableStateOf<ParaglidingLaunchSite?>(null) }
+    var viewportBounds by remember { mutableStateOf<LaunchSiteBounds?>(null) }
+    var launchSites by remember { mutableStateOf<List<ParaglidingLaunchSite>>(emptyList()) }
+    val showLaunchSites = preferences.showLaunchSites
     val initialCamera = resolveInitialCamera(routeState, preferences, favoritePlaces, savedCamera)
-    val favoriteMarkers = favoritePlaces.map { place ->
-        WebMapMarker(
-            id = place.id,
-            location = place.toLocation(),
-            title = place.name,
-            kind = WebMapMarkerKind.FAVORITE,
-        )
+
+    // Reloads whenever the toggle flips or the normalized viewport key changes; the previous request
+    // is cancelled automatically. When disabled, nothing is requested (not even the manifest).
+    LaunchedEffect(showLaunchSites, viewportBounds?.key) {
+        if (!showLaunchSites) {
+            launchSites = emptyList()
+            selectedLaunchSite = null
+        } else {
+            val bounds = viewportBounds
+            launchSites = if (bounds == null) {
+                emptyList()
+            } else {
+                runCatching { launchSiteRepository.getLaunchSites(bounds) }.getOrDefault(emptyList())
+            }
+        }
     }
+
     val renderState = WebMapRenderState(
         initialCamera = initialCamera,
         layer = preferences.mapLayer,
-        markers = favoriteMarkers + selectedLocation?.let { location ->
-            listOf(
-                WebMapMarker(
-                    id = SELECTED_MARKER_ID,
-                    location = location,
-                    title = location.name ?: formatCoordinates(location),
-                    kind = WebMapMarkerKind.SELECTED,
-                ),
-            )
-        }.orEmpty(),
+        markers = buildMarkers(favoritePlaces, launchSites, selectedLocation),
+        selectedLaunchSite = selectedLaunchSite,
+        showLaunchSites = showLaunchSites,
     )
 
     WebMapSurface(
@@ -77,13 +90,54 @@ internal actual fun WebMapDestination(
             val nearbyFavorite = favoritePlaces.firstOrNull { favorite ->
                 favorite.isNearby(tapped.latitude, tapped.longitude)
             }
+            selectedLaunchSite = null
             selectedLocation = nearbyFavorite?.toLocation() ?: tapped
         },
+        onLaunchSiteTap = { site ->
+            selectedLaunchSite = site
+            selectedLocation = site.toPlaceLocation()
+        },
+        onViewportChanged = { bounds -> viewportBounds = bounds },
         onLayerSelected = onMapLayerSelected,
         onLocationConfirmed = onLocationConfirmed,
         onCameraChanged = onCameraChanged,
         modifier = modifier,
     )
+}
+
+private fun buildMarkers(
+    favoritePlaces: List<SavedPlace>,
+    launchSites: List<ParaglidingLaunchSite>,
+    selectedLocation: PlaceLocation?,
+): List<WebMapMarker> {
+    val favoriteMarkers = favoritePlaces.map { place ->
+        WebMapMarker(
+            id = place.id,
+            location = place.toLocation(),
+            title = place.name,
+            kind = WebMapMarkerKind.FAVORITE,
+        )
+    }
+    val launchMarkers = launchSites.map { site ->
+        WebMapMarker(
+            id = "launch-${site.id}",
+            location = site.toPlaceLocation(),
+            title = site.name,
+            kind = WebMapMarkerKind.LAUNCH_SITE,
+            launchSite = site,
+        )
+    }
+    val selectedMarker = selectedLocation?.let { location ->
+        listOf(
+            WebMapMarker(
+                id = SELECTED_MARKER_ID,
+                location = location,
+                title = location.name ?: formatCoordinates(location),
+                kind = WebMapMarkerKind.SELECTED,
+            ),
+        )
+    }.orEmpty()
+    return favoriteMarkers + launchMarkers + selectedMarker
 }
 
 private fun resolveInitialCamera(
@@ -110,6 +164,8 @@ private fun WebMapSurface(
     state: WebMapRenderState,
     searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapTap: (PlaceLocation) -> Unit,
+    onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
+    onViewportChanged: (LaunchSiteBounds?) -> Unit,
     onLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
     onCameraChanged: (MapCameraPosition) -> Unit,
@@ -117,6 +173,8 @@ private fun WebMapSurface(
 ) {
     val scope = rememberCoroutineScope()
     val currentMapTap = rememberUpdatedState(onMapTap)
+    val currentLaunchSiteTap = rememberUpdatedState(onLaunchSiteTap)
+    val currentViewportChanged = rememberUpdatedState(onViewportChanged)
     val currentLayerSelected = rememberUpdatedState(onLayerSelected)
     val currentLocationConfirmed = rememberUpdatedState(onLocationConfirmed)
     val currentCameraChanged = rememberUpdatedState(onCameraChanged)
@@ -125,6 +183,8 @@ private fun WebMapSurface(
             scope = scope,
             searchLocations = searchLocations,
             onMapTap = { currentMapTap.value(it) },
+            onLaunchSiteTap = { currentLaunchSiteTap.value(it) },
+            onViewportChanged = { currentViewportChanged.value(it) },
             onLayerSelected = { currentLayerSelected.value(it) },
             onLocationConfirmed = { currentLocationConfirmed.value(it) },
             onCameraChanged = { currentCameraChanged.value(it) },
@@ -148,10 +208,13 @@ private fun WebMapSurface(
     )
 }
 
+@Suppress("LongParameterList")
 private class MapLibreBinding(
     private val scope: CoroutineScope,
     private val searchLocations: suspend (String) -> List<PlaceLocation>,
     private val onMapTap: (PlaceLocation) -> Unit,
+    private val onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
+    private val onViewportChanged: (LaunchSiteBounds?) -> Unit,
     private val onLayerSelected: (MapLayerPreference) -> Unit,
     private val onLocationConfirmed: (PlaceLocation) -> Unit,
     private val onCameraChanged: (MapCameraPosition) -> Unit,
@@ -173,9 +236,12 @@ private class MapLibreBinding(
     private var searchResults: HTMLDivElement? = null
     private var selectionCard: HTMLDivElement? = null
     private var selectionLabel: HTMLDivElement? = null
+    private var selectionDetail: HTMLDivElement? = null
+    private var selectionSource: HTMLDivElement? = null
     private var confirmButton: HTMLButtonElement? = null
     private var attributionButton: HTMLButtonElement? = null
     private var attributionDetail: HTMLDivElement? = null
+    private var launchAttribution: HTMLDivElement? = null
     private val layerButtons = mutableMapOf<MapLayerPreference, HTMLButtonElement>()
 
     fun attach(host: HTMLDivElement, state: WebMapRenderState) {
@@ -219,9 +285,12 @@ private class MapLibreBinding(
         searchResults = null
         selectionCard = null
         selectionLabel = null
+        selectionDetail = null
+        selectionSource = null
         confirmButton = null
         attributionButton = null
         attributionDetail = null
+        launchAttribution = null
         layerButtons.clear()
     }
 
@@ -292,22 +361,43 @@ private class MapLibreBinding(
             textContent = "Loading map…"
         }.also(host::appendChild)
 
-        selectionLabel = (document.createElement("div") as HTMLDivElement).apply {
+        buildSelectionCard(host)
+        buildAttribution(host)
+    }
+
+    private fun buildSelectionCard(host: HTMLDivElement) {
+        val label = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-selection-label"
         }
+        val detail = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-selection-detail"
+            style.display = "none"
+        }
+        val source = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-selection-source"
+            style.display = "none"
+        }
+        selectionLabel = label
+        selectionDetail = detail
+        selectionSource = source
+        val text = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-selection-text"
+            appendChild(label)
+            appendChild(detail)
+            appendChild(source)
+        }
         confirmButton = domButton("Show forecast", "cloudbase-map-confirm") {
-            latestState?.markers
-                ?.firstOrNull { it.kind == WebMapMarkerKind.SELECTED }
-                ?.location
-                ?.let(onLocationConfirmed)
+            confirmSelection()
         }
         selectionCard = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-selection-card"
             setAttribute("data-testid", "map-selection-card")
-            appendChild(requireNotNull(selectionLabel))
+            appendChild(text)
             appendChild(requireNotNull(confirmButton))
         }.also(host::appendChild)
+    }
 
+    private fun buildAttribution(host: HTMLDivElement) {
         attributionButton = domButton("", "cloudbase-map-attribution-button") {
             val detail = attributionDetail ?: return@domButton
             val expanded = detail.style.display == "block"
@@ -324,6 +414,15 @@ private class MapLibreBinding(
             className = "cloudbase-map-attribution"
             appendChild(requireNotNull(attributionButton))
             appendChild(requireNotNull(attributionDetail))
+        }.also(host::appendChild)
+
+        launchAttribution = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-launch-attribution"
+            setAttribute("data-testid", "launch-attribution")
+            style.display = "none"
+            appendChild(document.createTextNode("Launch-site data: "))
+            appendChild(domLink("ParaglidingEarth", PARAGLIDING_EARTH_HOME))
+            appendChild(document.createTextNode(" · CC BY-SA 3.0"))
         }.also(host::appendChild)
     }
 
@@ -344,9 +443,11 @@ private class MapLibreBinding(
             showStatus("", isError = false)
             createdMap.resize()
             saveCamera(createdMap)
+            reportViewport(createdMap)
         }
         subscriptions += createdMap.on("moveend") {
             saveCamera(createdMap)
+            reportViewport(createdMap)
         }
         subscriptions += createdMap.on("click") { event ->
             onMapTap(
@@ -375,35 +476,53 @@ private class MapLibreBinding(
         markers.clear()
         val module = mapModule ?: return
         state.markers.forEach { markerModel ->
-            val marker = createMapLibreMarker(
-                module,
-                markerOptions(
-                    if (markerModel.kind == WebMapMarkerKind.SELECTED) SELECTED_MARKER_COLOR
-                    else FAVORITE_MARKER_COLOR,
-                ),
-            ).setLngLat(
-                lngLat(markerModel.location.longitude, markerModel.location.latitude),
-            ).addTo(currentMap)
-            marker.getElement().apply {
-                title = markerModel.title
-                setAttribute("aria-label", markerModel.title)
-                if (markerModel.kind == WebMapMarkerKind.FAVORITE) {
-                    style.cursor = "pointer"
-                    addEventListener("click", { event ->
-                        event.stopPropagation()
-                        onMapTap(markerModel.location)
-                        currentMap.flyTo(
-                            flyToOptions(
-                                longitude = markerModel.location.longitude,
-                                latitude = markerModel.location.latitude,
-                                zoom = maxOf(currentMap.getZoom(), DEVICE_LOCATION_ZOOM),
-                            ),
-                        )
-                    })
-                }
-            }
+            val marker = createMapLibreMarker(module, markerOptions(markerColor(markerModel.kind)))
+                .setLngLat(lngLat(markerModel.location.longitude, markerModel.location.latitude))
+                .addTo(currentMap)
+            configureMarkerElement(marker.getElement(), markerModel, currentMap)
             markers += marker
         }
+    }
+
+    private fun configureMarkerElement(
+        element: HTMLElement,
+        markerModel: WebMapMarker,
+        currentMap: MapLibreMap,
+    ) {
+        element.title = markerModel.title
+        element.setAttribute("aria-label", markerModel.title)
+        when (markerModel.kind) {
+            WebMapMarkerKind.FAVORITE -> {
+                element.style.cursor = "pointer"
+                element.addEventListener("click", { event ->
+                    event.stopPropagation()
+                    onMapTap(markerModel.location)
+                    flyToMarker(currentMap, markerModel.location)
+                })
+            }
+            WebMapMarkerKind.LAUNCH_SITE -> {
+                val existingClass = element.className
+                element.className =
+                    if (existingClass.isBlank()) LAUNCH_MARKER_CLASS else "$existingClass $LAUNCH_MARKER_CLASS"
+                element.setAttribute("data-launch-site-id", markerModel.launchSite?.id.orEmpty())
+                element.style.cursor = "pointer"
+                element.addEventListener("click", { event ->
+                    event.stopPropagation()
+                    markerModel.launchSite?.let(onLaunchSiteTap)
+                })
+            }
+            WebMapMarkerKind.SELECTED -> Unit
+        }
+    }
+
+    private fun flyToMarker(currentMap: MapLibreMap, location: PlaceLocation) {
+        currentMap.flyTo(
+            flyToOptions(
+                longitude = location.longitude,
+                latitude = location.latitude,
+                zoom = maxOf(currentMap.getZoom(), DEVICE_LOCATION_ZOOM),
+            ),
+        )
     }
 
     private fun renderState(state: WebMapRenderState) {
@@ -412,12 +531,62 @@ private class MapLibreBinding(
             button.className = "cloudbase-map-layer-button" + if (selected) " active" else ""
             button.setAttribute("aria-pressed", selected.toString())
         }
-        val selected = state.markers.firstOrNull { it.kind == WebMapMarkerKind.SELECTED }
-        selectionCard?.style?.display = if (selected == null) "none" else "flex"
-        selectionLabel?.textContent = selected?.title.orEmpty()
-        confirmButton?.disabled = selected == null
+        val selectedMarker = state.markers.firstOrNull { it.kind == WebMapMarkerKind.SELECTED }
+        val launchSite = state.selectedLaunchSite
+        val hasSelection = selectedMarker != null || launchSite != null
+        selectionCard?.style?.display = if (hasSelection) "flex" else "none"
+        selectionLabel?.textContent = launchSite?.name ?: selectedMarker?.title.orEmpty()
+        renderLaunchDetail(launchSite)
+        confirmButton?.disabled = selectedMarker == null
         attributionButton?.textContent = state.layer.attributionCompact
         attributionDetail?.textContent = state.layer.attributionFull
+        launchAttribution?.style?.display = if (state.showLaunchSites) "block" else "none"
+    }
+
+    private fun renderLaunchDetail(site: ParaglidingLaunchSite?) {
+        if (site == null) clearLaunchDetail() else showLaunchDetail(site)
+    }
+
+    private fun clearLaunchDetail() {
+        selectionDetail?.apply {
+            textContent = ""
+            style.display = "none"
+        }
+        selectionSource?.apply {
+            textContent = ""
+            style.display = "none"
+        }
+    }
+
+    private fun showLaunchDetail(site: ParaglidingLaunchSite) {
+        selectionDetail?.apply {
+            textContent = launchDetailText(site)
+            style.display = "block"
+        }
+        val source = selectionSource ?: return
+        source.textContent = ""
+        source.appendChild(document.createTextNode("Launch-site data: "))
+        source.appendChild(domLink("ParaglidingEarth", site.link ?: PARAGLIDING_EARTH_HOME))
+        source.appendChild(document.createTextNode(" · CC BY-SA 3.0"))
+        source.style.display = "block"
+    }
+
+    private fun launchDetailText(site: ParaglidingLaunchSite): String {
+        return buildList {
+            site.altitudeMeters?.let { add("Altitude: $it m") }
+            LaunchSiteDisplay.windDirectionsSummary(site)?.let { add("Wind: $it") }
+            LaunchSiteDisplay.activitiesSummary(site)?.let { add("Activities: $it") }
+            site.landingName?.let { add("Landing: $it") }
+            LaunchSiteDisplay.shortDescription(site)?.let { add(it) }
+            add(formatCoordinates(site.toPlaceLocation()))
+        }.joinToString(separator = "\n")
+    }
+
+    private fun confirmSelection() {
+        latestState?.markers
+            ?.firstOrNull { it.kind == WebMapMarkerKind.SELECTED }
+            ?.location
+            ?.let(onLocationConfirmed)
     }
 
     private fun saveCamera(currentMap: MapLibreMap) {
@@ -426,6 +595,19 @@ private class MapLibreBinding(
             MapCameraPosition(
                 latitude = center.lat,
                 longitude = center.lng,
+                zoom = currentMap.getZoom(),
+            ),
+        )
+    }
+
+    private fun reportViewport(currentMap: MapLibreMap) {
+        val bounds = currentMap.getBounds()
+        onViewportChanged(
+            LaunchSiteBounds.normalizedForMap(
+                north = bounds.getNorth(),
+                south = bounds.getSouth(),
+                west = bounds.getWest(),
+                east = bounds.getEast(),
                 zoom = currentMap.getZoom(),
             ),
         )
@@ -543,6 +725,21 @@ private fun domButton(
     }
 }
 
+private fun domLink(label: String, href: String): HTMLAnchorElement {
+    return (document.createElement("a") as HTMLAnchorElement).apply {
+        textContent = label
+        setAttribute("href", href)
+        setAttribute("target", "_blank")
+        setAttribute("rel", "noopener noreferrer")
+    }
+}
+
+private fun markerColor(kind: WebMapMarkerKind): String = when (kind) {
+    WebMapMarkerKind.SELECTED -> SELECTED_MARKER_COLOR
+    WebMapMarkerKind.LAUNCH_SITE -> LAUNCH_SITE_MARKER_COLOR
+    WebMapMarkerKind.FAVORITE -> FAVORITE_MARKER_COLOR
+}
+
 private fun styleFor(layer: MapLayerPreference): kotlin.js.JsAny {
     return when (val style = buildWebMapStyle(layer, yesterdayUtcDate())) {
         is WebMapStyle.Url -> styleValue(style.value, isJson = false)
@@ -569,6 +766,9 @@ private val DEFAULT_MAP_CAMERA = MapCameraPosition(
 private const val SELECTED_MARKER_ID = "selected-location"
 private const val SELECTED_MARKER_COLOR = "#e64a5b"
 private const val FAVORITE_MARKER_COLOR = "#ffc107"
+private const val LAUNCH_SITE_MARKER_COLOR = "#1e88e5"
+private const val LAUNCH_MARKER_CLASS = "cloudbase-launch-marker"
+private const val PARAGLIDING_EARTH_HOME = "https://www.paragliding.earth"
 private const val INITIAL_MAP_ZOOM = 10.0
 private const val DEFAULT_MAP_ZOOM = 5.5
 private const val DEVICE_LOCATION_ZOOM = 12.0
@@ -582,6 +782,7 @@ private fun WebMapDestinationPreview() {
         preferences = WebPreviewData.preferences,
         favoritePlaces = WebPreviewData.favoritePlaces,
         savedCamera = null,
+        launchSiteRepository = WebPreviewData.launchSiteRepository,
         searchLocations = { emptyList() },
         onMapLayerSelected = {},
         onLocationConfirmed = {},

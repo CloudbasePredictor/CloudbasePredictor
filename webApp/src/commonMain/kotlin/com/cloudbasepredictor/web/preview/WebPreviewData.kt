@@ -1,5 +1,8 @@
 package com.cloudbasepredictor.web.preview
 
+import com.cloudbasepredictor.data.launch.LaunchSiteBounds
+import com.cloudbasepredictor.data.launch.LaunchSiteRepository
+import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.web.WebDestination
@@ -7,6 +10,11 @@ import com.cloudbasepredictor.web.WebRouteState
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 
 object WebPreviewData {
+    val launchSiteRepository: LaunchSiteRepository = object : LaunchSiteRepository {
+        override suspend fun getLaunchSites(bounds: LaunchSiteBounds): List<ParaglidingLaunchSite> =
+            emptyList()
+    }
+
     val brauneck = PlaceLocation(
         latitude = 47.6636,
         longitude = 11.5269,

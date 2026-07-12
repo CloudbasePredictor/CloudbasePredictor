@@ -182,11 +182,53 @@ noscript {
   box-shadow: 0 3px 14px rgb(0 0 0 / 24%);
 }
 
+.cloudbase-map-selection-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .cloudbase-map-selection-label {
   overflow: hidden;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cloudbase-map-selection-detail {
+  color: #33424c;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  white-space: pre-line;
+}
+
+.cloudbase-map-selection-source {
+  color: #55636c;
+  font-size: 0.72rem;
+}
+
+.cloudbase-map-selection-source a,
+.cloudbase-map-launch-attribution a {
+  color: #176b87;
+}
+
+.cloudbase-map-launch-attribution {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 0.45rem;
+  z-index: 4;
+  max-width: min(22rem, calc(100% - 0.9rem));
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.4rem;
+  color: #26333c;
+  background: rgb(255 255 255 / 88%);
+  font-size: 0.72rem;
+}
+
+.cloudbase-launch-marker {
+  cursor: pointer;
 }
 
 .cloudbase-map-confirm {

@@ -15,3 +15,5 @@ agent-local/
 .cxx
 local.properties
 app/screenshots/
+# Generated at build time (fixture in CI, live ParaglidingEarth data in the deploy workflow).
+/webApp/src/wasmJsMain/resources/data/launch-sites/

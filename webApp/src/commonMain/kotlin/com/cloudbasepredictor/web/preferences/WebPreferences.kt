@@ -15,6 +15,7 @@ data class WebPreferencesState(
     val mapLayer: MapLayerPreference = MapLayerPreference.OPENFREEMAP,
     val startWithFavorites: Boolean = true,
     val forecastModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
+    val showLaunchSites: Boolean = false,
 )
 
 class WebPreferences(
@@ -48,6 +49,11 @@ class WebPreferences(
         storage.putString(FORECAST_MODEL_KEY, value.apiName)
     }
 
+    fun setShowLaunchSites(value: Boolean) {
+        update(mutableState.value.copy(showLaunchSites = value))
+        storage.putBoolean(SHOW_LAUNCH_SITES_KEY, value)
+    }
+
     private fun update(value: WebPreferencesState) {
         mutableState.value = value
     }
@@ -67,6 +73,7 @@ class WebPreferences(
             forecastModel = storage.getString(FORECAST_MODEL_KEY)
                 ?.let(ForecastModel::fromApiName)
                 ?: ForecastModel.ICON_SEAMLESS,
+            showLaunchSites = storage.getBoolean(SHOW_LAUNCH_SITES_KEY) ?: false,
         )
     }
 
@@ -76,5 +83,6 @@ class WebPreferences(
         const val MAP_LAYER_KEY = "map_layer"
         const val START_WITH_FAVORITES_KEY = "start_with_favorites"
         const val FORECAST_MODEL_KEY = "selected_forecast_model"
+        const val SHOW_LAUNCH_SITES_KEY = "show_launch_sites"
     }
 }

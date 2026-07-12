@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - master
+  schedule:
+    # Weekly refresh of the ParaglidingEarth launch-site snapshot (Mondays 03:17 UTC).
+    - cron: "17 3 * * 1"
   workflow_dispatch:
 
 env:
@@ -61,6 +64,21 @@ jobs:
 
       - name: Run shared and web static analysis
         run: ./gradlew :shared:detekt :webApp:detekt
+
+      # Fetch, validate, and tile the ParaglidingEarth dataset into the web resources BEFORE the
+      # production build so it ships in the same GitHub Pages artifact. If ParaglidingEarth is
+      # unreachable or the snapshot fails verification, the job fails here — before any artifact
+      # upload — so the previously published site stays live. The browser never contacts
+      # ParaglidingEarth; only GitHub Actions does.
+      - name: Build ParaglidingEarth launch-site snapshot
+        run: >
+          node scripts/launch-sites/build-snapshot.mjs
+          --output webApp/src/wasmJsMain/resources/data/launch-sites
+
+      - name: Verify ParaglidingEarth launch-site snapshot
+        run: >
+          node scripts/launch-sites/verify-snapshot.mjs
+          webApp/src/wasmJsMain/resources/data/launch-sites
 
       - name: Build production web distribution
         run: ./gradlew :webApp:wasmJsBrowserDistribution

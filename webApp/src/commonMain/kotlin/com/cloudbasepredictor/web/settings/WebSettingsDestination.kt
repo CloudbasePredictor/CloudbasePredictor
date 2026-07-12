@@ -48,6 +48,7 @@ fun WebSettingsDestination(
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
+    onShowLaunchSitesChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -82,6 +83,7 @@ fun WebSettingsDestination(
                         onMapLayerSelected = onMapLayerSelected,
                         onStartWithFavoritesChanged = onStartWithFavoritesChanged,
                         onForecastModelSelected = onForecastModelSelected,
+                        onShowLaunchSitesChanged = onShowLaunchSitesChanged,
                     )
                 } else {
                     NarrowSettingsContent(
@@ -91,6 +93,7 @@ fun WebSettingsDestination(
                         onMapLayerSelected = onMapLayerSelected,
                         onStartWithFavoritesChanged = onStartWithFavoritesChanged,
                         onForecastModelSelected = onForecastModelSelected,
+                        onShowLaunchSitesChanged = onShowLaunchSitesChanged,
                     )
                 }
             }
@@ -106,6 +109,7 @@ private fun WideSettingsContent(
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
+    onShowLaunchSitesChanged: (Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -125,6 +129,7 @@ private fun WideSettingsContent(
             verticalArrangement = Arrangement.spacedBy(SectionSpacing),
         ) {
             MapLayerSection(state.mapLayer, onMapLayerSelected)
+            LaunchSitesSection(state.showLaunchSites, onShowLaunchSitesChanged)
             ForecastModelSection(state.forecastModel, onForecastModelSelected)
         }
     }
@@ -138,11 +143,13 @@ private fun NarrowSettingsContent(
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
+    onShowLaunchSitesChanged: (Boolean) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SectionSpacing)) {
         UnitsSection(state.unitPreset, onUnitPresetSelected)
         ThemeSection(state.themePreference, onThemePreferenceSelected)
         MapLayerSection(state.mapLayer, onMapLayerSelected)
+        LaunchSitesSection(state.showLaunchSites, onShowLaunchSitesChanged)
         StartupSection(state.startWithFavorites, onStartWithFavoritesChanged)
         ForecastModelSection(state.forecastModel, onForecastModelSelected)
     }
@@ -210,6 +217,50 @@ private fun ForecastModelSection(
         label = ForecastModel::displayName,
         supportingText = ForecastModel::description,
     )
+}
+
+@Composable
+private fun LaunchSitesSection(
+    showLaunchSites: Boolean,
+    onChanged: (Boolean) -> Unit,
+) {
+    SettingsCard(
+        title = "Launch sites",
+        description = "Show paragliding launch sites from ParaglidingEarth on the map.",
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = showLaunchSites,
+                    role = Role.Switch,
+                    onValueChange = onChanged,
+                )
+                .semantics {
+                    contentDescription = if (showLaunchSites) {
+                        "Show paragliding launch sites checked"
+                    } else {
+                        "Show paragliding launch sites unchecked"
+                    }
+                }
+                .padding(vertical = OptionVerticalPadding),
+            horizontalArrangement = Arrangement.spacedBy(OptionSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(OptionTextSpacing),
+            ) {
+                Text("Show paragliding launch sites", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Load nearby ParaglidingEarth launch sites when the map is zoomed in.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Switch(checked = showLaunchSites, onCheckedChange = null)
+        }
+    }
 }
 
 @Composable
@@ -413,6 +464,7 @@ private fun WebSettingsDestinationPreview() {
             onMapLayerSelected = {},
             onStartWithFavoritesChanged = {},
             onForecastModelSelected = {},
+            onShowLaunchSitesChanged = {},
         )
     }
 }

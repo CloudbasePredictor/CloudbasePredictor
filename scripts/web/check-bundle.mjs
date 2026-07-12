@@ -49,8 +49,18 @@ for (const file of files) {
   });
 }
 
-const distributionBytes = sum(fileMetrics.map((file) => file.bytes));
-const distributionGzipBytes = sum(fileMetrics.map((file) => file.gzipBytes));
+const launchSiteDirectory = (config.launchSiteData?.directory ?? "data/launch-sites").replace(/\/+$/u, "");
+const isLaunchSiteFile = (posixPath) =>
+  posixPath === launchSiteDirectory || posixPath.startsWith(`${launchSiteDirectory}/`);
+const appFiles = fileMetrics.filter((file) => !isLaunchSiteFile(file.path));
+const launchSiteFiles = fileMetrics.filter((file) => isLaunchSiteFile(file.path));
+
+// Application budgets exclude the static launch-site dataset so it can never inflate the app limits.
+const distributionBytes = sum(appFiles.map((file) => file.bytes));
+const distributionGzipBytes = sum(appFiles.map((file) => file.gzipBytes));
+const launchSiteRawBytes = sum(launchSiteFiles.map((file) => file.bytes));
+const launchSiteGzipBytes = sum(launchSiteFiles.map((file) => file.gzipBytes));
+const launchSiteMetrics = summarizeLaunchSiteData(distDirectory, launchSiteDirectory, launchSiteFiles);
 const directInitialScripts = directScriptAssets(distDirectory);
 const markerHits = findForbiddenMarkers(
   directInitialScripts,
@@ -92,12 +102,59 @@ check(
   markerHits.join(", "),
 );
 
+const launchConfig = config.launchSiteData ?? {};
+if (launchSiteFiles.length > 0) {
+  if (launchConfig.minimumSiteCount > 0) {
+    check(
+      failures,
+      `launch-site dataset has >= ${launchConfig.minimumSiteCount} sites`,
+      launchSiteMetrics.siteCount >= launchConfig.minimumSiteCount,
+      String(launchSiteMetrics.siteCount),
+    );
+  }
+  if (launchConfig.maximumRawBytes > 0) {
+    check(
+      failures,
+      `launch-site data size <= ${formatBytes(launchConfig.maximumRawBytes)}`,
+      launchSiteRawBytes <= launchConfig.maximumRawBytes,
+      formatBytes(launchSiteRawBytes),
+    );
+  }
+  if (launchConfig.maximumGzipBytes > 0) {
+    check(
+      failures,
+      `launch-site data gzip size <= ${formatBytes(launchConfig.maximumGzipBytes)}`,
+      launchSiteGzipBytes <= launchConfig.maximumGzipBytes,
+      formatBytes(launchSiteGzipBytes),
+    );
+  }
+  if (launchConfig.maximumTileBytes > 0) {
+    check(
+      failures,
+      `largest launch-site tile <= ${formatBytes(launchConfig.maximumTileBytes)}`,
+      launchSiteMetrics.largestTileBytes <= launchConfig.maximumTileBytes,
+      formatBytes(launchSiteMetrics.largestTileBytes),
+    );
+  }
+}
+
 const report = {
   schemaVersion: 1,
   config: toPosix(relative(repositoryRoot, configPath)),
   distribution: toPosix(relative(repositoryRoot, distDirectory)),
   distributionBytes,
   distributionGzipBytes,
+  launchSiteData: {
+    directory: launchSiteDirectory,
+    present: launchSiteFiles.length > 0,
+    rawBytes: launchSiteRawBytes,
+    gzipBytes: launchSiteGzipBytes,
+    siteCount: launchSiteMetrics.siteCount,
+    tileCount: launchSiteMetrics.tileCount,
+    largestTileBytes: launchSiteMetrics.largestTileBytes,
+    largestTilePath: launchSiteMetrics.largestTilePath,
+    datasetId: launchSiteMetrics.datasetId,
+  },
   directInitialScripts: directInitialScripts.map((file) => toPosix(relative(distDirectory, file))),
   markerHits,
   largestFiles: [...fileMetrics]
@@ -110,7 +167,16 @@ const report = {
 mkdirSync(dirname(reportPath), { recursive: true });
 writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 
-console.log(`Distribution: ${formatBytes(distributionBytes)} raw, ${formatBytes(distributionGzipBytes)} gzip`);
+console.log(`Application: ${formatBytes(distributionBytes)} raw, ${formatBytes(distributionGzipBytes)} gzip`);
+if (launchSiteFiles.length > 0) {
+  console.log(
+    `Launch-site data: ${formatBytes(launchSiteRawBytes)} raw, ${formatBytes(launchSiteGzipBytes)} gzip ` +
+      `(${launchSiteMetrics.siteCount} sites, ${launchSiteMetrics.tileCount} tiles, ` +
+      `largest ${formatBytes(launchSiteMetrics.largestTileBytes)}, dataset ${launchSiteMetrics.datasetId || "?"})`,
+  );
+} else {
+  console.log("Launch-site data: not present (generated in CI before the production build).");
+}
 console.log(`Report: ${toPosix(relative(repositoryRoot, reportPath))}`);
 if (failures.length > 0) {
   console.error(`Bundle gate failed:\n- ${failures.join("\n- ")}`);
@@ -121,6 +187,36 @@ if (failures.length > 0) {
 
 function resolveFromRepository(path) {
   return isAbsolute(path) ? resolve(path) : resolve(repositoryRoot, path);
+}
+
+function summarizeLaunchSiteData(distDir, directory, launchFiles) {
+  const manifestRelative = `${directory}/manifest.json`;
+  const tileFiles = launchFiles.filter(
+    (file) => file.path !== manifestRelative && file.path.endsWith(".json"),
+  );
+  const largestTile = tileFiles.reduce(
+    (largest, file) => (file.bytes > largest.bytes ? file : largest),
+    { path: "", bytes: 0 },
+  );
+  let siteCount = 0;
+  let datasetId = "";
+  const manifestPath = join(distDir, directory, "manifest.json");
+  if (existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      siteCount = Number(manifest.siteCount) || 0;
+      datasetId = String(manifest.datasetId ?? "");
+    } catch {
+      siteCount = 0;
+    }
+  }
+  return {
+    siteCount,
+    datasetId,
+    tileCount: tileFiles.length,
+    largestTileBytes: largestTile.bytes,
+    largestTilePath: largestTile.path,
+  };
 }
 
 async function listFiles(directory) {

@@ -210,6 +210,7 @@ private fun DestinationContent(
             preferences = preferences,
             favoritePlaces = favoritePlaces,
             savedCamera = environment.mapCameraStore.read(),
+            launchSiteRepository = environment.launchSiteRepository,
             searchLocations = environment.searchLocations,
             onMapLayerSelected = environment.preferences::selectMapLayer,
             onCameraChanged = environment.mapCameraStore::write,
@@ -233,6 +234,7 @@ private fun DestinationContent(
                 environment.preferences.selectForecastModel(model)
                 onNavigate(routeState.copy(model = model, dayIndex = 0))
             },
+            onShowLaunchSitesChanged = environment.preferences::setShowLaunchSites,
             modifier = contentModifier,
         )
         WebDestination.About -> WebAboutDestination(modifier = contentModifier)

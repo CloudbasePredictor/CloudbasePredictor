@@ -2,8 +2,10 @@ package com.cloudbasepredictor.web.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapCameraPosition
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.web.WebRouteState
@@ -16,17 +18,21 @@ data class WebMapMarker(
     val location: PlaceLocation,
     val title: String,
     val kind: WebMapMarkerKind,
+    val launchSite: ParaglidingLaunchSite? = null,
 )
 
 enum class WebMapMarkerKind {
     FAVORITE,
     SELECTED,
+    LAUNCH_SITE,
 }
 
 data class WebMapRenderState(
     val initialCamera: MapCameraPosition,
     val layer: MapLayerPreference,
     val markers: List<WebMapMarker>,
+    val selectedLaunchSite: ParaglidingLaunchSite? = null,
+    val showLaunchSites: Boolean = false,
 )
 
 @Composable
@@ -35,6 +41,7 @@ internal expect fun WebMapDestination(
     preferences: WebPreferencesState,
     favoritePlaces: List<SavedPlace>,
     savedCamera: MapCameraPosition?,
+    launchSiteRepository: LaunchSiteRepository,
     searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
@@ -50,6 +57,7 @@ private fun WebMapModelsPreview() {
         preferences = WebPreviewData.preferences,
         favoritePlaces = WebPreviewData.favoritePlaces,
         savedCamera = null,
+        launchSiteRepository = WebPreviewData.launchSiteRepository,
         searchLocations = { emptyList() },
         onMapLayerSelected = {},
         onLocationConfirmed = {},

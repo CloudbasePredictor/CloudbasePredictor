@@ -56,6 +56,20 @@ jobs:
       - name: Run shared and web static analysis
         run: ./gradlew :shared:detekt :webApp:detekt
 
+      # CI uses the committed fixture (not the live ParaglidingEarth API) so the bundle and browser
+      # release gates exercise a real, deterministic launch-site snapshot without a network
+      # dependency. The live snapshot is fetched only by the deploy workflow.
+      - name: Build fixture launch-site snapshot for release gates
+        run: >
+          node scripts/launch-sites/build-snapshot.mjs
+          --input scripts/launch-sites/fixtures/sample.geojson
+          --output webApp/src/wasmJsMain/resources/data/launch-sites
+
+      - name: Verify fixture launch-site snapshot
+        run: >
+          node scripts/launch-sites/verify-snapshot.mjs
+          webApp/src/wasmJsMain/resources/data/launch-sites
+
       - name: Build production web distribution
         run: ./gradlew :webApp:wasmJsBrowserDistribution
 

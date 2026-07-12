@@ -4,11 +4,18 @@
   "bundle": {
     "maximumDistributionBytes": 20000000,
     "maximumDistributionGzipBytes": 6500000,
-    "maximumInitialTransferBytes": 13000000,
+    "maximumInitialTransferBytes": 13200000,
     "maximumInitialTransferGzipBytes": 5500000,
     "forbiddenInitialJavaScriptMarkers": [
       "MapLibre GL JS"
     ]
+  },
+  "launchSiteData": {
+    "directory": "data/launch-sites",
+    "minimumSiteCount": 0,
+    "maximumRawBytes": 0,
+    "maximumGzipBytes": 0,
+    "maximumTileBytes": 0
   },
   "browser": {
     "startupBudgetMillis": 8000,
@@ -90,6 +97,11 @@
         "id": "forecast-model",
         "controlName": "Forecast model option: Best Effort",
         "expectedState": "selected"
+      },
+      {
+        "id": "launch-sites",
+        "controlName": "Show paragliding launch sites",
+        "expectedState": "checked"
       }
     ]
   }
