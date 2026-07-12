@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -225,7 +226,13 @@ private fun WebForecastReadyContent(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
+            // Cap and center the content on wide desktop screens so the header actions no longer
+            // drift to the far edge and the chart stops stretching edge-to-edge. Mirrors the
+            // Settings/About destinations (DestinationMaxWidth / ContentMaxWidth); a no-op on
+            // phone-width viewports where the available width is already below the cap.
             modifier = Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = ForecastContentMaxWidth)
                 .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -386,6 +393,10 @@ private fun ForecastChart(
 
 private const val INITIAL_VISIBLE_DAY_CHIPS = 5
 private const val DAY_CHIP_INCREMENT = 2
+
+// Shared with the Settings/About destinations (DestinationMaxWidth / ContentMaxWidth) so every web
+// screen caps and centers its content at the same width on wide desktop displays.
+private val ForecastContentMaxWidth = 1_080.dp
 
 @Composable
 private fun ScrollableChipRow(content: @Composable () -> Unit) {
