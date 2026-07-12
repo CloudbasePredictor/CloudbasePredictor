@@ -23,6 +23,7 @@ import com.cloudbasepredictor.model.ManualFavoriteInputResult
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.model.mergeColocatedFavoriteLaunchSites
 import com.cloudbasepredictor.model.parseManualFavoriteInput
 import com.cloudbasepredictor.web.WebRouteState
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
@@ -116,23 +117,42 @@ private fun buildMarkers(
     launchSites: List<ParaglidingLaunchSite>,
     selectedLocation: PlaceLocation?,
 ): List<WebMapMarker> {
-    val favoriteMarkers = favoritePlaces.map { place ->
+    // A favorite saved on a launch site is drawn once (as a favorite-colored flag) instead of two
+    // overlapping markers — matching the Android map. Merge first, then suppress the merged inputs.
+    val colocated = mergeColocatedFavoriteLaunchSites(favoritePlaces, launchSites)
+    val mergedFavoriteIds = colocated.mapTo(mutableSetOf()) { it.favorite.id }
+    val mergedLaunchSiteIds = colocated.mapTo(mutableSetOf()) { it.launchSite.id }
+
+    val launchMarkers = launchSites
+        .filterNot { site -> site.id in mergedLaunchSiteIds }
+        .map { site ->
+            WebMapMarker(
+                id = "launch-${site.id}",
+                location = site.toPlaceLocation(),
+                title = site.name,
+                kind = WebMapMarkerKind.LAUNCH_SITE,
+                launchSite = site,
+            )
+        }
+    val favoriteLaunchMarkers = colocated.map { pair ->
         WebMapMarker(
-            id = place.id,
-            location = place.toLocation(),
-            title = place.name,
-            kind = WebMapMarkerKind.FAVORITE,
+            id = "favorite-launch-${pair.launchSite.id}",
+            location = pair.favorite.toLocation(),
+            title = pair.favorite.name,
+            kind = WebMapMarkerKind.FAVORITE_LAUNCH_SITE,
+            launchSite = pair.launchSite,
         )
     }
-    val launchMarkers = launchSites.map { site ->
-        WebMapMarker(
-            id = "launch-${site.id}",
-            location = site.toPlaceLocation(),
-            title = site.name,
-            kind = WebMapMarkerKind.LAUNCH_SITE,
-            launchSite = site,
-        )
-    }
+    val favoriteMarkers = favoritePlaces
+        .filterNot { place -> place.id in mergedFavoriteIds }
+        .map { place ->
+            WebMapMarker(
+                id = place.id,
+                location = place.toLocation(),
+                title = place.name,
+                kind = WebMapMarkerKind.FAVORITE,
+            )
+        }
     val selectedMarker = selectedLocation?.let { location ->
         listOf(
             WebMapMarker(
@@ -143,7 +163,8 @@ private fun buildMarkers(
             ),
         )
     }.orEmpty()
-    return favoriteMarkers + launchMarkers + selectedMarker
+    // Draw order (bottom → top): plain launch flags, merged favorite flags, favorite pins, selection.
+    return launchMarkers + favoriteLaunchMarkers + favoriteMarkers + selectedMarker
 }
 
 private fun resolveInitialCamera(
@@ -607,7 +628,7 @@ private class MapLibreBinding(
         markers.clear()
         val module = mapModule ?: return
         state.markers.forEach { markerModel ->
-            val marker = createMapLibreMarker(module, markerOptions(markerColor(markerModel.kind)))
+            val marker = createMapLibreMarker(module, markerOptionsFor(markerModel.kind))
                 .setLngLat(lngLat(markerModel.location.longitude, markerModel.location.latitude))
                 .addTo(currentMap)
             configureMarkerElement(marker.getElement(), markerModel, currentMap)
@@ -631,7 +652,7 @@ private class MapLibreBinding(
                     flyToMarker(currentMap, markerModel.location)
                 })
             }
-            WebMapMarkerKind.LAUNCH_SITE -> {
+            WebMapMarkerKind.LAUNCH_SITE, WebMapMarkerKind.FAVORITE_LAUNCH_SITE -> {
                 val existingClass = element.className
                 element.className =
                     if (existingClass.isBlank()) LAUNCH_MARKER_CLASS else "$existingClass $LAUNCH_MARKER_CLASS"
@@ -870,10 +891,13 @@ private fun domLink(label: String, href: String): HTMLAnchorElement {
     }
 }
 
-private fun markerColor(kind: WebMapMarkerKind): String = when (kind) {
-    WebMapMarkerKind.SELECTED -> SELECTED_MARKER_COLOR
-    WebMapMarkerKind.LAUNCH_SITE -> LAUNCH_SITE_MARKER_COLOR
-    WebMapMarkerKind.FAVORITE -> FAVORITE_MARKER_COLOR
+// Launch sites (and favorites saved on them) render as flags; plain favorites and the selected
+// point keep MapLibre's default teardrop pin, distinguished only by color.
+private fun markerOptionsFor(kind: WebMapMarkerKind): kotlin.js.JsAny = when (kind) {
+    WebMapMarkerKind.LAUNCH_SITE -> flagMarkerOptions(LAUNCH_SITE_MARKER_COLOR)
+    WebMapMarkerKind.FAVORITE_LAUNCH_SITE -> flagMarkerOptions(FAVORITE_MARKER_COLOR)
+    WebMapMarkerKind.FAVORITE -> markerOptions(FAVORITE_MARKER_COLOR)
+    WebMapMarkerKind.SELECTED -> markerOptions(SELECTED_MARKER_COLOR)
 }
 
 private fun styleFor(layer: MapLayerPreference): kotlin.js.JsAny {
@@ -902,7 +926,7 @@ private val DEFAULT_MAP_CAMERA = MapCameraPosition(
 private const val SELECTED_MARKER_ID = "selected-location"
 private const val SELECTED_MARKER_COLOR = "#e64a5b"
 private const val FAVORITE_MARKER_COLOR = "#ffc107"
-private const val LAUNCH_SITE_MARKER_COLOR = "#1e88e5"
+private const val LAUNCH_SITE_MARKER_COLOR = "#00796b"
 private const val LAUNCH_MARKER_CLASS = "cloudbase-launch-marker"
 private const val PARAGLIDING_EARTH_HOME = "https://www.paragliding.earth"
 private const val INITIAL_MAP_ZOOM = 10.0

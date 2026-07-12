@@ -25,6 +25,9 @@ enum class WebMapMarkerKind {
     FAVORITE,
     SELECTED,
     LAUNCH_SITE,
+
+    /** A favorite saved on top of a launch site — drawn once as a flag in the favorite color. */
+    FAVORITE_LAUNCH_SITE,
 }
 
 data class WebMapRenderState(

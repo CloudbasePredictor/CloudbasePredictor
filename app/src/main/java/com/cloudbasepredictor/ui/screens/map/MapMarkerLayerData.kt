@@ -1,9 +1,10 @@
 package com.cloudbasepredictor.ui.screens.map
 
+import com.cloudbasepredictor.model.FavoriteLaunchSite
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.SavedPlace
-import kotlin.math.cos
-import kotlin.math.sqrt
+import com.cloudbasepredictor.model.mergeColocatedFavoriteLaunchSites
+import com.cloudbasepredictor.model.nearestColocatedLaunchSite
 
 internal data class MapMarkerLayerData(
     val selectedCoordinatePlace: SavedPlace?,
@@ -139,95 +140,22 @@ private fun launchSitesWithSelected(
     return launchSites + selectedLaunchSite
 }
 
-private data class FavoriteLaunchSiteCandidate(
-    val favoritePlace: SavedPlace,
-    val launchSite: ParaglidingLaunchSite,
-    val distanceMeters: Double,
-) {
-    fun toMarker(): FavoriteLaunchSiteMarker {
-        return FavoriteLaunchSiteMarker(
-            favoritePlace = favoritePlace,
-            launchSite = launchSite,
-        )
-    }
-}
-
+// Colocation matching (a favorite saved on a launch site) lives in :shared so Android and web merge
+// markers identically; this only adapts the shared result to the Android marker type.
 private fun buildFavoriteLaunchSiteMarkers(
     favoritePlaces: List<SavedPlace>,
     launchSites: List<ParaglidingLaunchSite>,
 ): List<FavoriteLaunchSiteMarker> {
-    val candidates = favoritePlaces
-        .filter { place -> place.isFavorite }
-        .flatMap { favoritePlace ->
-            launchSites.mapNotNull { launchSite ->
-                favoriteLaunchSiteCandidate(
-                    favoritePlace = favoritePlace,
-                    launchSite = launchSite,
-                )
-            }
-        }
-        .sortedWith(favoriteLaunchSiteCandidateComparator())
-
-    val usedFavoriteIds = mutableSetOf<String>()
-    val usedLaunchSiteIds = mutableSetOf<String>()
-    return candidates.mapNotNull { candidate ->
-        if (
-            !usedFavoriteIds.add(candidate.favoritePlace.id) ||
-            !usedLaunchSiteIds.add(candidate.launchSite.id)
-        ) {
-            return@mapNotNull null
-        }
-        candidate.toMarker()
-    }
+    return mergeColocatedFavoriteLaunchSites(favoritePlaces, launchSites).map { it.toMarker() }
 }
 
 private fun favoriteLaunchSiteMarkerForFavorite(
     favoritePlace: SavedPlace,
     launchSites: List<ParaglidingLaunchSite>,
 ): FavoriteLaunchSiteMarker? {
-    if (!favoritePlace.isFavorite) return null
-    return launchSites
-        .mapNotNull { launchSite ->
-            favoriteLaunchSiteCandidate(
-                favoritePlace = favoritePlace,
-                launchSite = launchSite,
-            )
-        }
-        .minWithOrNull(favoriteLaunchSiteCandidateComparator())
-        ?.toMarker()
+    return nearestColocatedLaunchSite(favoritePlace, launchSites)?.toMarker()
 }
 
-private fun favoriteLaunchSiteCandidate(
-    favoritePlace: SavedPlace,
-    launchSite: ParaglidingLaunchSite,
-): FavoriteLaunchSiteCandidate? {
-    val distanceMeters = favoritePlace.distanceMetersTo(
-        latitude = launchSite.latitude,
-        longitude = launchSite.longitude,
-    )
-    if (distanceMeters > COLOCATED_MARKER_THRESHOLD_METERS) return null
-    return FavoriteLaunchSiteCandidate(
-        favoritePlace = favoritePlace,
-        launchSite = launchSite,
-        distanceMeters = distanceMeters,
-    )
+private fun FavoriteLaunchSite.toMarker(): FavoriteLaunchSiteMarker {
+    return FavoriteLaunchSiteMarker(favoritePlace = favorite, launchSite = launchSite)
 }
-
-private fun favoriteLaunchSiteCandidateComparator(): Comparator<FavoriteLaunchSiteCandidate> {
-    return compareBy<FavoriteLaunchSiteCandidate> { candidate -> candidate.distanceMeters }
-        .thenBy { candidate -> candidate.favoritePlace.id }
-        .thenBy { candidate -> candidate.launchSite.id }
-}
-
-private fun SavedPlace.distanceMetersTo(
-    latitude: Double,
-    longitude: Double,
-): Double {
-    val dLat = Math.toRadians(this.latitude - latitude)
-    val dLon = Math.toRadians(this.longitude - longitude) *
-        cos(Math.toRadians((this.latitude + latitude) / 2.0))
-    return sqrt(dLat * dLat + dLon * dLon) * EARTH_RADIUS_M
-}
-
-private const val COLOCATED_MARKER_THRESHOLD_METERS = 30.0
-private const val EARTH_RADIUS_M = 6_371_000.0

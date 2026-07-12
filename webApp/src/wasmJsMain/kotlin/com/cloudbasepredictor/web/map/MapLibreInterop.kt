@@ -86,6 +86,23 @@ internal fun styleValue(value: String, isJson: Boolean): JsAny =
 
 internal fun markerOptions(color: String): JsAny = js("({ color: color })")
 
+// Builds a flag-shaped marker (Material "Flag" glyph) in [color] with a white halo, anchored so the
+// base of the pole sits on the coordinate — mirroring the Android launch-site markers. Returned as
+// MapLibre Marker options with a custom element; getElement() then returns this same div to configure.
+internal fun flagMarkerOptions(color: String): JsAny = js(
+    """
+    (function() {
+      var el = document.createElement('div');
+      el.className = 'cloudbase-flag-marker';
+      el.innerHTML =
+        '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z" fill="' + color +
+        '" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round" paint-order="stroke"/></svg>';
+      return { element: el, anchor: 'bottom' };
+    })()
+    """,
+)
+
 internal fun lngLat(longitude: Double, latitude: Double): JsAny =
     js("[longitude, latitude]")
 
