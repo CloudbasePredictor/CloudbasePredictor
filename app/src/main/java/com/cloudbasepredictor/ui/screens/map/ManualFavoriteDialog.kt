@@ -18,7 +18,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.R
+import com.cloudbasepredictor.model.ManualFavoriteInputError
+import com.cloudbasepredictor.model.ManualFavoriteInputResult
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.model.parseManualFavoriteInput
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 

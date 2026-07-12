@@ -18,9 +18,12 @@ import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapCameraPosition
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.model.LaunchSiteDisplay
+import com.cloudbasepredictor.model.ManualFavoriteInputError
+import com.cloudbasepredictor.model.ManualFavoriteInputResult
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.model.parseManualFavoriteInput
 import com.cloudbasepredictor.web.WebRouteState
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebPreviewData
@@ -37,6 +40,7 @@ import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
+import kotlin.math.abs
 
 @Composable
 internal actual fun WebMapDestination(
@@ -49,6 +53,7 @@ internal actual fun WebMapDestination(
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
     onCameraChanged: (MapCameraPosition) -> Unit,
+    onAddFavorite: (SavedPlace) -> Unit,
     modifier: Modifier,
 ) {
     var selectedLocation by remember(routeState.location) { mutableStateOf(routeState.location) }
@@ -101,6 +106,7 @@ internal actual fun WebMapDestination(
         onLayerSelected = onMapLayerSelected,
         onLocationConfirmed = onLocationConfirmed,
         onCameraChanged = onCameraChanged,
+        onAddFavorite = onAddFavorite,
         modifier = modifier,
     )
 }
@@ -169,6 +175,7 @@ private fun WebMapSurface(
     onLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
     onCameraChanged: (MapCameraPosition) -> Unit,
+    onAddFavorite: (SavedPlace) -> Unit,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -178,6 +185,7 @@ private fun WebMapSurface(
     val currentLayerSelected = rememberUpdatedState(onLayerSelected)
     val currentLocationConfirmed = rememberUpdatedState(onLocationConfirmed)
     val currentCameraChanged = rememberUpdatedState(onCameraChanged)
+    val currentAddFavorite = rememberUpdatedState(onAddFavorite)
     val binding = remember {
         MapLibreBinding(
             scope = scope,
@@ -188,6 +196,7 @@ private fun WebMapSurface(
             onLayerSelected = { currentLayerSelected.value(it) },
             onLocationConfirmed = { currentLocationConfirmed.value(it) },
             onCameraChanged = { currentCameraChanged.value(it) },
+            onAddFavorite = { currentAddFavorite.value(it) },
         )
     }
 
@@ -218,6 +227,7 @@ private class MapLibreBinding(
     private val onLayerSelected: (MapLayerPreference) -> Unit,
     private val onLocationConfirmed: (PlaceLocation) -> Unit,
     private val onCameraChanged: (MapCameraPosition) -> Unit,
+    private val onAddFavorite: (SavedPlace) -> Unit,
 ) {
     private var disposed = false
     private var latestState: WebMapRenderState? = null
@@ -232,6 +242,11 @@ private class MapLibreBinding(
     private var root: HTMLDivElement? = null
     private var mapContainer: HTMLDivElement? = null
     private var status: HTMLDivElement? = null
+    private var northResetButton: HTMLButtonElement? = null
+    private var manualForm: HTMLDivElement? = null
+    private var manualNameInput: HTMLInputElement? = null
+    private var manualCoordinatesInput: HTMLInputElement? = null
+    private var manualError: HTMLDivElement? = null
     private var searchInput: HTMLInputElement? = null
     private var searchResults: HTMLDivElement? = null
     private var selectionCard: HTMLDivElement? = null
@@ -281,6 +296,11 @@ private class MapLibreBinding(
         root = null
         mapContainer = null
         status = null
+        northResetButton = null
+        manualForm = null
+        manualNameInput = null
+        manualCoordinatesInput = null
+        manualError = null
         searchInput = null
         searchResults = null
         selectionCard = null
@@ -355,6 +375,24 @@ private class MapLibreBinding(
         }
         host.appendChild(geolocate)
 
+        northResetButton = domButton("N", "cloudbase-map-north-reset") {
+            map?.resetNorth()
+        }.apply {
+            title = "Reset map orientation to north"
+            setAttribute("aria-label", "Reset map orientation to north")
+            style.display = "none"
+        }
+        host.appendChild(requireNotNull(northResetButton))
+
+        val addPoint = domButton("＋", "cloudbase-map-add-point") {
+            showManualForm()
+        }.apply {
+            title = "Add a location manually"
+            setAttribute("aria-label", "Add a location manually")
+        }
+        host.appendChild(addPoint)
+        buildManualAddForm(host)
+
         status = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-status"
             setAttribute("role", "status")
@@ -426,6 +464,95 @@ private class MapLibreBinding(
         }.also(host::appendChild)
     }
 
+    private fun buildManualAddForm(host: HTMLDivElement) {
+        val nameInput = manualInput("Name", "Favorite name", "manual-favorite-name")
+        val coordinatesInput =
+            manualInput("47.3769, 8.5417", "Coordinates", "manual-favorite-coordinates")
+        manualNameInput = nameInput
+        manualCoordinatesInput = coordinatesInput
+        val help = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-manual-help"
+            textContent = "Decimal, DMS, or N/E coordinates — e.g. 47.3769, 8.5417"
+        }
+        manualError = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-manual-error"
+            setAttribute("role", "alert")
+            style.display = "none"
+        }
+        val actions = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-manual-actions"
+            appendChild(domButton("Cancel", "cloudbase-map-manual-cancel") { hideManualForm() })
+            appendChild(domButton("Save", "cloudbase-map-manual-save") { submitManualForm() })
+        }
+        val heading = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-manual-heading"
+            textContent = "Add a location"
+        }
+        manualForm = (document.createElement("div") as HTMLDivElement).apply {
+            className = "cloudbase-map-manual-form"
+            setAttribute("data-testid", "manual-favorite-form")
+            setAttribute("role", "group")
+            setAttribute("aria-label", "Add a location manually")
+            style.display = "none"
+            appendChild(heading)
+            appendChild(nameInput)
+            appendChild(coordinatesInput)
+            appendChild(help)
+            appendChild(requireNotNull(manualError))
+            appendChild(actions)
+        }.also(host::appendChild)
+    }
+
+    private fun manualInput(placeholderText: String, label: String, testId: String): HTMLInputElement {
+        return (document.createElement("input") as HTMLInputElement).apply {
+            type = "text"
+            className = "cloudbase-map-manual-input"
+            placeholder = placeholderText
+            autocomplete = "off"
+            setAttribute("aria-label", label)
+            setAttribute("data-testid", testId)
+        }
+    }
+
+    private fun showManualForm() {
+        manualNameInput?.value = ""
+        manualCoordinatesInput?.value = ""
+        manualError?.style?.display = "none"
+        manualForm?.style?.display = "flex"
+        manualNameInput?.focus()
+    }
+
+    private fun hideManualForm() {
+        manualForm?.style?.display = "none"
+    }
+
+    private fun submitManualForm() {
+        val name = manualNameInput?.value.orEmpty()
+        val coordinates = manualCoordinatesInput?.value.orEmpty()
+        when (val result = parseManualFavoriteInput(name, coordinates)) {
+            is ManualFavoriteInputResult.Valid -> {
+                onAddFavorite(result.input.toSavedPlace())
+                hideManualForm()
+                showStatus("Added ${result.input.name} to favorites.", isError = false)
+            }
+            is ManualFavoriteInputResult.Invalid -> {
+                manualError?.apply {
+                    textContent = manualFavoriteErrorMessage(result.error)
+                    style.display = "block"
+                }
+            }
+        }
+    }
+
+    private fun manualFavoriteErrorMessage(error: ManualFavoriteInputError): String = when (error) {
+        ManualFavoriteInputError.BLANK_NAME -> "Enter a name for this location."
+        ManualFavoriteInputError.NAME_TOO_LONG -> "The name is too long."
+        ManualFavoriteInputError.BLANK_COORDINATES -> "Enter coordinates for this location."
+        ManualFavoriteInputError.COORDINATES_FORMAT -> "Enter coordinates like 47.3769, 8.5417."
+        ManualFavoriteInputError.LATITUDE_OUT_OF_RANGE -> "Latitude must be between -90 and 90."
+        ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE -> "Longitude must be between -180 and 180."
+    }
+
     private fun createMap(host: HTMLDivElement, module: kotlin.js.JsAny, state: WebMapRenderState) {
         val container = mapContainer ?: return
         val createdMap = createMapLibreMap(
@@ -444,10 +571,14 @@ private class MapLibreBinding(
             createdMap.resize()
             saveCamera(createdMap)
             reportViewport(createdMap)
+            updateNorthReset(createdMap)
         }
         subscriptions += createdMap.on("moveend") {
             saveCamera(createdMap)
             reportViewport(createdMap)
+        }
+        subscriptions += createdMap.on("rotate") {
+            updateNorthReset(createdMap)
         }
         subscriptions += createdMap.on("click") { event ->
             onMapTap(
@@ -598,6 +729,11 @@ private class MapLibreBinding(
                 zoom = currentMap.getZoom(),
             ),
         )
+    }
+
+    private fun updateNorthReset(currentMap: MapLibreMap) {
+        val rotated = abs(currentMap.getBearing()) > BEARING_EPSILON_DEGREES
+        northResetButton?.style?.display = if (rotated) "flex" else "none"
     }
 
     private fun reportViewport(currentMap: MapLibreMap) {
@@ -773,6 +909,7 @@ private const val INITIAL_MAP_ZOOM = 10.0
 private const val DEFAULT_MAP_ZOOM = 5.5
 private const val DEVICE_LOCATION_ZOOM = 12.0
 private const val MINIMUM_SEARCH_LENGTH = 2
+private const val BEARING_EPSILON_DEGREES = 0.5
 
 @Preview
 @Composable
@@ -787,5 +924,6 @@ private fun WebMapDestinationPreview() {
         onMapLayerSelected = {},
         onLocationConfirmed = {},
         onCameraChanged = {},
+        onAddFavorite = {},
     )
 }

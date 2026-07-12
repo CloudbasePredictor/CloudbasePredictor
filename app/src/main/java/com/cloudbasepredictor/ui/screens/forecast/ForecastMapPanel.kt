@@ -44,7 +44,13 @@ import androidx.compose.ui.unit.sp
 import com.cloudbasepredictor.BuildConfig
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.map.MapLayerPreference
+import com.cloudbasepredictor.model.FORECAST_MAP_LOCATION_UPDATE_MIN_DISTANCE_METERS
+import com.cloudbasepredictor.model.FORECAST_MAP_LOCATION_UPDATE_RATE_LIMIT_MS
+import com.cloudbasepredictor.model.ForecastMapLocation
+import com.cloudbasepredictor.model.ForecastMapLocationUpdateDecision
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.model.forecastMapDistanceMeters
+import com.cloudbasepredictor.model.forecastMapLocationUpdateDecision
 import com.cloudbasepredictor.ui.components.MapAttributionOverlay
 import com.cloudbasepredictor.ui.screens.map.FavoriteLabelsLayer
 import com.cloudbasepredictor.ui.map.MapRasterBaseLayer
@@ -72,8 +78,6 @@ import kotlin.math.roundToInt
 private const val DRAG_HANDLE_HEIGHT_DP = 24
 private const val MAP_INITIAL_ZOOM = 12.0
 private const val SNAP_THRESHOLD_FRACTION = 0.25f
-internal const val FORECAST_MAP_LOCATION_UPDATE_RATE_LIMIT_MS = 1_500L
-internal const val FORECAST_MAP_LOCATION_UPDATE_MIN_DISTANCE_METERS = 200.0
 private const val CAMERA_RECENTER_EPSILON_METERS = 5.0
 private const val GEOJSON_PROPERTY_NAME = "name"
 
@@ -395,46 +399,6 @@ fun ForecastMapPanel(
     }
 }
 
-internal data class ForecastMapLocation(
-    val latitude: Double,
-    val longitude: Double,
-)
-
-internal enum class ForecastMapLocationUpdateDecision {
-    UPDATE,
-    TOO_SOON,
-    TOO_CLOSE,
-}
-
-internal fun forecastMapLocationUpdateDecision(
-    nowMs: Long,
-    lastUpdateTimeMs: Long,
-    lastLocation: ForecastMapLocation?,
-    candidate: ForecastMapLocation,
-    rateLimitMs: Long = FORECAST_MAP_LOCATION_UPDATE_RATE_LIMIT_MS,
-    minDistanceMeters: Double = FORECAST_MAP_LOCATION_UPDATE_MIN_DISTANCE_METERS,
-): ForecastMapLocationUpdateDecision {
-    if (lastUpdateTimeMs > 0L && nowMs - lastUpdateTimeMs < rateLimitMs) {
-        return ForecastMapLocationUpdateDecision.TOO_SOON
-    }
-
-    if (lastLocation != null && forecastMapDistanceMeters(lastLocation, candidate) < minDistanceMeters) {
-        return ForecastMapLocationUpdateDecision.TOO_CLOSE
-    }
-
-    return ForecastMapLocationUpdateDecision.UPDATE
-}
-
-internal fun forecastMapDistanceMeters(
-    first: ForecastMapLocation,
-    second: ForecastMapLocation,
-): Double {
-    val dLat = Math.toRadians(first.latitude - second.latitude)
-    val dLon = Math.toRadians(first.longitude - second.longitude) *
-        kotlin.math.cos(Math.toRadians((first.latitude + second.latitude) / 2.0))
-    return kotlin.math.sqrt(dLat * dLat + dLon * dLon) * EARTH_RADIUS_METERS
-}
-
 private fun SavedPlace.toForecastMapLocation(): ForecastMapLocation {
     return ForecastMapLocation(latitude = latitude, longitude = longitude)
 }
@@ -458,8 +422,6 @@ private fun buildPlaceGeoJson(place: SavedPlace): String {
         }
     """.trimIndent()
 }
-
-private const val EARTH_RADIUS_METERS = 6_371_000.0
 
 private fun buildFavoritesGeoJson(places: List<SavedPlace>): String {
     if (places.isEmpty()) return emptyGeoJson()

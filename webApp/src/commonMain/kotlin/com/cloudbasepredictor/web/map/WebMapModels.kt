@@ -46,6 +46,7 @@ internal expect fun WebMapDestination(
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
     onCameraChanged: (MapCameraPosition) -> Unit,
+    onAddFavorite: (SavedPlace) -> Unit,
     modifier: Modifier = Modifier,
 )
 
@@ -62,5 +63,6 @@ private fun WebMapModelsPreview() {
         onMapLayerSelected = {},
         onLocationConfirmed = {},
         onCameraChanged = {},
+        onAddFavorite = {},
     )
 }

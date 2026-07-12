@@ -1,7 +1,8 @@
-@file:Suppress("FunctionNaming")
+@file:Suppress("FunctionNaming", "SwallowedException")
 
 package com.cloudbasepredictor.web.forecast
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -45,9 +47,11 @@ import com.cloudbasepredictor.ui.screens.forecast.views.ThermicForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.WindForecastView
 import com.cloudbasepredictor.web.WebDestination
 import com.cloudbasepredictor.web.WebRouteState
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebPreviewData
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.delay
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -60,6 +64,8 @@ fun WebForecastDestination(
     onForecastModelSelected: (ForecastModel) -> Unit,
     onFavoriteToggle: (PlaceLocation, Boolean) -> Unit,
     onShareRequested: () -> Unit,
+    initialTopAltitudeKm: Float?,
+    onTopAltitudeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val location = routeState.location
@@ -108,7 +114,7 @@ fun WebForecastDestination(
         )
         is WebForecastLoadState.Ready -> {
             var visibleTopAltitudeKm by remember(location, routeState.model) {
-                mutableFloatStateOf(DEFAULT_VISIBLE_TOP_ALTITUDE_KM)
+                mutableFloatStateOf(initialTopAltitudeKm ?: DEFAULT_VISIBLE_TOP_ALTITUDE_KM)
             }
             val readyState = remember(
                 state.result,
@@ -135,16 +141,55 @@ fun WebForecastDestination(
             }
             val currentId = SavedPlace.fromCoordinates(location.latitude, location.longitude).id
             val isFavorite = favoritePlaces.any { it.id == currentId }
+            var autoRefreshFailed by remember(location, routeState.model) { mutableStateOf(false) }
+            // Background auto-refresh at the next model run / midnight, keeping the current chart on
+            // failure (mirrors Android). The delay cancels automatically when the location/model change.
+            LaunchedEffect(state.result.fetchedAtMillis, state.result.resolvedModel) {
+                val waitMillis = autoRefreshDelayMillis(state.result, repository.now())
+                if (waitMillis != null) {
+                    delay(waitMillis)
+                    val refreshed = try {
+                        repository.load(location, routeState.model, forecastDays, forceRefresh = true)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        null
+                    }
+                    if (refreshed != null) {
+                        loadState = WebForecastLoadState.Ready(refreshed)
+                    } else {
+                        autoRefreshFailed = true
+                    }
+                }
+            }
+            LaunchedEffect(autoRefreshFailed) {
+                if (autoRefreshFailed) {
+                    delay(AUTO_REFRESH_NOTICE_MILLIS)
+                    autoRefreshFailed = false
+                }
+            }
             WebForecastReadyContent(
                 routeState = routeState,
                 uiState = readyState,
                 fromCache = state.result.fromCache,
+                autoRefreshFailed = autoRefreshFailed,
                 isFavorite = isFavorite,
                 onRouteChanged = onRouteChanged,
                 onForecastModelSelected = onForecastModelSelected,
                 onFavoriteToggle = { onFavoriteToggle(location, isFavorite) },
                 onShareRequested = onShareRequested,
-                onVisibleTopAltitudeChanged = { visibleTopAltitudeKm = it },
+                onVisibleTopAltitudeChanged = {
+                    visibleTopAltitudeKm = it
+                    onTopAltitudeChanged(it)
+                },
+                onJumpToFavorite = { place ->
+                    onRouteChanged(
+                        routeState.copy(
+                            location = PlaceLocation(place.latitude, place.longitude, place.name),
+                        ),
+                    )
+                },
+                otherFavorites = favoritePlaces.filterNot { it.id == currentId },
                 modifier = modifier,
             )
         }
@@ -157,15 +202,20 @@ private fun WebForecastReadyContent(
     routeState: WebRouteState,
     uiState: ForecastReadyUiState,
     fromCache: Boolean,
+    autoRefreshFailed: Boolean,
     isFavorite: Boolean,
     onRouteChanged: (WebRouteState) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
     onFavoriteToggle: () -> Unit,
     onShareRequested: () -> Unit,
     onVisibleTopAltitudeChanged: (Float) -> Unit,
+    onJumpToFavorite: (SavedPlace) -> Unit,
+    otherFavorites: List<SavedPlace>,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     var showModelSheet by remember(routeState.location) { mutableStateOf(false) }
+    var showSaveDialog by remember(routeState.location) { mutableStateOf(false) }
     var visibleDayCount by remember(uiState.dayChips.size) {
         mutableIntStateOf(INITIAL_VISIBLE_DAY_CHIPS)
     }
@@ -189,12 +239,19 @@ private fun WebForecastReadyContent(
                     Text(
                         text = uiState.selectedPlace?.name ?: "Forecast",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.semantics { heading() },
+                        modifier = Modifier
+                            .clickable { showSaveDialog = true }
+                            .semantics {
+                                heading()
+                                contentDescription =
+                                    "Edit favorite: ${uiState.selectedPlace?.name ?: routeState.location?.name ?: "this location"}"
+                            },
                     )
                     Text(
                         text = buildString {
                             append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
-                            append(if (fromCache) " · saved forecast" else " · live forecast")
+                            append(" · ")
+                            append(if (fromCache) strings.savedForecastSuffix else strings.liveForecastSuffix)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -202,14 +259,21 @@ private fun WebForecastReadyContent(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = onShareRequested) {
-                        Text("Copy link")
+                        Text(strings.copyLink)
                     }
                     OutlinedButton(onClick = onFavoriteToggle) {
-                        Text(if (isFavorite) "Remove favorite" else "Save favorite")
+                        Text(if (isFavorite) strings.removeFavorite else strings.saveFavorite)
                     }
                 }
             }
 
+            if (autoRefreshFailed) {
+                Text(
+                    text = strings.couldNotRefresh,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             WebForecastModePicker(
                 selectedMode = routeState.mode,
                 onModeSelected = { mode -> onRouteChanged(routeState.copy(mode = mode)) },
@@ -236,43 +300,20 @@ private fun WebForecastReadyContent(
                             visibleDayCount = (shownDayCount + DAY_CHIP_INCREMENT)
                                 .coerceAtMost(uiState.dayChips.size)
                         },
-                        label = { Text("More days") },
+                        label = { Text(strings.moreDays) },
                     )
                 }
             }
 
-            Box(
+            ForecastChart(
+                mode = routeState.mode,
+                uiState = uiState,
+                onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
+                onHourChanged = { hour -> onRouteChanged(routeState.copy(hour = hour)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-            ) {
-                when (routeState.mode) {
-                    ForecastMode.THERMIC -> ThermicForecastView(
-                        uiState = uiState,
-                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                        noThermalsMessage = "No usable thermals are forecast for this period.",
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    ForecastMode.STUVE -> StuveForecastView(
-                        uiState = uiState,
-                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                        onStuveHourChanged = { hour ->
-                            onRouteChanged(routeState.copy(hour = hour))
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    ForecastMode.WIND -> WindForecastView(
-                        uiState = uiState,
-                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    ForecastMode.CLOUD -> CloudForecastView(
-                        uiState = uiState,
-                        onVisibleTopAltitudeChange = onVisibleTopAltitudeChanged,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
+            )
             Text(
                 text = "${uiState.forecastText} · Forecast data by Open-Meteo.com",
                 style = MaterialTheme.typography.bodySmall,
@@ -289,6 +330,55 @@ private fun WebForecastReadyContent(
                     visibleDayCount = INITIAL_VISIBLE_DAY_CHIPS
                 },
                 onDismiss = { showModelSheet = false },
+            )
+        }
+
+        if (showSaveDialog) {
+            WebSaveFavoriteDialog(
+                currentName = uiState.selectedPlace?.name
+                    ?: routeState.location?.name
+                    ?: "New location",
+                isFavorite = isFavorite,
+                otherFavorites = otherFavorites,
+                onToggleFavorite = onFavoriteToggle,
+                onJumpToFavorite = onJumpToFavorite,
+                onDismiss = { showSaveDialog = false },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ForecastChart(
+    mode: ForecastMode,
+    uiState: ForecastReadyUiState,
+    onVisibleTopAltitudeChange: (Float) -> Unit,
+    onHourChanged: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        when (mode) {
+            ForecastMode.THERMIC -> ThermicForecastView(
+                uiState = uiState,
+                onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                noThermalsMessage = "No usable thermals are forecast for this period.",
+                modifier = Modifier.fillMaxSize(),
+            )
+            ForecastMode.STUVE -> StuveForecastView(
+                uiState = uiState,
+                onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                onStuveHourChanged = onHourChanged,
+                modifier = Modifier.fillMaxSize(),
+            )
+            ForecastMode.WIND -> WindForecastView(
+                uiState = uiState,
+                onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                modifier = Modifier.fillMaxSize(),
+            )
+            ForecastMode.CLOUD -> CloudForecastView(
+                uiState = uiState,
+                onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
@@ -374,8 +464,19 @@ internal val ForecastMode.webLabel: String
         ForecastMode.CLOUD -> "Cloud"
     }
 
+// Delay until the next model run (or UTC midnight, whichever is sooner) for a background refresh;
+// null when it is not worth scheduling (already due, or absurdly far away).
+private fun autoRefreshDelayMillis(result: WebForecastResult, nowMillis: Long): Long? {
+    val nextMidnight = ((nowMillis / DAY_MILLIS) + 1) * DAY_MILLIS
+    val target = minOf(result.nextExpectedUpdateMillis, nextMidnight)
+    return (target - nowMillis).takeIf { it in 1..MAX_AUTO_REFRESH_DELAY_MILLIS }
+}
+
 private const val MAX_WEB_FORECAST_DAYS = 14
 private const val DEFAULT_VISIBLE_TOP_ALTITUDE_KM = 4f
+private const val DAY_MILLIS = 24L * 60L * 60L * 1000L
+private const val MAX_AUTO_REFRESH_DELAY_MILLIS = 26L * 60L * 60L * 1000L
+private const val AUTO_REFRESH_NOTICE_MILLIS = 6000L
 
 @Preview(name = "Web forecast", showBackground = true, widthDp = 1024, heightDp = 760)
 @Composable
@@ -385,12 +486,15 @@ private fun WebForecastReadyContentPreview() {
             routeState = WebPreviewData.forecastRoute,
             uiState = ForecastPreviewData.readyState,
             fromCache = false,
+            autoRefreshFailed = false,
             isFavorite = true,
             onRouteChanged = {},
             onForecastModelSelected = {},
             onFavoriteToggle = {},
             onShareRequested = {},
             onVisibleTopAltitudeChanged = {},
+            onJumpToFavorite = {},
+            otherFavorites = emptyList(),
         )
     }
 }

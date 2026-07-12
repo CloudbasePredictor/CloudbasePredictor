@@ -1,9 +1,9 @@
-package com.cloudbasepredictor.ui.screens.forecast
+package com.cloudbasepredictor.model
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-class ForecastMapLocationUpdatePolicyTest {
+class ForecastMapUpdatePolicyTest {
     @Test
     fun updateDecision_allowsFirstLocationUpdate() {
         val decision = forecastMapLocationUpdateDecision(

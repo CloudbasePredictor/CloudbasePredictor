@@ -22,6 +22,7 @@ data class WebForecastResult(
     val resolvedModel: ForecastModel,
     val fetchedAtMillis: Long,
     val fromCache: Boolean,
+    val nextExpectedUpdateMillis: Long = Long.MAX_VALUE,
 )
 
 /**
@@ -36,6 +37,8 @@ class WebForecastRepository(
     private val json: Json,
     private val nowMillis: () -> Long,
 ) {
+    fun now(): Long = nowMillis()
+
     suspend fun load(
         location: PlaceLocation,
         requestedModel: ForecastModel,
@@ -71,6 +74,10 @@ class WebForecastRepository(
             resolvedModel = resolvedModel,
             fetchedAtMillis = fetchedAtMillis,
             fromCache = false,
+            nextExpectedUpdateMillis = nextExpectedModelUpdateMillis(
+                fetchedAtMillis = fetchedAtMillis,
+                model = resolvedModel,
+            ),
         )
     }
 
@@ -92,6 +99,7 @@ class WebForecastRepository(
             resolvedModel = resolvedModel,
             fetchedAtMillis = record.fetchedAtMillis,
             fromCache = true,
+            nextExpectedUpdateMillis = record.nextExpectedUpdateMillis,
         )
     }
 }

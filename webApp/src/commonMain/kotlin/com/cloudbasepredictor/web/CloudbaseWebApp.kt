@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,12 +36,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.web.about.WebAboutDestination
 import com.cloudbasepredictor.web.favorites.WebFavoritesDialog
 import com.cloudbasepredictor.web.forecast.WebForecastDestination
+import com.cloudbasepredictor.web.forecast.WebForecastMapPanel
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
+import com.cloudbasepredictor.web.i18n.WebStrings
+import com.cloudbasepredictor.web.i18n.webStringsFor
 import com.cloudbasepredictor.web.map.WebMapDestination
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
@@ -83,7 +89,9 @@ fun CloudbaseWebApp(
         }
     }
 
+    val strings = webStringsFor(preferences.language.resolve(environment.systemLanguageTag))
     MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
+        CompositionLocalProvider(LocalWebStrings provides strings) {
         Surface(modifier = modifier.fillMaxSize()) {
             Scaffold(
                 topBar = {
@@ -93,7 +101,7 @@ fun CloudbaseWebApp(
                             IconButton(onClick = { showFavorites = true }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Star,
-                                    contentDescription = "Favorite locations",
+                                    contentDescription = strings.favoriteLocations,
                                 )
                             }
                         },
@@ -126,6 +134,9 @@ fun CloudbaseWebApp(
                             }
                         },
                         onShareRequested = { copyWebShareUrl(routeState) },
+                        onAddFavorite = { place ->
+                            scope.launch { environment.favoritePlaceStore.upsert(place) }
+                        },
                         contentPadding = contentPadding,
                     )
 
@@ -150,6 +161,7 @@ fun CloudbaseWebApp(
                 }
             }
         }
+        }
     }
 }
 
@@ -158,16 +170,24 @@ private fun WebNavigationBar(
     selectedDestination: WebDestination,
     onDestinationSelected: (WebDestination) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     NavigationBar {
         WebDestination.entries.forEach { destination ->
             NavigationBarItem(
                 selected = destination == selectedDestination,
                 onClick = { onDestinationSelected(destination) },
                 icon = { Icon(imageVector = destination.icon, contentDescription = null) },
-                label = { Text(destination.label) },
+                label = { Text(destination.navLabel(strings)) },
             )
         }
     }
+}
+
+private fun WebDestination.navLabel(strings: WebStrings): String = when (this) {
+    WebDestination.Map -> strings.navMap
+    WebDestination.Forecast -> strings.navForecast
+    WebDestination.Settings -> strings.navSettings
+    WebDestination.About -> strings.navAbout
 }
 
 private val WebDestination.icon: ImageVector
@@ -178,7 +198,7 @@ private val WebDestination.icon: ImageVector
         WebDestination.About -> Icons.Outlined.Info
     }
 
-@Suppress("LongParameterList")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun DestinationContent(
     environment: WebAppEnvironment,
@@ -188,23 +208,42 @@ private fun DestinationContent(
     onNavigate: (WebRouteState) -> Unit,
     onFavoriteToggle: (PlaceLocation, Boolean) -> Unit,
     onShareRequested: () -> Unit,
+    onAddFavorite: (SavedPlace) -> Unit,
     contentPadding: PaddingValues,
 ) {
     val contentModifier = Modifier
         .fillMaxSize()
         .padding(contentPadding)
     when (routeState.destination) {
-        WebDestination.Forecast -> WebForecastDestination(
-            routeState = routeState,
-            repository = environment.forecastRepository,
-            preferences = preferences,
-            favoritePlaces = favoritePlaces,
-            onRouteChanged = onNavigate,
-            onForecastModelSelected = environment.preferences::selectForecastModel,
-            onFavoriteToggle = onFavoriteToggle,
-            onShareRequested = onShareRequested,
-            modifier = contentModifier,
-        )
+        WebDestination.Forecast -> Box(modifier = contentModifier) {
+            WebForecastDestination(
+                routeState = routeState,
+                repository = environment.forecastRepository,
+                preferences = preferences,
+                favoritePlaces = favoritePlaces,
+                onRouteChanged = onNavigate,
+                onForecastModelSelected = environment.preferences::selectForecastModel,
+                onFavoriteToggle = onFavoriteToggle,
+                onShareRequested = onShareRequested,
+                initialTopAltitudeKm = environment.chartViewportStore.readTopAltitudeKm(),
+                onTopAltitudeChanged = environment.chartViewportStore::writeTopAltitudeKm,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = FORECAST_MAP_PANEL_PEEK),
+            )
+            // Sibling of the forecast content so the draggable map panel survives the chart's
+            // background reloads instead of being torn down and re-created on every location update.
+            routeState.location?.let { location ->
+                WebForecastMapPanel(
+                    currentLocation = location,
+                    mapLayer = preferences.mapLayer,
+                    onLocationChanged = { updated ->
+                        onNavigate(routeState.copy(location = updated))
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
         WebDestination.Map -> WebMapDestination(
             routeState = routeState,
             preferences = preferences,
@@ -214,6 +253,7 @@ private fun DestinationContent(
             searchLocations = environment.searchLocations,
             onMapLayerSelected = environment.preferences::selectMapLayer,
             onCameraChanged = environment.mapCameraStore::write,
+            onAddFavorite = onAddFavorite,
             onLocationConfirmed = { location ->
                 onNavigate(
                     routeState.copy(
@@ -235,6 +275,7 @@ private fun DestinationContent(
                 onNavigate(routeState.copy(model = model, dayIndex = 0))
             },
             onShowLaunchSitesChanged = environment.preferences::setShowLaunchSites,
+            onLanguageSelected = environment.preferences::selectLanguage,
             modifier = contentModifier,
         )
         WebDestination.About -> WebAboutDestination(modifier = contentModifier)
@@ -246,6 +287,7 @@ private fun SavedPlace.toLocation(): PlaceLocation {
 }
 
 private const val AUTO_OPEN_FAVORITE_THRESHOLD = 2
+private val FORECAST_MAP_PANEL_PEEK = 28.dp
 
 @Preview(name = "Web about shell content", showBackground = true, widthDp = 1024, heightDp = 760)
 @Composable

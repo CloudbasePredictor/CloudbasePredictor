@@ -5,6 +5,7 @@ import com.cloudbasepredictor.data.storage.InMemoryKeyValueStorage
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.web.i18n.WebLanguage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,6 +23,7 @@ class WebPreferencesTest {
         first.setStartWithFavorites(false)
         first.selectForecastModel(ForecastModel.ECMWF_IFS)
         first.setShowLaunchSites(true)
+        first.selectLanguage(WebLanguage.RUSSIAN)
 
         val restored = WebPreferences(storage).state.value
         assertEquals(UnitPreset.AVIATION, restored.unitPreset)
@@ -30,6 +32,7 @@ class WebPreferencesTest {
         assertFalse(restored.startWithFavorites)
         assertEquals(ForecastModel.ECMWF_IFS, restored.forecastModel)
         assertTrue(restored.showLaunchSites)
+        assertEquals(WebLanguage.RUSSIAN, restored.language)
     }
 
     @Test
@@ -37,5 +40,10 @@ class WebPreferencesTest {
         val preferences = WebPreferences(InMemoryKeyValueStorage())
 
         assertFalse(preferences.state.value.showLaunchSites)
+    }
+
+    @Test
+    fun languageDefaultsToSystem() {
+        assertEquals(WebLanguage.SYSTEM, WebPreferences(InMemoryKeyValueStorage()).state.value.language)
     }
 }

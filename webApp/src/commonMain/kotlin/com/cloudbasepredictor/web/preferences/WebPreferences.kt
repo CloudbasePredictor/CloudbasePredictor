@@ -5,6 +5,7 @@ import com.cloudbasepredictor.data.storage.KeyValueStorage
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.web.i18n.WebLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ data class WebPreferencesState(
     val startWithFavorites: Boolean = true,
     val forecastModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
     val showLaunchSites: Boolean = false,
+    val language: WebLanguage = WebLanguage.SYSTEM,
 )
 
 class WebPreferences(
@@ -54,6 +56,11 @@ class WebPreferences(
         storage.putBoolean(SHOW_LAUNCH_SITES_KEY, value)
     }
 
+    fun selectLanguage(value: WebLanguage) {
+        update(mutableState.value.copy(language = value))
+        storage.putString(LANGUAGE_KEY, value.name)
+    }
+
     private fun update(value: WebPreferencesState) {
         mutableState.value = value
     }
@@ -74,6 +81,9 @@ class WebPreferences(
                 ?.let(ForecastModel::fromApiName)
                 ?: ForecastModel.ICON_SEAMLESS,
             showLaunchSites = storage.getBoolean(SHOW_LAUNCH_SITES_KEY) ?: false,
+            language = storage.getString(LANGUAGE_KEY)
+                ?.let { value -> WebLanguage.entries.firstOrNull { it.name == value } }
+                ?: WebLanguage.SYSTEM,
         )
     }
 
@@ -84,5 +94,6 @@ class WebPreferences(
         const val START_WITH_FAVORITES_KEY = "start_with_favorites"
         const val FORECAST_MODEL_KEY = "selected_forecast_model"
         const val SHOW_LAUNCH_SITES_KEY = "show_launch_sites"
+        const val LANGUAGE_KEY = "app_language"
     }
 }

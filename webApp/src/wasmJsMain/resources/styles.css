@@ -59,6 +59,8 @@ noscript {
 
 .cloudbase-map-layer-button,
 .cloudbase-map-geolocate,
+.cloudbase-map-north-reset,
+.cloudbase-map-add-point,
 .cloudbase-map-confirm,
 .cloudbase-map-attribution-button {
   min-height: 2.75rem;
@@ -89,6 +91,97 @@ noscript {
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
   font-size: 1.35rem;
+}
+
+.cloudbase-map-north-reset {
+  position: absolute;
+  top: 7.25rem;
+  right: 0.75rem;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+  font-weight: 700;
+}
+
+.cloudbase-map-add-point {
+  position: absolute;
+  top: 10.25rem;
+  right: 0.75rem;
+  z-index: 4;
+  width: 2.75rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+  font-size: 1.5rem;
+}
+
+.cloudbase-map-manual-form {
+  position: absolute;
+  top: 8rem;
+  left: 0.75rem;
+  z-index: 6;
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(20rem, calc(100% - 1.5rem));
+  padding: 0.9rem;
+  border-radius: 0.9rem;
+  color: #163044;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 3px 16px rgb(0 0 0 / 28%);
+}
+
+.cloudbase-map-manual-heading {
+  font-weight: 700;
+}
+
+.cloudbase-map-manual-input {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgb(0 0 0 / 25%);
+  border-radius: 0.55rem;
+  font: inherit;
+}
+
+.cloudbase-map-manual-help {
+  color: #55636c;
+  font-size: 0.72rem;
+}
+
+.cloudbase-map-manual-error {
+  color: #b3261e;
+  font-size: 0.78rem;
+}
+
+.cloudbase-map-manual-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.cloudbase-map-manual-save,
+.cloudbase-map-manual-cancel {
+  min-height: 2.4rem;
+  padding: 0.4rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.cloudbase-map-manual-save {
+  color: white;
+  background: #176b87;
+}
+
+.cloudbase-map-manual-cancel {
+  color: #163044;
+  background: rgb(0 0 0 / 8%);
 }
 
 .cloudbase-map-search {
@@ -231,6 +324,13 @@ noscript {
   cursor: pointer;
 }
 
+.cloudbase-forecast-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .cloudbase-map-confirm {
   flex: 0 0 auto;
   padding: 0.45rem 0.9rem;
@@ -265,6 +365,11 @@ noscript {
 
 .cloudbase-map-layer-button:focus-visible,
 .cloudbase-map-geolocate:focus-visible,
+.cloudbase-map-north-reset:focus-visible,
+.cloudbase-map-add-point:focus-visible,
+.cloudbase-map-manual-input:focus-visible,
+.cloudbase-map-manual-save:focus-visible,
+.cloudbase-map-manual-cancel:focus-visible,
 .cloudbase-map-confirm:focus-visible,
 .cloudbase-map-attribution-button:focus-visible,
 .cloudbase-map-search-input:focus-visible,

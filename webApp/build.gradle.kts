@@ -65,3 +65,29 @@ kotlin {
         }
     }
 }
+
+// Generate WebBuildConfig with the app version so the web About screen shows the
+// build version instead of a duplicated hardcoded constant. Single source of
+// truth is the `cloudbaseVersionName` Gradle property (also used by :app).
+val generateWebBuildConfig by tasks.registering {
+    val version = providers.gradleProperty("cloudbaseVersionName").getOrElse("dev")
+    val outputDir = layout.buildDirectory.dir("generated/webBuildConfig/commonMain")
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+    doLast {
+        val target = outputDir.get().asFile
+            .resolve("com/cloudbasepredictor/web/WebBuildConfig.kt")
+        target.parentFile.mkdirs()
+        target.writeText(
+            "package com.cloudbasepredictor.web\n\n" +
+                "// Generated from the cloudbaseVersionName Gradle property. Do not edit.\n" +
+                "internal object WebBuildConfig {\n" +
+                "    const val VERSION: String = \"$version\"\n" +
+                "}\n",
+        )
+    }
+}
+
+kotlin.sourceSets.named("commonMain") {
+    kotlin.srcDir(generateWebBuildConfig)
+}

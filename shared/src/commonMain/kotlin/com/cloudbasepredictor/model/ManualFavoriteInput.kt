@@ -1,11 +1,18 @@
-package com.cloudbasepredictor.ui.screens.map
+// Self-contained coordinate parser: multiple early returns and DMS numeric constants are inherent
+// to the algorithm (these were accepted via the app detekt baseline before the move to :shared).
+@file:Suppress("ReturnCount", "MagicNumber")
 
-import com.cloudbasepredictor.model.SavedPlace
+package com.cloudbasepredictor.model
+
 import kotlin.math.abs
 
 private const val MAX_MANUAL_FAVORITE_NAME_LENGTH = 80
 
-internal data class ManualFavoriteInput(
+/**
+ * A validated manually-entered favorite location. Shared so Android's manual-add dialog and the web
+ * map manual-add form apply identical parsing/validation rules.
+ */
+data class ManualFavoriteInput(
     val name: String,
     val latitude: Double,
     val longitude: Double,
@@ -21,7 +28,7 @@ internal data class ManualFavoriteInput(
     }
 }
 
-internal enum class ManualFavoriteInputError {
+enum class ManualFavoriteInputError {
     BLANK_NAME,
     NAME_TOO_LONG,
     BLANK_COORDINATES,
@@ -30,12 +37,12 @@ internal enum class ManualFavoriteInputError {
     LONGITUDE_OUT_OF_RANGE,
 }
 
-internal sealed interface ManualFavoriteInputResult {
+sealed interface ManualFavoriteInputResult {
     data class Valid(val input: ManualFavoriteInput) : ManualFavoriteInputResult
     data class Invalid(val error: ManualFavoriteInputError) : ManualFavoriteInputResult
 }
 
-internal fun parseManualFavoriteInput(
+fun parseManualFavoriteInput(
     name: String,
     coordinates: String,
 ): ManualFavoriteInputResult {
@@ -53,10 +60,10 @@ internal fun parseManualFavoriteInput(
     val parsedCoordinates = parseManualFavoriteCoordinates(coordinates)
         ?: return ManualFavoriteInputResult.Invalid(ManualFavoriteInputError.COORDINATES_FORMAT)
 
-    if (parsedCoordinates.latitude !in -90.0..90.0) {
+    if (parsedCoordinates.latitude !in MIN_LATITUDE..MAX_LATITUDE) {
         return ManualFavoriteInputResult.Invalid(ManualFavoriteInputError.LATITUDE_OUT_OF_RANGE)
     }
-    if (parsedCoordinates.longitude !in -180.0..180.0) {
+    if (parsedCoordinates.longitude !in MIN_LONGITUDE..MAX_LONGITUDE) {
         return ManualFavoriteInputResult.Invalid(ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE)
     }
 
@@ -65,18 +72,18 @@ internal fun parseManualFavoriteInput(
             name = normalizedName,
             latitude = parsedCoordinates.latitude,
             longitude = parsedCoordinates.longitude,
-        )
+        ),
     )
 }
 
-internal fun parseManualFavoriteCoordinates(coordinates: String): ManualFavoriteCoordinates? {
+private fun parseManualFavoriteCoordinates(coordinates: String): ManualFavoriteCoordinates? {
     val text = coordinates.trim()
     return parseLabelledDecimalCoordinates(text)
         ?: parseDirectionalCoordinates(text)
         ?: parsePlainDecimalCoordinates(text)
 }
 
-internal data class ManualFavoriteCoordinates(
+private data class ManualFavoriteCoordinates(
     val latitude: Double,
     val longitude: Double,
 )
@@ -90,6 +97,13 @@ private enum class CardinalPlacement {
     PREFIX,
     SUFFIX,
 }
+
+private const val MIN_LATITUDE = -90.0
+private const val MAX_LATITUDE = 90.0
+private const val MIN_LONGITUDE = -180.0
+private const val MAX_LONGITUDE = 180.0
+private const val MINUTES_PER_DEGREE = 60.0
+private const val SECONDS_PER_DEGREE = 3600.0
 
 private val WhitespaceRegex = Regex("\\s+")
 private val CoordinateNumberRegex = Regex("""[+-]?\d+(?:[.,]\d+)?""")
@@ -207,9 +221,11 @@ private fun dmsToDecimalDegrees(
     val seconds = numbers.getOrNull(2) ?: 0.0
 
     if (!degrees.isFinite() || !minutes.isFinite() || !seconds.isFinite()) return null
-    if (minutes < 0.0 || minutes >= 60.0 || seconds < 0.0 || seconds >= 60.0) return null
+    val minutesValid = minutes >= 0.0 && minutes < MINUTES_PER_DEGREE
+    val secondsValid = seconds >= 0.0 && seconds < MINUTES_PER_DEGREE
+    if (!minutesValid || !secondsValid) return null
 
-    val value = abs(degrees) + (minutes / 60.0) + (seconds / 3600.0)
+    val value = abs(degrees) + (minutes / MINUTES_PER_DEGREE) + (seconds / SECONDS_PER_DEGREE)
     val sign = when (cardinal) {
         'S', 'W' -> -1.0
         else -> 1.0

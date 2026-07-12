@@ -56,7 +56,7 @@ android {
         minSdk = 25
         targetSdk = 36
         versionCode = 16
-        versionName = "1.8.1"
+        versionName = providers.gradleProperty("cloudbaseVersionName").getOrElse("1.8.1")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -6,8 +6,10 @@ import com.cloudbasepredictor.data.remote.KtorOpenMeteoApi
 import com.cloudbasepredictor.data.remote.OpenMeteoRemoteDataSource
 import com.cloudbasepredictor.data.remote.OpenMeteoGeocodingDataSource
 import com.cloudbasepredictor.data.remote.createCloudbaseHttpClient
+import com.cloudbasepredictor.web.forecast.WebChartViewportStore
 import com.cloudbasepredictor.web.forecast.WebForecastRepository
 import com.cloudbasepredictor.web.forecast.WebForecastSource
+import com.cloudbasepredictor.web.i18n.browserLanguageTag
 import com.cloudbasepredictor.web.launch.KtorLaunchSiteSnapshotSource
 import com.cloudbasepredictor.web.launch.StaticLaunchSiteRepository
 import com.cloudbasepredictor.web.launch.browserLaunchSiteSnapshotBaseUrl
@@ -45,6 +47,7 @@ actual fun createWebAppEnvironment(): WebAppEnvironment {
         preferences = WebPreferences(keyValueStorage),
         favoritePlaceStore = BrowserLocalStorageFavoritePlaceStore(),
         mapCameraStore = WebMapCameraStore(keyValueStorage),
+        chartViewportStore = WebChartViewportStore(keyValueStorage),
         launchSiteRepository = StaticLaunchSiteRepository(
             source = KtorLaunchSiteSnapshotSource(
                 httpClient = httpClient,
@@ -52,6 +55,7 @@ actual fun createWebAppEnvironment(): WebAppEnvironment {
             ),
         ),
         searchLocations = geocodingDataSource::search,
+        systemLanguageTag = browserLanguageTag(),
         closeAction = httpClient::close,
     )
 }

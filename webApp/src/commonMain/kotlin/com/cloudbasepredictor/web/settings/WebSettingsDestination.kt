@@ -36,6 +36,8 @@ import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.theme.ThemePreference
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.model.ForecastModel
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
+import com.cloudbasepredictor.web.i18n.WebLanguage
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.presentation.destinationColumnCount
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
@@ -49,8 +51,10 @@ fun WebSettingsDestination(
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
     onShowLaunchSitesChanged: (Boolean) -> Unit,
+    onLanguageSelected: (WebLanguage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -63,12 +67,12 @@ fun WebSettingsDestination(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(HeaderSpacing)) {
                 Text(
-                    text = "Settings",
+                    text = strings.settingsTitle,
                     modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Text(
-                    text = "Choose how forecasts, maps, and startup behavior work in this browser.",
+                    text = strings.settingsSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -84,6 +88,7 @@ fun WebSettingsDestination(
                         onStartWithFavoritesChanged = onStartWithFavoritesChanged,
                         onForecastModelSelected = onForecastModelSelected,
                         onShowLaunchSitesChanged = onShowLaunchSitesChanged,
+                        onLanguageSelected = onLanguageSelected,
                     )
                 } else {
                     NarrowSettingsContent(
@@ -94,6 +99,7 @@ fun WebSettingsDestination(
                         onStartWithFavoritesChanged = onStartWithFavoritesChanged,
                         onForecastModelSelected = onForecastModelSelected,
                         onShowLaunchSitesChanged = onShowLaunchSitesChanged,
+                        onLanguageSelected = onLanguageSelected,
                     )
                 }
             }
@@ -110,6 +116,7 @@ private fun WideSettingsContent(
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
     onShowLaunchSitesChanged: (Boolean) -> Unit,
+    onLanguageSelected: (WebLanguage) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -123,6 +130,7 @@ private fun WideSettingsContent(
             UnitsSection(state.unitPreset, onUnitPresetSelected)
             ThemeSection(state.themePreference, onThemePreferenceSelected)
             StartupSection(state.startWithFavorites, onStartWithFavoritesChanged)
+            LanguageSection(state.language, onLanguageSelected)
         }
         Column(
             modifier = Modifier.weight(1f),
@@ -144,6 +152,7 @@ private fun NarrowSettingsContent(
     onStartWithFavoritesChanged: (Boolean) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
     onShowLaunchSitesChanged: (Boolean) -> Unit,
+    onLanguageSelected: (WebLanguage) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SectionSpacing)) {
         UnitsSection(state.unitPreset, onUnitPresetSelected)
@@ -152,6 +161,7 @@ private fun NarrowSettingsContent(
         LaunchSitesSection(state.showLaunchSites, onShowLaunchSitesChanged)
         StartupSection(state.startWithFavorites, onStartWithFavoritesChanged)
         ForecastModelSection(state.forecastModel, onForecastModelSelected)
+        LanguageSection(state.language, onLanguageSelected)
     }
 }
 
@@ -160,9 +170,10 @@ private fun UnitsSection(
     selected: UnitPreset,
     onSelected: (UnitPreset) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     PreferenceOptionSection(
-        title = "Display units",
-        description = "Apply one unit preset across wind, altitude, and climb values.",
+        title = strings.unitsTitle,
+        description = strings.unitsDescription,
         options = UnitPreset.entries,
         selected = selected,
         onSelected = onSelected,
@@ -176,9 +187,10 @@ private fun ThemeSection(
     selected: ThemePreference,
     onSelected: (ThemePreference) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     PreferenceOptionSection(
-        title = "Theme",
-        description = "Use your device appearance or choose a fixed theme.",
+        title = strings.themeTitle,
+        description = strings.themeDescription,
         options = ThemePreference.entries,
         selected = selected,
         onSelected = onSelected,
@@ -192,9 +204,10 @@ private fun MapLayerSection(
     selected: MapLayerPreference,
     onSelected: (MapLayerPreference) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     PreferenceOptionSection(
-        title = "Map layer",
-        description = "Choose the default map shown when selecting forecast locations.",
+        title = strings.mapLayerTitle,
+        description = strings.mapLayerDescription,
         options = MapLayerPreference.entries,
         selected = selected,
         onSelected = onSelected,
@@ -208,9 +221,10 @@ private fun ForecastModelSection(
     selected: ForecastModel,
     onSelected: (ForecastModel) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     PreferenceOptionSection(
-        title = "Forecast model",
-        description = "The selected model is requested first; unavailable regional models fall back safely.",
+        title = strings.forecastModelTitle,
+        description = strings.forecastModelDescription,
         options = ForecastModel.entries,
         selected = selected,
         onSelected = onSelected,
@@ -224,9 +238,10 @@ private fun LaunchSitesSection(
     showLaunchSites: Boolean,
     onChanged: (Boolean) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     SettingsCard(
-        title = "Launch sites",
-        description = "Show paragliding launch sites from ParaglidingEarth on the map.",
+        title = strings.launchSitesTitle,
+        description = strings.launchSitesDescription,
     ) {
         Row(
             modifier = Modifier
@@ -238,9 +253,9 @@ private fun LaunchSitesSection(
                 )
                 .semantics {
                     contentDescription = if (showLaunchSites) {
-                        "Show paragliding launch sites checked"
+                        "${strings.launchSitesToggleLabel} checked"
                     } else {
-                        "Show paragliding launch sites unchecked"
+                        "${strings.launchSitesToggleLabel} unchecked"
                     }
                 }
                 .padding(vertical = OptionVerticalPadding),
@@ -251,9 +266,9 @@ private fun LaunchSitesSection(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(OptionTextSpacing),
             ) {
-                Text("Show paragliding launch sites", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.launchSitesToggleLabel, style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = "Load nearby ParaglidingEarth launch sites when the map is zoomed in.",
+                    text = strings.launchSitesToggleDescription,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -268,9 +283,10 @@ private fun StartupSection(
     startWithFavorites: Boolean,
     onChanged: (Boolean) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     SettingsCard(
-        title = "Startup",
-        description = "Control the initial map center when Cloudbase Predictor opens.",
+        title = strings.startupTitle,
+        description = strings.startupDescription,
     ) {
         Row(
             modifier = Modifier
@@ -282,9 +298,9 @@ private fun StartupSection(
                 )
                 .semantics {
                     contentDescription = if (startWithFavorites) {
-                        "Start the map with favorite locations checked"
+                        "${strings.startupToggleControl} checked"
                     } else {
-                        "Start the map with favorite locations unchecked"
+                        "${strings.startupToggleControl} unchecked"
                     }
                 }
                 .padding(vertical = OptionVerticalPadding),
@@ -295,9 +311,9 @@ private fun StartupSection(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(OptionTextSpacing),
             ) {
-                Text("Center the first favorite", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.startupToggleLabel, style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = "Start at your first saved location instead of the default map center.",
+                    text = strings.startupToggleDescription,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -305,6 +321,23 @@ private fun StartupSection(
             Switch(checked = startWithFavorites, onCheckedChange = null)
         }
     }
+}
+
+@Composable
+private fun LanguageSection(
+    selected: WebLanguage,
+    onSelected: (WebLanguage) -> Unit,
+) {
+    val strings = LocalWebStrings.current
+    PreferenceOptionSection(
+        title = strings.languageTitle,
+        description = strings.languageDescription,
+        options = WebLanguage.entries,
+        selected = selected,
+        onSelected = onSelected,
+        label = WebLanguage::displayName,
+        supportingText = { "" },
+    )
 }
 
 @Composable
@@ -465,6 +498,7 @@ private fun WebSettingsDestinationPreview() {
             onStartWithFavoritesChanged = {},
             onForecastModelSelected = {},
             onShowLaunchSitesChanged = {},
+            onLanguageSelected = {},
         )
     }
 }

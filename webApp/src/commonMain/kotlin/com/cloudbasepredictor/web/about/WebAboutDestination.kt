@@ -30,11 +30,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cloudbasepredictor.web.WebBuildConfig
 
 /**
  * Web "About" screen. Mirrors the Android AboutScreen attribution content so the four navigation
- * destinations match the Android app. Strings are English for now; Stage F migrates them to shared
- * Compose resources, and Stage E injects the version from Gradle instead of the constant below.
+ * destinations match the Android app. The version is injected at build time via [WebBuildConfig]
+ * (generated from the `cloudbaseVersionName` Gradle property). Strings are English for now; Stage F
+ * migrates them to shared Compose resources.
  */
 @Suppress("LongMethod")
 @Composable
@@ -64,7 +66,7 @@ fun WebAboutDestination(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "Version $WEB_APP_VERSION · web",
+                    text = "Version ${WebBuildConfig.VERSION} · web",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -177,8 +179,6 @@ private const val ESRI_WORLD_IMAGERY_URL =
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"
 private const val MAPLIBRE_URL = "https://maplibre.org"
 
-// TODO(Stage E): inject the version from Gradle at build time instead of hardcoding it here.
-private const val WEB_APP_VERSION = "1.8.1"
 
 private val ContentMaxWidth = 1_080.dp
 private val ContentPadding = 24.dp

@@ -16,6 +16,8 @@ internal external interface MapLibreMap : JsAny {
     fun getCenter(): MapLibreLngLat
     fun getBounds(): MapLibreBounds
     fun getZoom(): Double
+    fun getBearing(): Double
+    fun resetNorth(): MapLibreMap
     fun resize(): MapLibreMap
     fun remove()
 }
