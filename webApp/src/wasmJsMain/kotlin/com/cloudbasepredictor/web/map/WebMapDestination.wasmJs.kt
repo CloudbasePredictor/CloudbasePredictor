@@ -339,6 +339,16 @@ private class MapLibreBinding(
         val canvasHost = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-canvas"
             setAttribute("data-testid", "map-canvas-host")
+            // MapLibre adds its `maplibregl-map { position: relative; overflow: hidden }` class to
+            // this element, and its lazy-loaded stylesheet arrives after ours, overriding the
+            // `.cloudbase-map-canvas { position: absolute }` rule at equal specificity. That
+            // collapsed the host to zero height and clipped the fully drawn map to nothing (a grey
+            // rectangle on every platform). Inline styles outrank both stylesheets, so pin the
+            // geometry here instead of in styles.css.
+            style.position = "absolute"
+            style.setProperty("inset", "0")
+            style.width = "100%"
+            style.height = "100%"
         }
         mapContainer = canvasHost
         host.appendChild(canvasHost)

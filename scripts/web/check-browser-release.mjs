@@ -616,6 +616,29 @@ try {
     config.browser.mapMountTimeoutMillis,
     "map re-mount with launch sites enabled",
   );
+  // The map must be VISIBLY composited, not merely mounted: MapLibre's lazy-loaded CSS once
+  // overrode the host's position and collapsed it to zero height, so the fully drawn canvas was
+  // clipped to a grey rectangle on every platform while all DOM-presence checks stayed green.
+  const mapCanvasGeometry = await evaluate(browser, `(() => {
+    const host = document.querySelector(".cloudbase-map-canvas");
+    const canvas = document.querySelector(".cloudbase-map-canvas canvas");
+    const rect = canvas ? canvas.getBoundingClientRect() : null;
+    return {
+      hostHeight: host ? host.clientHeight : 0,
+      hostPosition: host ? getComputedStyle(host).position : "",
+      canvasWidth: rect ? Math.round(rect.width) : 0,
+      canvasHeight: rect ? Math.round(rect.height) : 0
+    };
+  })()`);
+  check(
+    "map canvas is visibly composited",
+    mapCanvasGeometry.hostPosition === "absolute" &&
+      mapCanvasGeometry.hostHeight >= 200 &&
+      mapCanvasGeometry.canvasWidth >= 200 &&
+      mapCanvasGeometry.canvasHeight >= 200,
+    `host=${mapCanvasGeometry.hostHeight}px/${mapCanvasGeometry.hostPosition} ` +
+      `canvas=${mapCanvasGeometry.canvasWidth}x${mapCanvasGeometry.canvasHeight}`,
+  );
   await waitForExpression(
     browser,
     `document.querySelectorAll(".cloudbase-launch-marker").length > 0`,
