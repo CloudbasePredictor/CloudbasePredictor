@@ -39,9 +39,10 @@ The browser gate verifies:
   accessibility state and route state, plus each expected renderer's accessible
   drawing region, nonblank screenshot pixels, and a visual fingerprint distinct
   from the other three renderers;
-- the DOM-hosted MapLibre adapter, its real canvas, accessibility-tree layer
-  and geolocation controls, and its lazy chunk after startup (by stable name
-  when available, otherwise by a MapLibre content marker after minification);
+- the DOM-hosted MapLibre adapter, its visibly sized real canvas,
+  accessibility-tree layer and geolocation controls, and its lazy chunk after
+  startup (by stable name when available, otherwise by a MapLibre content
+  marker after minification);
 - keyboard entry and Enter submission through the accessible location-search
   field, deterministic result selection, and `Show forecast` navigation;
 - saving a favorite, displaying it in Favorites, and retaining both the UI and
@@ -106,3 +107,22 @@ regression review, geolocation permission tests, or live map-tile/provider
 monitoring. It proves that the production MapLibre module is deferred and can
 mount a real map canvas, but intentionally does not compare map pixels or
 require a third-party tile response.
+
+For an explicit developer-side check of the pixels composited on screen, run:
+
+```bash
+npm run check:web:visual
+npm run check:web:visual -- --url https://cloudbasepredictor.github.io/CloudbasePredictor/
+```
+
+This non-CI check automatically starts Xvfb when no display is available, uses
+headful Chromium with Mesa software WebGL, and captures the X root with
+ImageMagick. It checks both a 1280x900 desktop viewport and a 390x844 touch
+viewport. For each profile it requires visible MapLibre geometry and nonblank
+pixels in a crop taken from the composited X screen, rather than from the WebGL
+backbuffer or Playwright's page screenshot. Full-screen captures, map crops,
+pixel metrics, browser errors, and request failures are written under
+`webApp/build/reports/visual-check/`.
+
+The command requires `xvfb-run`, ImageMagick's `import` and `convert`, a working
+Playwright Chromium installation, and software OpenGL such as Mesa llvmpipe.
