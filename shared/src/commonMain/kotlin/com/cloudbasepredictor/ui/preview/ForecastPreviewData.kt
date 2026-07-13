@@ -43,7 +43,7 @@ object ForecastPreviewData {
     )
 
     val dayChips = listOf(
-        ForecastDayChipUiModel(title = "Today", subtitle = "Today"),
+        ForecastDayChipUiModel(title = "Today", subtitle = "11 Jul"),
         ForecastDayChipUiModel(title = "Sun", subtitle = "12 Jul"),
         ForecastDayChipUiModel(title = "Mon", subtitle = "13 Jul"),
         ForecastDayChipUiModel(title = "Tue", subtitle = "14 Jul"),

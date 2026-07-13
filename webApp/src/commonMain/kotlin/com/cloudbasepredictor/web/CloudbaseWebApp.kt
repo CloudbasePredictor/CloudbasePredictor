@@ -4,7 +4,11 @@ package com.cloudbasepredictor.web
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,6 +23,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.data.theme.ThemePreference
@@ -51,6 +58,7 @@ import com.cloudbasepredictor.web.map.WebMapDestination
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
 import com.cloudbasepredictor.web.settings.WebSettingsDestination
+import com.cloudbasepredictor.web.presentation.usesNavigationRail
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -93,28 +101,12 @@ fun CloudbaseWebApp(
     MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
         CompositionLocalProvider(LocalWebStrings provides strings) {
         Surface(modifier = modifier.fillMaxSize()) {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("Cloudbase Predictor") },
-                        actions = {
-                            IconButton(onClick = { showFavorites = true }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Star,
-                                    contentDescription = strings.favoriteLocations,
-                                )
-                            }
-                        },
-                    )
+            ResponsiveWebScaffold(
+                selectedDestination = routeState.destination,
+                onDestinationSelected = { destination ->
+                    onNavigate(routeState.copy(destination = destination))
                 },
-                bottomBar = {
-                    WebNavigationBar(
-                        selectedDestination = routeState.destination,
-                        onDestinationSelected = { destination ->
-                            onNavigate(routeState.copy(destination = destination))
-                        },
-                    )
-                },
+                onFavoriteLocationsClick = { showFavorites = true },
             ) { contentPadding ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     DestinationContent(
@@ -161,6 +153,95 @@ fun CloudbaseWebApp(
                 }
             }
         }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ResponsiveWebScaffold(
+    selectedDestination: WebDestination,
+    onDestinationSelected: (WebDestination) -> Unit,
+    onFavoriteLocationsClick: () -> Unit,
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        if (usesNavigationRail(maxWidth.value)) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                WebNavigationRail(
+                    selectedDestination = selectedDestination,
+                    onDestinationSelected = onDestinationSelected,
+                    onFavoriteLocationsClick = onFavoriteLocationsClick,
+                )
+                Scaffold(
+                    modifier = Modifier.weight(1f),
+                    content = content,
+                )
+            }
+        } else {
+            Scaffold(
+                topBar = {
+                    WebTopAppBar(onFavoriteLocationsClick)
+                },
+                bottomBar = {
+                    WebNavigationBar(
+                        selectedDestination = selectedDestination,
+                        onDestinationSelected = onDestinationSelected,
+                    )
+                },
+                content = content,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WebTopAppBar(onFavoriteLocationsClick: () -> Unit) {
+    val strings = LocalWebStrings.current
+    TopAppBar(
+        title = { Text("Cloudbase Predictor") },
+        actions = {
+            IconButton(onClick = onFavoriteLocationsClick) {
+                Icon(
+                    imageVector = Icons.Outlined.Star,
+                    contentDescription = strings.favoriteLocations,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun WebNavigationRail(
+    selectedDestination: WebDestination,
+    onDestinationSelected: (WebDestination) -> Unit,
+    onFavoriteLocationsClick: () -> Unit,
+) {
+    val strings = LocalWebStrings.current
+    NavigationRail(
+        modifier = Modifier.fillMaxHeight(),
+        header = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Cloudbase", style = MaterialTheme.typography.labelLarge)
+                Text("Predictor", style = MaterialTheme.typography.labelMedium)
+                IconButton(onClick = onFavoriteLocationsClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Star,
+                        contentDescription = strings.favoriteLocations,
+                    )
+                }
+            }
+        },
+    ) {
+        WebDestination.entries.forEach { destination ->
+            NavigationRailItem(
+                selected = destination == selectedDestination,
+                onClick = { onDestinationSelected(destination) },
+                icon = { Icon(imageVector = destination.icon, contentDescription = null) },
+                label = { Text(destination.navLabel(strings)) },
+                alwaysShowLabel = true,
+            )
         }
     }
 }

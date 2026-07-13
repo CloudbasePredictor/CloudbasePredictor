@@ -53,6 +53,8 @@ class ForecastReadyUiStateFactoryTest {
         assertTrue(state.windChart.hours.isNotEmpty())
         assertTrue(state.cloudChart.hours.isNotEmpty())
         assertTrue(state.stuveChart.temperatureProfile.isNotEmpty())
+        assertEquals("Today", state.dayChips[0].title)
+        assertEquals("11 Jul", state.dayChips[0].subtitle)
         assertEquals("Sun", state.dayChips[1].title)
         assertEquals("12 Jul", state.dayChips[1].subtitle)
         assertTrue(state.forecastText.contains("Interlaken"))

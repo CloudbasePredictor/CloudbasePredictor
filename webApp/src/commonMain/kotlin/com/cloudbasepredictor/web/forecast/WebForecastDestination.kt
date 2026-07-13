@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,9 +19,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
@@ -237,42 +245,18 @@ private fun WebForecastReadyContent(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = uiState.selectedPlace?.name ?: "Forecast",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier
-                            .clickable { showSaveDialog = true }
-                            .semantics {
-                                heading()
-                                contentDescription =
-                                    "Edit favorite: ${uiState.selectedPlace?.name ?: routeState.location?.name ?: "this location"}"
-                            },
-                    )
-                    Text(
-                        text = buildString {
-                            append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
-                            append(" · ")
-                            append(if (fromCache) strings.savedForecastSuffix else strings.liveForecastSuffix)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onShareRequested) {
-                        Text(strings.copyLink)
-                    }
-                    OutlinedButton(onClick = onFavoriteToggle) {
-                        Text(if (isFavorite) strings.removeFavorite else strings.saveFavorite)
-                    }
-                }
-            }
+            ForecastHeader(
+                title = uiState.selectedPlace?.name ?: "Forecast",
+                subtitle = buildString {
+                    append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
+                    append(" · ")
+                    append(if (fromCache) strings.savedForecastSuffix else strings.liveForecastSuffix)
+                },
+                isFavorite = isFavorite,
+                onEditFavorite = { showSaveDialog = true },
+                onShareRequested = onShareRequested,
+                onFavoriteToggle = onFavoriteToggle,
+            )
 
             if (autoRefreshFailed) {
                 Text(
@@ -293,7 +277,9 @@ private fun WebForecastReadyContent(
             ScrollableChipRow {
                 uiState.dayChips.take(shownDayCount).forEachIndexed { index, day ->
                     val isSelected = index == uiState.selectedDayIndex
-                    val label = "${day.title} ${day.subtitle}"
+                    val label = listOf(day.title, day.subtitle)
+                        .distinct()
+                        .joinToString(" ")
                     FilterChip(
                         selected = isSelected,
                         onClick = { onRouteChanged(routeState.copy(dayIndex = index)) },
@@ -356,6 +342,71 @@ private fun WebForecastReadyContent(
 }
 
 @Composable
+private fun ForecastHeader(
+    title: String,
+    subtitle: String,
+    isFavorite: Boolean,
+    onEditFavorite: () -> Unit,
+    onShareRequested: () -> Unit,
+    onFavoriteToggle: () -> Unit,
+) {
+    val strings = LocalWebStrings.current
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compactActions = maxWidth < COMPACT_FORECAST_ACTIONS_MAX_WIDTH
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier
+                        .clickable(onClick = onEditFavorite)
+                        .semantics {
+                            heading()
+                            contentDescription = "Edit favorite: $title"
+                        },
+                )
+                Text(
+                    text = subtitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (compactActions) {
+                IconButton(onClick = onShareRequested) {
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = strings.copyLink,
+                    )
+                }
+                IconButton(onClick = onFavoriteToggle) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (isFavorite) strings.removeFavorite else strings.saveFavorite,
+                    )
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onShareRequested) {
+                        Text(strings.copyLink)
+                    }
+                    OutlinedButton(onClick = onFavoriteToggle) {
+                        Text(if (isFavorite) strings.removeFavorite else strings.saveFavorite)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ForecastChart(
     mode: ForecastMode,
     uiState: ForecastReadyUiState,
@@ -393,6 +444,7 @@ private fun ForecastChart(
 
 private const val INITIAL_VISIBLE_DAY_CHIPS = 5
 private const val DAY_CHIP_INCREMENT = 2
+private val COMPACT_FORECAST_ACTIONS_MAX_WIDTH = 600.dp
 
 // Shared with the Settings/About destinations (DestinationMaxWidth / ContentMaxWidth) so every web
 // screen caps and centers its content at the same width on wide desktop displays.

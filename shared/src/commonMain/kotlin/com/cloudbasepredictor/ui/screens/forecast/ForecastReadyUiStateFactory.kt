@@ -122,7 +122,7 @@ fun buildForecastDayChips(days: List<DailyForecast>): List<ForecastDayChipUiMode
     days.mapIndexed { index, day ->
         ForecastDayChipUiModel(
             title = if (index == 0) "Today" else formatIsoWeekday(day.date) ?: day.date,
-            subtitle = if (index == 0) "Today" else formatIsoDayMonth(day.date) ?: day.date,
+            subtitle = formatIsoDayMonth(day.date) ?: day.date,
         )
     }
 

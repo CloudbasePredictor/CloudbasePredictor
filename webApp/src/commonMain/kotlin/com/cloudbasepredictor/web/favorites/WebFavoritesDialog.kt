@@ -37,14 +37,14 @@ import com.cloudbasepredictor.util.toFixedDecimalString
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
 
 /**
- * Favorite locations dialog, opened from the top-app-bar star. Replaces the previous Favorites
- * navigation tab so the web navigation matches the Android app's four destinations (Map, Forecast,
- * Settings, About), while keeping the saved-favorites list reachable (open + remove).
+ * Favorite locations dialog, opened from the app-shell star in the mobile top bar or desktop rail.
+ * Replaces the previous Favorites navigation tab so the web navigation matches the Android app's
+ * four destinations (Map, Forecast, Settings, About), while keeping the saved-favorites list
+ * reachable (open + remove).
  *
  * Rendered as an in-canvas overlay rather than a Compose `Dialog`/`Popup`: on the wasmJs
  * Compose target the popup layer is unreliable (dismissing it can tear down the shared canvas),
- * so the whole app is drawn in a single composition. Stage C relocates this to the Map star FAB
- * with auto-open and manual-add, matching Android's `FavoritesListDialog`.
+ * so the whole app is drawn in a single composition.
  */
 @Suppress("LongMethod")
 @Composable

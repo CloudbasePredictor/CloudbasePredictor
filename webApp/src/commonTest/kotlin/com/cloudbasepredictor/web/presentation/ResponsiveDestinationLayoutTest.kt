@@ -5,6 +5,13 @@ import kotlin.test.assertEquals
 
 class ResponsiveDestinationLayoutTest {
     @Test
+    fun navigationChangesFromBottomBarToRailAtTheWideBreakpoint() {
+        assertEquals(false, usesNavigationRail(NAVIGATION_RAIL_MIN_WIDTH_DP - 1f))
+        assertEquals(true, usesNavigationRail(NAVIGATION_RAIL_MIN_WIDTH_DP))
+        assertEquals(true, usesNavigationRail(NAVIGATION_RAIL_MIN_WIDTH_DP + 1f))
+    }
+
+    @Test
     fun columnSelectionChangesAtTheResponsiveBreakpoint() {
         assertEquals(1, destinationColumnCount(TWO_COLUMN_MIN_WIDTH_DP - 1f))
         assertEquals(2, destinationColumnCount(TWO_COLUMN_MIN_WIDTH_DP))
