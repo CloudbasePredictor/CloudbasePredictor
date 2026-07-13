@@ -48,5 +48,14 @@ allprojects {
     }
     plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenPlugin> {
         the<org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenEnvSpec>().downloadBaseUrl.clear()
+        // Pin Binaryen to a single core. wasm-opt parallelizes optimization passes across
+        // every available core, and on the large Kotlin/Wasm module a worker thread's small
+        // (RLIMIT_STACK-independent) stack overflows deep in --gufa/-Oz, crashing the whole
+        // process with SIGSEGV. The more cores, the likelier a deep function lands on a worker,
+        // so many-core dev machines fail while few-core CI runners happen to survive. Running
+        // single-threaded keeps every pass on the main thread (ample stack) at the cost of a
+        // slower optimize step.
+        tasks.withType<org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenExec>()
+            .configureEach { environment("BINARYEN_CORES", "1") }
     }
 }
