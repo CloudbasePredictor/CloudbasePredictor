@@ -3,7 +3,6 @@ package com.cloudbasepredictor.web
 import com.cloudbasepredictor.data.launch.LaunchSiteRepository
 import com.cloudbasepredictor.data.map.MapCameraStore
 import com.cloudbasepredictor.data.place.FavoritePlaceStore
-import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.web.forecast.WebChartViewportStore
 import com.cloudbasepredictor.web.forecast.WebForecastRepository
 import com.cloudbasepredictor.web.preferences.WebPreferences
@@ -16,7 +15,6 @@ class WebAppEnvironment(
     val mapCameraStore: MapCameraStore,
     val launchSiteRepository: LaunchSiteRepository,
     val chartViewportStore: WebChartViewportStore,
-    val searchLocations: suspend (String) -> List<PlaceLocation>,
     val systemLanguageTag: String? = null,
     private val closeAction: () -> Unit = {},
 ) {

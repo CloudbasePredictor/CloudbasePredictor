@@ -40,7 +40,6 @@ import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.Event
-import org.w3c.dom.events.KeyboardEvent
 import kotlin.math.abs
 
 @Composable
@@ -50,7 +49,6 @@ internal actual fun WebMapDestination(
     favoritePlaces: List<SavedPlace>,
     savedCamera: MapCameraPosition?,
     launchSiteRepository: LaunchSiteRepository,
-    searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapLayerSelected: (MapLayerPreference) -> Unit,
     onLocationConfirmed: (PlaceLocation) -> Unit,
     onCameraChanged: (MapCameraPosition) -> Unit,
@@ -90,7 +88,6 @@ internal actual fun WebMapDestination(
 
     WebMapSurface(
         state = renderState,
-        searchLocations = searchLocations,
         onMapTap = { tapped ->
             // Tapping within ~200 m of a favorite selects the favorite (like Android).
             val nearbyFavorite = favoritePlaces.firstOrNull { favorite ->
@@ -189,7 +186,6 @@ private fun resolveInitialCamera(
 @Composable
 private fun WebMapSurface(
     state: WebMapRenderState,
-    searchLocations: suspend (String) -> List<PlaceLocation>,
     onMapTap: (PlaceLocation) -> Unit,
     onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
     onViewportChanged: (LaunchSiteBounds?) -> Unit,
@@ -210,7 +206,6 @@ private fun WebMapSurface(
     val binding = remember {
         MapLibreBinding(
             scope = scope,
-            searchLocations = searchLocations,
             onMapTap = { currentMapTap.value(it) },
             onLaunchSiteTap = { currentLaunchSiteTap.value(it) },
             onViewportChanged = { currentViewportChanged.value(it) },
@@ -241,7 +236,6 @@ private fun WebMapSurface(
 @Suppress("LongParameterList")
 private class MapLibreBinding(
     private val scope: CoroutineScope,
-    private val searchLocations: suspend (String) -> List<PlaceLocation>,
     private val onMapTap: (PlaceLocation) -> Unit,
     private val onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
     private val onViewportChanged: (LaunchSiteBounds?) -> Unit,
@@ -253,7 +247,6 @@ private class MapLibreBinding(
     private var disposed = false
     private var latestState: WebMapRenderState? = null
     private var loadJob: Job? = null
-    private var searchJob: Job? = null
     private var mapModule: kotlin.js.JsAny? = null
     private var map: MapLibreMap? = null
     private var resizeObserver: WebResizeObserver? = null
@@ -268,8 +261,6 @@ private class MapLibreBinding(
     private var manualNameInput: HTMLInputElement? = null
     private var manualCoordinatesInput: HTMLInputElement? = null
     private var manualError: HTMLDivElement? = null
-    private var searchInput: HTMLInputElement? = null
-    private var searchResults: HTMLDivElement? = null
     private var selectionCard: HTMLDivElement? = null
     private var selectionLabel: HTMLDivElement? = null
     private var selectionDetail: HTMLDivElement? = null
@@ -311,8 +302,6 @@ private class MapLibreBinding(
         disposed = true
         loadJob?.cancel()
         loadJob = null
-        searchJob?.cancel()
-        searchJob = null
         releaseCurrentMap()
         root = null
         mapContainer = null
@@ -322,8 +311,6 @@ private class MapLibreBinding(
         manualNameInput = null
         manualCoordinatesInput = null
         manualError = null
-        searchInput = null
-        searchResults = null
         selectionCard = null
         selectionLabel = null
         selectionDetail = null
@@ -366,37 +353,6 @@ private class MapLibreBinding(
             toolbar.appendChild(button)
         }
         host.appendChild(toolbar)
-
-        val searchField = (document.createElement("input") as HTMLInputElement).apply {
-            type = "search"
-            className = "cloudbase-map-search-input"
-            placeholder = "Search for a location"
-            autocomplete = "off"
-            setAttribute("aria-label", "Search location")
-            setAttribute("data-testid", "location-search")
-            addEventListener("keydown", { event ->
-                if ((event as? KeyboardEvent)?.key == "Enter") {
-                    event.preventDefault()
-                    runLocationSearch()
-                }
-            })
-        }
-        searchInput = searchField
-        val searchButton = domButton("Search", "cloudbase-map-search-button") {
-            runLocationSearch()
-        }
-        searchResults = (document.createElement("div") as HTMLDivElement).apply {
-            className = "cloudbase-map-search-results"
-            setAttribute("role", "listbox")
-            setAttribute("aria-label", "Location search results")
-            style.display = "none"
-        }
-        (document.createElement("div") as HTMLDivElement).apply {
-            className = "cloudbase-map-search"
-            appendChild(searchField)
-            appendChild(searchButton)
-            appendChild(requireNotNull(searchResults))
-        }.also(host::appendChild)
 
         val geolocate = domButton("◎", "cloudbase-map-geolocate") {
             requestDeviceLocation()
@@ -805,57 +761,6 @@ private class MapLibreBinding(
         }
     }
 
-    private fun runLocationSearch() {
-        val query = searchInput?.value?.trim().orEmpty()
-        if (query.length < MINIMUM_SEARCH_LENGTH) {
-            showStatus("Enter at least two characters to search.", isError = true)
-            return
-        }
-        searchJob?.cancel()
-        showStatus("Searching for locations…", isError = false)
-        searchJob = scope.launch {
-            try {
-                val matches = searchLocations(query)
-                if (disposed) return@launch
-                renderSearchResults(matches)
-                showStatus(
-                    message = if (matches.isEmpty()) "No matching locations found." else "",
-                    isError = false,
-                )
-            } catch (_: Throwable) {
-                if (!disposed) {
-                    renderSearchResults(emptyList())
-                    showStatus("Location search is temporarily unavailable.", isError = true)
-                }
-            }
-        }
-    }
-
-    private fun renderSearchResults(matches: List<PlaceLocation>) {
-        val container = searchResults ?: return
-        container.textContent = ""
-        container.style.display = if (matches.isEmpty()) "none" else "block"
-        matches.forEach { location ->
-            val label = location.name ?: formatCoordinates(location)
-            val button = domButton(label, "cloudbase-map-search-result") {
-                onMapTap(location)
-                map?.flyTo(
-                    flyToOptions(
-                        longitude = location.longitude,
-                        latitude = location.latitude,
-                        zoom = DEVICE_LOCATION_ZOOM,
-                    ),
-                )
-                searchInput?.value = label
-                container.style.display = "none"
-            }.apply {
-                setAttribute("role", "option")
-                setAttribute("aria-label", "Select $label")
-            }
-            container.appendChild(button)
-        }
-    }
-
     private fun showStatus(message: String, isError: Boolean) {
         status?.apply {
             textContent = message
@@ -942,7 +847,6 @@ private const val PARAGLIDING_EARTH_HOME = "https://www.paragliding.earth"
 private const val INITIAL_MAP_ZOOM = 10.0
 private const val DEFAULT_MAP_ZOOM = 5.5
 private const val DEVICE_LOCATION_ZOOM = 12.0
-private const val MINIMUM_SEARCH_LENGTH = 2
 private const val BEARING_EPSILON_DEGREES = 0.5
 
 @Preview
@@ -954,7 +858,6 @@ private fun WebMapDestinationPreview() {
         favoritePlaces = WebPreviewData.favoritePlaces,
         savedCamera = null,
         launchSiteRepository = WebPreviewData.launchSiteRepository,
-        searchLocations = { emptyList() },
         onMapLayerSelected = {},
         onLocationConfirmed = {},
         onCameraChanged = {},

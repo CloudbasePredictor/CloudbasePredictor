@@ -22,7 +22,6 @@ const forecastFixturePath = resolve(
   repositoryRoot,
   "app/src/main/assets/simulated/brauneck_icon_seamless_20260418.json",
 );
-const TEXT_INPUT_PROBE = "Brauneck";
 const MOCK_LOCATION = Object.freeze({
   name: "Brauneck, Bavaria, Germany",
   latitude: 47.6631,
@@ -77,7 +76,8 @@ let chrome;
 let browser;
 let server;
 let profileDirectory;
-let locationSearchName = null;
+let manualInputValues = null;
+let selectionState = null;
 
 class CdpClient {
   static async connect(url) {
@@ -175,7 +175,6 @@ try {
     browser.send("Fetch.enable", {
       patterns: [
         { urlPattern: "https://api.open-meteo.com/*", requestStage: "Request" },
-        { urlPattern: "https://geocoding-api.open-meteo.com/*", requestStage: "Request" },
       ],
     }),
   ]);
@@ -391,47 +390,56 @@ try {
     accessibleNodeMatchesState(initialLayerControl, "selected"),
     describeAccessibleState(initialLayerControl),
   );
-  const locationPattern = new RegExp(config.browser.locationSearchNamePattern, "iu");
-  const locationSearch = mapAccessibility.find(
-    (node) => TEXT_INPUT_ROLES.has(node.role) && locationPattern.test(node.name),
+  // The manual-add form is the map's only text input: it accepts a name plus coordinates in decimal,
+  // DMS, or N/E notation and saves the result as a favorite, exactly like Android's ManualFavoriteDialog.
+  await clickAccessibleControl(browser, "Add a location manually", config.browser.interactionTimeoutMillis);
+  const manualFormAccessibility = await waitForAccessibility(
+    browser,
+    (nodes) => findAccessibleTextInput(nodes, "Favorite name") !== undefined &&
+      findAccessibleTextInput(nodes, "Coordinates") !== undefined,
+    config.browser.interactionTimeoutMillis,
+    "manual-favorite form",
   );
-  locationSearchName = locationSearch?.name ?? null;
-  check("accessible location-search input", locationSearch !== undefined, locationSearch?.name ?? "not found");
+  const manualNameInput = findAccessibleTextInput(manualFormAccessibility, "Favorite name");
+  const manualCoordinatesInput = findAccessibleTextInput(manualFormAccessibility, "Coordinates");
+  check("accessible manual-favorite name input", manualNameInput !== undefined);
+  check("accessible manual-favorite coordinates input", manualCoordinatesInput !== undefined);
   check(
-    "location-search input is focusable",
-    locationSearch?.backendDOMNodeId !== undefined,
-    locationSearch?.backendDOMNodeId === undefined ? "no DOM node" : "",
+    "manual-favorite inputs are focusable",
+    manualNameInput?.backendDOMNodeId !== undefined && manualCoordinatesInput?.backendDOMNodeId !== undefined,
   );
-  if (locationSearch?.backendDOMNodeId) {
-    try {
-      await exerciseTextInput(browser, locationSearch.backendDOMNodeId);
-      const afterInput = await accessibilitySnapshot(browser);
-      const updatedSearch = afterInput.find(
-        (node) => TEXT_INPUT_ROLES.has(node.role) && locationPattern.test(node.name),
-      );
-      check(
-        "location-search accepts keyboard input",
-        updatedSearch?.value.includes(TEXT_INPUT_PROBE) === true,
-        updatedSearch?.value ?? "no exposed value",
-      );
-      await pressKey(browser, "Enter", "Enter");
-    } catch (error) {
-      check(
-        "location-search accepts keyboard input",
-        false,
-        error instanceof Error ? error.message : String(error),
-      );
-    }
-  }
+  await exerciseTextInput(browser, manualNameInput.backendDOMNodeId, MOCK_LOCATION.name);
+  await exerciseTextInput(
+    browser,
+    manualCoordinatesInput.backendDOMNodeId,
+    `${MOCK_LOCATION.latitude}, ${MOCK_LOCATION.longitude}`,
+  );
+  const typedManualInput = await accessibilitySnapshot(browser);
+  manualInputValues = {
+    name: findAccessibleTextInput(typedManualInput, "Favorite name")?.value ?? "",
+    coordinates: findAccessibleTextInput(typedManualInput, "Coordinates")?.value ?? "",
+  };
+  check(
+    "manual-favorite form accepts keyboard input",
+    manualInputValues.name === MOCK_LOCATION.name &&
+      manualInputValues.coordinates === `${MOCK_LOCATION.latitude}, ${MOCK_LOCATION.longitude}`,
+    JSON.stringify(manualInputValues),
+  );
 
+  await clickAccessibleControl(browser, "Save", config.browser.interactionTimeoutMillis);
+  const favoriteMarkerSelector =
+    `.cloudbase-map-canvas [aria-label=${JSON.stringify(MOCK_LOCATION.name)}]`;
   await waitForExpression(
     browser,
-    `document.querySelector(".cloudbase-map-search-result") !== null`,
+    `document.querySelector(${JSON.stringify(favoriteMarkerSelector)}) !== null &&
+      document.querySelector(".cloudbase-map-manual-form")?.style.display === "none"`,
     config.browser.interactionTimeoutMillis,
-    "deterministic location-search result",
+    "favorite saved from the manual-add form",
   );
-  const searchResultName = `Select ${MOCK_LOCATION.name}`;
-  await clickAccessibleControl(browser, searchResultName, config.browser.interactionTimeoutMillis);
+  check("manually added location is written to durable browser storage", await localStorageHas(browser, FAVORITES_STORAGE_KEY));
+
+  // Tapping the favorite marker selects it (Android snaps to a favorite within ~200 m of the tap).
+  await evaluate(browser, `document.querySelector(${JSON.stringify(favoriteMarkerSelector)}).click()`);
   await waitForExpression(
     browser,
     `document.querySelector(".cloudbase-map-selection-card")?.style.display === "flex" &&
@@ -440,13 +448,12 @@ try {
     config.browser.interactionTimeoutMillis,
     "deterministic map selection",
   );
-  const selectionState = await evaluate(browser, `({
+  selectionState = await evaluate(browser, `({
     label: document.querySelector(".cloudbase-map-selection-label")?.textContent ?? "",
-    confirmLabel: document.querySelector(".cloudbase-map-confirm")?.textContent ?? "",
-    searchValue: document.querySelector(".cloudbase-map-search-input")?.value ?? ""
+    confirmLabel: document.querySelector(".cloudbase-map-confirm")?.textContent ?? ""
   })`);
   check(
-    "keyboard search returns deterministic location",
+    "tapping a favorite marker selects that location",
     selectionState.label === MOCK_LOCATION.name,
     selectionState.label,
   );
@@ -454,11 +461,6 @@ try {
     "map selection exposes Show forecast",
     selectionState.confirmLabel === "Show forecast",
     selectionState.confirmLabel,
-  );
-  check(
-    "geocoding is fulfilled by the CDP fixture",
-    apiMocks.geocodingRequests > 0,
-    String(apiMocks.geocodingRequests),
   );
 
   await waitForTransferQuiet();
@@ -509,6 +511,15 @@ try {
   const copiedShareUrl = await evaluate(browser, "globalThis.__cloudbaseCopiedText");
   check("Copy link writes the complete shareable URL", copiedShareUrl === expectedShareUrl, copiedShareUrl);
 
+  // The location was saved from the map's manual-add form, so the forecast opens already favorited.
+  // Toggle it off and on again to exercise both directions of the forecast favorite control.
+  await clickAccessibleControl(browser, "Remove favorite", config.browser.interactionTimeoutMillis);
+  await waitForAccessibleControl(
+    browser,
+    "Save favorite",
+    config.browser.interactionTimeoutMillis,
+    "favorite toggle after removal",
+  );
   await clickAccessibleControl(browser, "Save favorite", config.browser.interactionTimeoutMillis);
   await waitForAccessibleControl(
     browser,
@@ -760,7 +771,7 @@ try {
       interactiveNodeCount: interactiveNodes.length,
       namedInteractiveNodeCount: interactiveNodes.length - unnamedInteractiveNodes.length,
       unnamedInteractiveNodes,
-      locationSearchName,
+      manualFavoriteInput: manualInputValues,
     },
     parity: {
       forecastModes: forecastModeResults,
@@ -786,8 +797,6 @@ try {
       forecastFixture: toPosix(relative(repositoryRoot, forecastFixturePath)),
       forecastRequests: apiMocks.forecastRequests,
       forecastRequestParams: apiMocks.forecastRequestParams,
-      geocodingRequests: apiMocks.geocodingRequests,
-      geocodingRequestParams: apiMocks.geocodingRequestParams,
       failures: apiMocks.failures,
     },
     initialExceptions,
@@ -888,25 +897,14 @@ function installDeterministicApiMocks(client) {
   }
   const forecastBody = readFileSync(forecastFixturePath, "utf8");
   JSON.parse(forecastBody);
-  const geocodingBody = JSON.stringify({
-    results: [{
-      name: "Brauneck",
-      latitude: MOCK_LOCATION.latitude,
-      longitude: MOCK_LOCATION.longitude,
-      country: "Germany",
-      admin1: "Bavaria",
-    }],
-  });
   const state = {
     forecastRequests: 0,
     forecastRequestParams: [],
-    geocodingRequests: 0,
-    geocodingRequestParams: [],
     failures: [],
   };
 
   client.on("Fetch.requestPaused", (params) => {
-    void fulfillDeterministicApiRequest(client, params, forecastBody, geocodingBody, state)
+    void fulfillDeterministicApiRequest(client, params, forecastBody, state)
       .catch(async (error) => {
         state.failures.push(error instanceof Error ? error.message : String(error));
         try {
@@ -922,7 +920,7 @@ function installDeterministicApiMocks(client) {
   return state;
 }
 
-async function fulfillDeterministicApiRequest(client, params, forecastBody, geocodingBody, state) {
+async function fulfillDeterministicApiRequest(client, params, forecastBody, state) {
   const url = new URL(params.request.url);
   const method = params.request.method;
   const isPreflight = method === "OPTIONS";
@@ -930,9 +928,6 @@ async function fulfillDeterministicApiRequest(client, params, forecastBody, geoc
   if (url.hostname === "api.open-meteo.com") {
     validateForecastMockRequest(url, method, state);
     body = isPreflight ? "{}" : forecastBody;
-  } else if (url.hostname === "geocoding-api.open-meteo.com") {
-    validateGeocodingMockRequest(url, method, state);
-    body = isPreflight ? "{}" : geocodingBody;
   } else {
     await client.send("Fetch.continueRequest", { requestId: params.requestId });
     return;
@@ -994,32 +989,6 @@ function validateForecastMockRequest(url, method, state) {
   }
 }
 
-function validateGeocodingMockRequest(url, method, state) {
-  if (method !== "GET" && method !== "OPTIONS") {
-    state.failures.push(`Unexpected geocoding method: ${method}`);
-    return;
-  }
-  if (url.pathname !== "/v1/search") {
-    state.failures.push(`Unexpected geocoding endpoint: ${url.pathname}`);
-  }
-  if (method === "OPTIONS") return;
-
-  const request = {
-    name: url.searchParams.get("name"),
-    language: url.searchParams.get("language"),
-    format: url.searchParams.get("format"),
-  };
-  state.geocodingRequests++;
-  state.geocodingRequestParams.push(request);
-  if (request.name !== TEXT_INPUT_PROBE) {
-    state.failures.push(`Unexpected geocoding query: ${request.name}`);
-  }
-  if (request.language !== "en" || request.format !== "json") {
-    state.failures.push(
-      `Unexpected geocoding response contract: language=${request.language}, format=${request.format}`,
-    );
-  }
-}
 
 async function exerciseForecastModes(client) {
   const results = [];
@@ -1265,6 +1234,10 @@ function findAccessibleControl(nodes, name) {
 
 function findAccessibleNode(nodes, name) {
   return nodes.find((node) => node.name.trim() === name);
+}
+
+function findAccessibleTextInput(nodes, name) {
+  return nodes.find((node) => TEXT_INPUT_ROLES.has(node.role) && node.name.trim() === name);
 }
 
 async function clickBackendNode(client, backendDOMNodeId) {
@@ -1669,7 +1642,7 @@ async function accessibilitySnapshot(client) {
     }));
 }
 
-async function exerciseTextInput(client, backendDOMNodeId) {
+async function exerciseTextInput(client, backendDOMNodeId, text) {
   await client.send("DOM.focus", { backendNodeId: backendDOMNodeId });
   await client.send("Input.dispatchKeyEvent", {
     type: "keyDown",
@@ -1685,13 +1658,8 @@ async function exerciseTextInput(client, backendDOMNodeId) {
   });
   await client.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Backspace", code: "Backspace" });
   await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Backspace", code: "Backspace" });
-  await client.send("Input.insertText", { text: TEXT_INPUT_PROBE });
+  await client.send("Input.insertText", { text });
   await delay(200);
-}
-
-async function pressKey(client, key, code) {
-  await client.send("Input.dispatchKeyEvent", { type: "keyDown", key, code });
-  await client.send("Input.dispatchKeyEvent", { type: "keyUp", key, code });
 }
 
 function normalizeBasePath(path) {

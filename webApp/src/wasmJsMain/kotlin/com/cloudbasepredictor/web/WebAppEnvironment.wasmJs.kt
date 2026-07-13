@@ -4,7 +4,6 @@ package com.cloudbasepredictor.web
 
 import com.cloudbasepredictor.data.remote.KtorOpenMeteoApi
 import com.cloudbasepredictor.data.remote.OpenMeteoRemoteDataSource
-import com.cloudbasepredictor.data.remote.OpenMeteoGeocodingDataSource
 import com.cloudbasepredictor.data.remote.createCloudbaseHttpClient
 import com.cloudbasepredictor.web.forecast.WebChartViewportStore
 import com.cloudbasepredictor.web.forecast.WebForecastRepository
@@ -27,7 +26,6 @@ actual fun createWebAppEnvironment(): WebAppEnvironment {
     }
     val httpClient = createCloudbaseHttpClient(jsonConfiguration = json)
     val remoteDataSource = OpenMeteoRemoteDataSource(KtorOpenMeteoApi(httpClient))
-    val geocodingDataSource = OpenMeteoGeocodingDataSource(httpClient)
     val cacheStore = BrowserIndexedDbForecastCacheStore()
     val keyValueStorage = BrowserLocalStorageKeyValueStorage()
     return WebAppEnvironment(
@@ -54,7 +52,6 @@ actual fun createWebAppEnvironment(): WebAppEnvironment {
                 baseUrl = browserLaunchSiteSnapshotBaseUrl(),
             ),
         ),
-        searchLocations = geocodingDataSource::search,
         systemLanguageTag = browserLanguageTag(),
         closeAction = httpClient::close,
     )

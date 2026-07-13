@@ -184,61 +184,6 @@ noscript {
   background: rgb(0 0 0 / 8%);
 }
 
-.cloudbase-map-search {
-  position: absolute;
-  top: 4.25rem;
-  left: 0.75rem;
-  z-index: 5;
-  display: grid;
-  grid-template-columns: minmax(10rem, 20rem) auto;
-  max-width: calc(100% - 5rem);
-  border-radius: 0.75rem;
-  background: rgb(255 255 255 / 96%);
-  box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
-}
-
-.cloudbase-map-search-input,
-.cloudbase-map-search-button,
-.cloudbase-map-search-result {
-  min-height: 2.75rem;
-  border: 0;
-  color: #163044;
-  background: transparent;
-  font: inherit;
-}
-
-.cloudbase-map-search-input {
-  min-width: 0;
-  padding: 0.5rem 0.75rem;
-}
-
-.cloudbase-map-search-button {
-  padding: 0.5rem 0.8rem;
-  border-left: 1px solid rgb(0 0 0 / 14%);
-  cursor: pointer;
-  font-weight: 650;
-}
-
-.cloudbase-map-search-results {
-  grid-column: 1 / -1;
-  max-height: min(18rem, 45vh);
-  overflow-y: auto;
-  border-top: 1px solid rgb(0 0 0 / 14%);
-}
-
-.cloudbase-map-search-result {
-  display: block;
-  width: 100%;
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid rgb(0 0 0 / 9%);
-  text-align: left;
-  cursor: pointer;
-}
-
-.cloudbase-map-search-result:hover {
-  background: #e7f3f8;
-}
-
 .cloudbase-map-status {
   position: absolute;
   top: 4.25rem;
@@ -381,10 +326,7 @@ noscript {
 .cloudbase-map-manual-save:focus-visible,
 .cloudbase-map-manual-cancel:focus-visible,
 .cloudbase-map-confirm:focus-visible,
-.cloudbase-map-attribution-button:focus-visible,
-.cloudbase-map-search-input:focus-visible,
-.cloudbase-map-search-button:focus-visible,
-.cloudbase-map-search-result:focus-visible {
+.cloudbase-map-attribution-button:focus-visible {
   outline: 3px solid #ffb000;
   outline-offset: 2px;
 }
@@ -399,13 +341,6 @@ noscript {
   .cloudbase-map-layer-button {
     padding-inline: 0.65rem;
     font-size: 0.82rem;
-  }
-
-  .cloudbase-map-search {
-    right: 4.25rem;
-    left: 0.5rem;
-    grid-template-columns: minmax(0, 1fr) auto;
-    max-width: none;
   }
 }
 

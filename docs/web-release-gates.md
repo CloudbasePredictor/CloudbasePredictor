@@ -43,29 +43,28 @@ The browser gate verifies:
   accessibility-tree layer and geolocation controls, and its lazy chunk after
   startup (by stable name when available, otherwise by a MapLibre content
   marker after minification);
-- keyboard entry and Enter submission through the accessible location-search
-  field, deterministic result selection, and `Show forecast` navigation;
+- keyboard entry into the accessible manual-add form, saving the typed location
+  as a favorite, selecting it by tapping its map marker, and `Show forecast`
+  navigation;
 - saving a favorite, displaying it in Favorites, and retaining both the UI and
   durable storage after a page reload;
 - changing units, theme, map layer, startup behavior, and forecast model, then
   observing their selected accessibility states again after a page reload;
-- named navigation controls, unnamed interactive controls, and location-search
+- named navigation controls, unnamed interactive controls, and manual-add
   keyboard input in Chromium's accessibility tree;
 - uncaught exceptions during startup and the complete parity journey.
 
-Forecast and geocoding requests are fulfilled through CDP so the release gate
-does not depend on Open-Meteo availability or mutable live data. Forecast
-responses use the repository's simulated Brauneck snapshot, and geocoding
-returns one fixed Brauneck result. This keeps the test focused on production
-Kotlin/Wasm networking, presentation, navigation, and persistence code while
-remaining deterministic. The production application does not contain or use
-these mocks.
+Forecast requests are fulfilled through CDP so the release gate does not depend
+on Open-Meteo availability or mutable live data. Forecast responses use the
+repository's simulated Brauneck snapshot. This keeps the test focused on
+production Kotlin/Wasm networking, presentation, navigation, and persistence
+code while remaining deterministic. The production application does not contain
+or use these mocks.
 
 The CDP interceptor validates request method, endpoint, coordinates, selected
-model, forecast horizon, pressure-level variables, and geocoding query before
-serving a fixture. It therefore fails if the production client silently calls
-the wrong Open-Meteo contract instead of merely returning a fixture for any
-request on the host.
+model, forecast horizon, and pressure-level variables before serving a fixture.
+It therefore fails if the production client silently calls the wrong Open-Meteo
+contract instead of merely returning a fixture for any request on the host.
 
 Each chart renderer exposes a stable accessible name on its drawing surface. The
 gate crops that surface from a real Chromium screenshot, verifies that the crop
@@ -85,10 +84,10 @@ All release gates write machine-readable reports under
 fails.
 
 The focused WebKit input gate runs the same production distribution with
-Playwright's `iPhone 15` Mobile Safari device profile. It touch-focuses the
-native location-search field, enters text through WebKit keyboard events,
-submits with Enter, validates the deterministic geocoding request and visible
-result, selects that result by touch, and requires an enabled forecast action.
+Playwright's `iPhone 15` Mobile Safari device profile. It opens the map's
+manual-add form, touch-focuses its native name and coordinate fields, enters
+text through WebKit keyboard events, saves, and requires the typed location to
+be parsed and written to durable favorite storage.
 It also fails on uncaught page errors or a WebKit page crash and writes
 `webkit-input.json` beside the Chromium report. On Linux, install browser and
 system dependencies with `npx playwright install --with-deps webkit`; CI runs

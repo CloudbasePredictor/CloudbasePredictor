@@ -250,7 +250,6 @@ private fun DestinationContent(
             favoritePlaces = favoritePlaces,
             savedCamera = environment.mapCameraStore.read(),
             launchSiteRepository = environment.launchSiteRepository,
-            searchLocations = environment.searchLocations,
             onMapLayerSelected = environment.preferences::selectMapLayer,
             onCameraChanged = environment.mapCameraStore::write,
             onAddFavorite = onAddFavorite,

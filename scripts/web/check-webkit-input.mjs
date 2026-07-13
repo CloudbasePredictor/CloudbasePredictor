@@ -26,6 +26,8 @@ const MOCK_LOCATION = Object.freeze({
   latitude: 47.6631,
   longitude: 11.5217,
 });
+const TYPED_COORDINATES = `${MOCK_LOCATION.latitude}, ${MOCK_LOCATION.longitude}`;
+const FAVORITES_STORAGE_KEY = "cbp.kmp.favorites";
 const CONTENT_TYPES = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -45,7 +47,6 @@ const runtimeErrors = [];
 const consoleErrors = [];
 const apiState = {
   forecastRequests: [],
-  geocodingRequests: [],
   failures: [],
 };
 let browser;
@@ -59,9 +60,8 @@ let maxTouchPoints = null;
 let touchEvents = [];
 let inputEvents = [];
 let typedValue = null;
-let selectedValue = null;
-let selectionLabel = null;
-let confirmEnabled = false;
+let typedCoordinates = null;
+let savedFavorites = null;
 
 try {
   assertRequiredInputs();
@@ -114,19 +114,29 @@ try {
   });
   await mapControl.evaluate((element) => element.click());
 
-  const searchInput = page.locator('[data-testid="location-search"]');
-  await searchInput.waitFor({
+  // The manual-add form is the map's only text input. It is a native DOM input layered over the
+  // Skiko canvas, which is exactly the combination Mobile Safari has historically broken.
+  const addPoint = page.locator(".cloudbase-map-add-point");
+  await addPoint.waitFor({
     state: "visible",
     timeout: config.browser.mapMountTimeoutMillis,
   });
-  check("native location-search input is visible", await searchInput.isVisible());
-  check("location-search input uses search semantics", await searchInput.getAttribute("type") === "search");
+  await addPoint.tap();
+
+  const nameInput = page.locator('[data-testid="manual-favorite-name"]');
+  const coordinatesInput = page.locator('[data-testid="manual-favorite-coordinates"]');
+  await nameInput.waitFor({
+    state: "visible",
+    timeout: config.browser.interactionTimeoutMillis,
+  });
+  check("native manual-favorite inputs are visible", await nameInput.isVisible() && await coordinatesInput.isVisible());
   check(
-    "location-search input has an accessible name",
-    (await searchInput.getAttribute("aria-label")) === "Search location",
+    "manual-favorite inputs have accessible names",
+    (await nameInput.getAttribute("aria-label")) === "Favorite name" &&
+      (await coordinatesInput.getAttribute("aria-label")) === "Coordinates",
   );
 
-  await searchInput.evaluate((element) => {
+  await nameInput.evaluate((element) => {
     globalThis.__cloudbaseWebKitInputEvents = [];
     globalThis.__cloudbaseWebKitTouchEvents = [];
     for (const type of ["beforeinput", "input", "keydown", "keyup", "change"]) {
@@ -141,7 +151,7 @@ try {
       });
     }
   });
-  await searchInput.tap();
+  await nameInput.tap();
   touchEvents = await page.evaluate(() => globalThis.__cloudbaseWebKitTouchEvents ?? []);
   check(
     "touch activation dispatches touch input events",
@@ -149,53 +159,37 @@ try {
     JSON.stringify(touchEvents),
   );
   check(
-    "touch activation focuses location-search input",
-    await searchInput.evaluate((element) => document.activeElement === element),
+    "touch activation focuses the manual-favorite name input",
+    await nameInput.evaluate((element) => document.activeElement === element),
   );
-  await searchInput.pressSequentially(TEXT_INPUT_PROBE, { delay: 30 });
-  typedValue = await searchInput.inputValue();
+  await nameInput.pressSequentially(TEXT_INPUT_PROBE, { delay: 30 });
+  typedValue = await nameInput.inputValue();
   inputEvents = await page.evaluate(() => globalThis.__cloudbaseWebKitInputEvents ?? []);
-  check("location-search accepts WebKit keyboard input", typedValue === TEXT_INPUT_PROBE, typedValue);
+  check("manual-favorite input accepts WebKit keyboard input", typedValue === TEXT_INPUT_PROBE, typedValue);
   check("WebKit dispatches input events", inputEvents.includes("input"), inputEvents.join(", "));
 
-  await searchInput.press("Enter");
+  await coordinatesInput.tap();
+  await coordinatesInput.pressSequentially(TYPED_COORDINATES, { delay: 30 });
+  typedCoordinates = await coordinatesInput.inputValue();
+  check("manual-favorite coordinates accept WebKit keyboard input", typedCoordinates === TYPED_COORDINATES, typedCoordinates);
+
+  // Saving proves the typed text reached Kotlin: the coordinates are parsed in :shared and the
+  // favorite is written to durable storage, which is what a real Safari user would get.
+  await page.locator(".cloudbase-map-manual-save").tap();
   await waitFor(
-    () => apiState.geocodingRequests.length > 0,
+    async () => (await page.locator(".cloudbase-map-manual-form").evaluate((element) => element.style.display)) === "none",
     config.browser.interactionTimeoutMillis,
-    "Enter-triggered geocoding request",
+    "manual-favorite form submission",
   );
-  const geocodingRequest = apiState.geocodingRequests.at(-1);
-  check("Enter submits the typed query", geocodingRequest?.name === TEXT_INPUT_PROBE, geocodingRequest?.name);
+  savedFavorites = await page.evaluate(
+    (key) => localStorage.getItem(key) ?? "",
+    FAVORITES_STORAGE_KEY,
+  );
   check(
-    "geocoding request keeps the production response contract",
-    geocodingRequest?.language === "en" && geocodingRequest?.format === "json",
-    JSON.stringify(geocodingRequest),
+    "typed favorite is parsed and written to durable storage",
+    savedFavorites.includes(TEXT_INPUT_PROBE) && savedFavorites.includes(String(MOCK_LOCATION.latitude)),
+    savedFavorites,
   );
-
-  const searchResult = page.getByRole("option", { name: `Select ${MOCK_LOCATION.name}`, exact: true });
-  await searchResult.waitFor({
-    state: "visible",
-    timeout: config.browser.interactionTimeoutMillis,
-  });
-  check("location-search result is visible", await searchResult.isVisible(), MOCK_LOCATION.name);
-  await searchResult.tap();
-
-  const selectionCard = page.locator('[data-testid="map-selection-card"]');
-  await selectionCard.waitFor({
-    state: "visible",
-    timeout: config.browser.interactionTimeoutMillis,
-  });
-  await waitFor(
-    async () => !(await page.locator(".cloudbase-map-confirm").isDisabled()),
-    config.browser.interactionTimeoutMillis,
-    "selected location confirmation",
-  );
-  selectedValue = await searchInput.inputValue();
-  selectionLabel = (await page.locator(".cloudbase-map-selection-label").textContent())?.trim() ?? "";
-  confirmEnabled = !(await page.locator(".cloudbase-map-confirm").isDisabled());
-  check("touch selection updates the search field", selectedValue === MOCK_LOCATION.name, selectedValue);
-  check("touch selection exposes the selected location", selectionLabel === MOCK_LOCATION.name, selectionLabel);
-  check("selected location can continue to forecast", confirmEnabled);
   check("deterministic API routes have no contract failures", apiState.failures.length === 0, apiState.failures.join("; "));
   check("WebKit journey has no uncaught runtime errors", runtimeErrors.length === 0, runtimeErrors.join("; "));
 } catch (error) {
@@ -223,10 +217,9 @@ try {
     input: {
       probe: TEXT_INPUT_PROBE,
       typedValue,
+      typedCoordinates,
       events: inputEvents,
-      selectedValue,
-      selectionLabel,
-      confirmEnabled,
+      savedFavorites,
     },
     api: apiState,
     runtimeErrors,
@@ -259,15 +252,6 @@ function assertRequiredInputs() {
 async function installDeterministicRoutes(browserContext) {
   const forecastBody = readFileSync(forecastFixturePath, "utf8");
   JSON.parse(forecastBody);
-  const geocodingBody = JSON.stringify({
-    results: [{
-      name: "Brauneck",
-      latitude: MOCK_LOCATION.latitude,
-      longitude: MOCK_LOCATION.longitude,
-      country: "Germany",
-      admin1: "Bavaria",
-    }],
-  });
 
   await browserContext.route("https://api.open-meteo.com/**", async (route) => {
     const request = route.request();
@@ -287,26 +271,6 @@ async function installDeterministicRoutes(browserContext) {
       });
     }
     await fulfillJson(route, method === "OPTIONS" ? "{}" : forecastBody);
-  });
-
-  await browserContext.route("https://geocoding-api.open-meteo.com/**", async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-    const method = request.method();
-    if (method !== "GET" && method !== "OPTIONS") {
-      apiState.failures.push(`Unexpected geocoding method: ${method}`);
-    }
-    if (url.pathname !== "/v1/search") {
-      apiState.failures.push(`Unexpected geocoding endpoint: ${url.pathname}`);
-    }
-    if (method === "GET") {
-      apiState.geocodingRequests.push({
-        name: url.searchParams.get("name"),
-        language: url.searchParams.get("language"),
-        format: url.searchParams.get("format"),
-      });
-    }
-    await fulfillJson(route, method === "OPTIONS" ? "{}" : geocodingBody);
   });
 
   await browserContext.route("https://tiles.openfreemap.org/styles/liberty**", async (route) => {
