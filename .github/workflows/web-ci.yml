@@ -4,10 +4,6 @@ on:
   push:
   pull_request:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  BINARYEN_CORES: 1
-
 permissions:
   contents: read
 
@@ -16,129 +12,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-web:
-    name: Verify Kotlin/Wasm web app
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Set up Chrome
-        id: chrome
-        uses: browser-actions/setup-chrome@v2
-
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run shared tests (JVM and browser Wasm)
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :shared:allTests
-
-      - name: Run web browser tests
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :webApp:wasmJsBrowserTest
-
-      - name: Run shared and web static analysis
-        run: ./gradlew :shared:detekt :webApp:detekt
-
-      # CI uses the committed fixture (not the live ParaglidingEarth API) so the bundle and browser
-      # release gates exercise a real, deterministic launch-site snapshot without a network
-      # dependency. The live snapshot is fetched only by the deploy workflow.
-      - name: Build fixture launch-site snapshot for release gates
-        run: >
-          node scripts/launch-sites/build-snapshot.mjs
-          --input scripts/launch-sites/fixtures/sample.geojson
-          --output webApp/src/wasmJsMain/resources/data/launch-sites
-
-      - name: Verify fixture launch-site snapshot
-        run: >
-          node scripts/launch-sites/verify-snapshot.mjs
-          webApp/src/wasmJsMain/resources/data/launch-sites
-
-      - name: Build production web distribution
-        run: ./gradlew :webApp:wasmJsBrowserDistribution
-
-      - name: Check production bundle budgets
-        run: node scripts/web/check-bundle.mjs
-
-      - name: Run browser release gates
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: node scripts/web/check-browser-release.mjs
-
-      - name: Upload web release-gate reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-release-gate-reports
-          path: |
-            shared/build/reports/tests/
-            shared/build/reports/detekt/
-            webApp/build/reports/tests/
-            webApp/build/reports/detekt/
-            webApp/build/reports/release-gates/
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload production web distribution
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-production
-          path: webApp/build/dist/wasmJs/productionExecutable/
-          if-no-files-found: error
-          retention-days: 14
-
-  verify-webkit-input:
-    name: Verify mobile WebKit location input
-    needs: verify-web
-    runs-on: macos-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Install release-gate dependencies
-        run: npm ci
-
-      - name: Install Playwright WebKit
-        run: npx playwright install webkit
-
-      - name: Download verified production web distribution
-        uses: actions/download-artifact@v4
-        with:
-          name: web-production
-          path: webApp/build/dist/wasmJs/productionExecutable
-
-      - name: Run mobile WebKit input release gate
-        run: npm run check:web:webkit-input
-
-      - name: Upload mobile WebKit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: webkit-input-release-gate
-          path: webApp/build/reports/release-gates/webkit-input.json
-          if-no-files-found: ignore
-          retention-days: 14
+  verify:
+    name: Verify web distribution
+    permissions:
+      contents: read
+    uses: ./.github/workflows/web-verify.yml
+    with:
+      snapshot: fixture
+      dist-artifact: web-production
+      reports-artifact: web-release-gate-reports

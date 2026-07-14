@@ -1,0 +1,48 @@
+name: Verify deployed site is current
+
+# The safety net for everything the other workflows cannot see.
+#
+# Every other gate answers "is this build good?". None answer "did that build actually reach
+# production?" — and that is the gap this repository fell into: when the WebKit gate failed inside
+# web-deploy.yml, the Deploy job was SKIPPED rather than failed. GitHub Pages kept serving the old
+# build, the same commit still showed a green Web CI check, and the site quietly fell two commits
+# behind before anyone noticed.
+#
+# This check compares the commit the live site reports (build-info.json) against the default branch.
+# It is deliberately outcome-based: it does not care *why* the site is stale — a failed gate, a
+# skipped deploy, a broken cron, a Pages outage — so it also catches whatever the next unforeseen
+# failure mode turns out to be.
+
+on:
+  schedule:
+    # Every 6 hours. A stale site should not survive a working day unnoticed.
+    - cron: "37 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-freshness
+  cancel-in-progress: true
+
+jobs:
+  check-deployed-commit:
+    name: Compare the live site against the default branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Full history so the check can report how many commits the live site is behind.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Compare the deployed commit with the default branch
+        run: node scripts/web/check-deployed-freshness.mjs

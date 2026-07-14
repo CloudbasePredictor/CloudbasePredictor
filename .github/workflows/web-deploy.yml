@@ -10,100 +10,52 @@ on:
     - cron: "17 3 * * 1"
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  BINARYEN_CORES: 1
-
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build and verify Pages site
+  # Fetches, validates, and tiles the live ParaglidingEarth dataset, then runs every web gate against
+  # the resulting distribution. If ParaglidingEarth is unreachable or the snapshot comes back
+  # degraded, this fails before anything is published and the previously deployed site stays live.
+  # The browser never contacts ParaglidingEarth; only GitHub Actions does.
+  verify:
+    name: Verify web distribution
     if: github.ref_name == github.event.repository.default_branch
+    permissions:
+      contents: read
+    uses: ./.github/workflows/web-verify.yml
+    with:
+      snapshot: live
+      min-sites: 8000
+      dist-artifact: pages-web-production
+      dist-retention-days: 1
+      reports-artifact: pages-web-verification-reports
+
+  publish:
+    name: Publish GitHub Pages
+    needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      # Publish exactly the bytes every gate ran against. The previous version built the Pages
+      # artifact in the same job as the build, before the WebKit gate had even run.
+      - name: Download the verified production distribution
+        uses: actions/download-artifact@v4
         with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Set up Chrome
-        id: chrome
-        uses: browser-actions/setup-chrome@v2
-
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run shared tests (JVM and browser Wasm)
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :shared:allTests
-
-      - name: Run web browser tests
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :webApp:wasmJsBrowserTest
-
-      - name: Run shared and web static analysis
-        run: ./gradlew :shared:detekt :webApp:detekt
-
-      # Fetch, validate, and tile the ParaglidingEarth dataset into the web resources BEFORE the
-      # production build so it ships in the same GitHub Pages artifact. If ParaglidingEarth is
-      # unreachable or the snapshot fails verification, the job fails here — before any artifact
-      # upload — so the previously published site stays live. The browser never contacts
-      # ParaglidingEarth; only GitHub Actions does.
-      - name: Build ParaglidingEarth launch-site snapshot
-        run: >
-          node scripts/launch-sites/build-snapshot.mjs
-          --output webApp/src/wasmJsMain/resources/data/launch-sites
-
-      - name: Verify ParaglidingEarth launch-site snapshot
-        run: >
-          node scripts/launch-sites/verify-snapshot.mjs
-          webApp/src/wasmJsMain/resources/data/launch-sites
-
-      - name: Build production web distribution
-        run: ./gradlew :webApp:wasmJsBrowserDistribution
-
-      - name: Check production bundle budgets
-        run: node scripts/web/check-bundle.mjs
-
-      - name: Run browser release gates
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: node scripts/web/check-browser-release.mjs
-
-      - name: Upload web verification reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pages-web-verification-reports
-          path: |
-            shared/build/reports/tests/
-            shared/build/reports/detekt/
-            webApp/build/reports/tests/
-            webApp/build/reports/detekt/
-            webApp/build/reports/release-gates/
-          if-no-files-found: ignore
-          retention-days: 14
+          name: pages-web-production
+          path: dist
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -111,69 +63,8 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: webApp/build/dist/wasmJs/productionExecutable
+          path: dist
 
-      - name: Upload production candidate for WebKit verification
-        uses: actions/upload-artifact@v4
-        with:
-          name: pages-web-production
-          path: webApp/build/dist/wasmJs/productionExecutable/
-          if-no-files-found: error
-          retention-days: 1
-
-  verify-webkit-input:
-    name: Verify mobile WebKit location input
-    needs: build
-    permissions:
-      contents: read
-    runs-on: macos-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Install release-gate dependencies
-        run: npm ci
-
-      - name: Install Playwright WebKit
-        run: npx playwright install webkit
-
-      - name: Download verified production web distribution
-        uses: actions/download-artifact@v4
-        with:
-          name: pages-web-production
-          path: webApp/build/dist/wasmJs/productionExecutable
-
-      - name: Run mobile WebKit input release gate
-        run: npm run check:web:webkit-input
-
-      - name: Upload mobile WebKit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pages-webkit-input-release-gate
-          path: webApp/build/reports/release-gates/webkit-input.json
-          if-no-files-found: ignore
-          retention-days: 14
-
-  deploy:
-    name: Deploy GitHub Pages
-    needs:
-      - build
-      - verify-webkit-input
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

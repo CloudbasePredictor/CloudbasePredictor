@@ -91,3 +91,37 @@ val generateWebBuildConfig by tasks.registering {
 kotlin.sourceSets.named("commonMain") {
     kotlin.srcDir(generateWebBuildConfig)
 }
+
+// Publish the built version and commit as a static file in the distribution. WebBuildConfig is
+// compiled into the wasm binary, so nothing outside the build can tell which commit GitHub Pages is
+// actually serving — which is why a skipped deploy used to leave a stale site up with no signal
+// anywhere. web-freshness.yml fetches this file and compares it against the default branch.
+val generateWebBuildInfo by tasks.registering {
+    val version = providers.gradleProperty("cloudbaseVersionName").getOrElse("dev")
+    val commit = providers.environmentVariable("GITHUB_SHA")
+        .orElse(providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText)
+        .map(String::trim)
+        .getOrElse("unknown")
+    val outputDir = layout.buildDirectory.dir("generated/webBuildInfo")
+    inputs.property("version", version)
+    inputs.property("commit", commit)
+    outputs.dir(outputDir)
+    doLast {
+        val target = outputDir.get().asFile.resolve("build-info.json")
+        target.parentFile.mkdirs()
+        target.writeText(
+            """
+            {
+              "schemaVersion": 1,
+              "version": "$version",
+              "commit": "$commit"
+            }
+
+            """.trimIndent(),
+        )
+    }
+}
+
+kotlin.sourceSets.named("wasmJsMain") {
+    resources.srcDir(generateWebBuildInfo)
+}

@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify-kmp:
-    name: Verify Android and web release gates
+  verify-android:
+    name: Verify Android release gates
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -34,15 +34,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Set up Chrome
-        id: chrome
-        uses: browser-actions/setup-chrome@v2
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
@@ -52,96 +43,31 @@ jobs:
       - name: Run engine tests (JVM and Wasm)
         run: ./gradlew :engine:allTests
 
-      - name: Run shared tests (JVM and browser Wasm)
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :shared:allTests
-
       - name: Compile Android instrumentation tests
         run: ./gradlew :app:compileDebugAndroidTestKotlin
 
       - name: Run static analysis
-        run: ./gradlew :app:detekt :engine:detekt :shared:detekt :webApp:detekt
+        run: ./gradlew :app:detekt :engine:detekt
 
-      - name: Run web browser tests
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: ./gradlew :webApp:wasmJsBrowserTest
-
-      - name: Build production web distribution
-        run: ./gradlew :webApp:wasmJsBrowserDistribution
-
-      - name: Check production bundle budgets
-        run: node scripts/web/check-bundle.mjs
-
-      - name: Run browser release gates
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: node scripts/web/check-browser-release.mjs
-
-      - name: Upload web release-gate reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-web-gate-reports
-          path: webApp/build/reports/release-gates/
-          if-no-files-found: ignore
-
-      - name: Upload verified production web distribution
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-web-production
-          path: webApp/build/dist/wasmJs/productionExecutable/
-          if-no-files-found: error
-          retention-days: 1
-
-  verify-webkit-input:
-    name: Verify mobile WebKit location input
-    needs: verify-kmp
+  # The web half is the shared definition, not a copy of it. The copy that used to live here had
+  # silently lost its launch-site snapshot step, which would have failed the next tag on a missing
+  # dataset — nobody could see it, because this workflow only runs on tags.
+  verify-web:
+    name: Verify web release gates
     permissions:
       contents: read
-    runs-on: macos-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Install release-gate dependencies
-        run: npm ci
-
-      - name: Install Playwright WebKit
-        run: npx playwright install webkit
-
-      - name: Download verified production web distribution
-        uses: actions/download-artifact@v4
-        with:
-          name: release-web-production
-          path: webApp/build/dist/wasmJs/productionExecutable
-
-      - name: Run mobile WebKit input release gate
-        run: npm run check:web:webkit-input
-
-      - name: Upload mobile WebKit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-webkit-input-release-gate
-          path: webApp/build/reports/release-gates/webkit-input.json
-          if-no-files-found: ignore
-          retention-days: 14
+    uses: ./.github/workflows/web-verify.yml
+    with:
+      snapshot: fixture
+      dist-artifact: release-web-production
+      dist-retention-days: 1
+      reports-artifact: release-web-gate-reports
 
   build-release:
     name: Build signed release
     needs:
-      - verify-kmp
-      - verify-webkit-input
+      - verify-android
+      - verify-web
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

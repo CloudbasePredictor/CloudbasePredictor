@@ -20,6 +20,7 @@ const forecastFixturePath = resolve(
   "app/src/main/assets/simulated/brauneck_icon_seamless_20260418.json",
 );
 const DEVICE_NAME = "iPhone 15";
+const POLL_INTERVAL_MILLIS = 100;
 const TEXT_INPUT_PROBE = "Brauneck";
 const MOCK_LOCATION = Object.freeze({
   name: "Brauneck, Bavaria, Germany",
@@ -175,20 +176,46 @@ try {
 
   // Saving proves the typed text reached Kotlin: the coordinates are parsed in :shared and the
   // favorite is written to durable storage, which is what a real Safari user would get.
-  await page.locator(".cloudbase-map-manual-save").tap();
-  await waitFor(
-    async () => (await page.locator(".cloudbase-map-manual-form").evaluate((element) => element.style.display)) === "none",
-    config.browser.interactionTimeoutMillis,
-    "manual-favorite form submission",
-  );
-  savedFavorites = await page.evaluate(
-    (key) => localStorage.getItem(key) ?? "",
-    FAVORITES_STORAGE_KEY,
-  );
+  //
+  // Assert the transition, never the end state. An earlier revision waited for the map selection
+  // card to become visible and then read its label -- but the deep link had already opened that
+  // card, so the wait returned immediately and the read raced Kotlin's state update. It passed or
+  // failed depending on machine speed, and when it landed in the deploy workflow it skipped the
+  // Pages deploy without turning any commit red. So: prove the value is absent, act, then poll for
+  // it.
+  const storageBeforeSave = await readFavorites(page);
   check(
+    "durable storage has no probe favorite before saving",
+    !storageBeforeSave.includes(TEXT_INPUT_PROBE),
+    storageBeforeSave,
+  );
+
+  await page.locator(".cloudbase-map-manual-save").tap();
+  await checkEventually(
+    "manual-favorite form closes on save",
+    async () => {
+      const display = await page
+        .locator(".cloudbase-map-manual-form")
+        .evaluate((element) => element.style.display);
+      const validationError = (await page.locator(".cloudbase-map-manual-error").textContent())?.trim() ?? "";
+      return { passed: display === "none", detail: validationError || `display=${display}` };
+    },
+    config.browser.interactionTimeoutMillis,
+  );
+  // onAddFavorite suspends into the Kotlin favorite store, so the localStorage write lands after
+  // the form hides. Poll storage itself instead of treating the closed form as a proxy for it.
+  await checkEventually(
     "typed favorite is parsed and written to durable storage",
-    savedFavorites.includes(TEXT_INPUT_PROBE) && savedFavorites.includes(String(MOCK_LOCATION.latitude)),
-    savedFavorites,
+    async () => {
+      savedFavorites = await readFavorites(page);
+      return {
+        passed:
+          savedFavorites.includes(TEXT_INPUT_PROBE) &&
+          savedFavorites.includes(String(MOCK_LOCATION.latitude)),
+        detail: savedFavorites,
+      };
+    },
+    config.browser.interactionTimeoutMillis,
   );
   check("deterministic API routes have no contract failures", apiState.failures.length === 0, apiState.failures.join("; "));
   check("WebKit journey has no uncaught runtime errors", runtimeErrors.length === 0, runtimeErrors.join("; "));
@@ -326,19 +353,34 @@ async function startStaticServer() {
   return { server: staticServer, port: staticServer.address().port };
 }
 
-async function waitFor(predicate, timeoutMillis, label) {
+function readFavorites(page) {
+  return page.evaluate((key) => localStorage.getItem(key) ?? "", FAVORITES_STORAGE_KEY);
+}
+
+/**
+ * Polls `probe` until it passes, then records the last observation as an ordinary check.
+ *
+ * The web app renders through Kotlin and Compose, so a DOM side effect (a hidden form, a native
+ * input's value) lands *before* the Kotlin state it is supposed to stand for. Asserting straight
+ * after an action races that pipeline, and so does waiting on some other condition and then
+ * asserting -- especially when that condition was already true beforehand. Poll the same value you
+ * assert, so a slow machine waits and a genuine regression still fails with the stale value shown.
+ */
+async function checkEventually(label, probe, timeoutMillis) {
   const deadline = performance.now() + timeoutMillis;
-  let lastError;
-  while (performance.now() < deadline) {
+  let last = { passed: false, detail: "probe never ran" };
+  for (;;) {
     try {
-      if (await predicate()) return;
+      last = await probe();
+      if (last.passed) break;
     } catch (error) {
-      lastError = error;
+      last = { passed: false, detail: error instanceof Error ? error.message : String(error) };
     }
-    await delay(100);
+    if (performance.now() >= deadline) break;
+    await delay(POLL_INTERVAL_MILLIS);
   }
-  const detail = lastError instanceof Error ? `: ${lastError.message}` : "";
-  throw new Error(`${label} did not complete within ${timeoutMillis} ms${detail}`);
+  check(label, last.passed, last.detail);
+  return last.passed;
 }
 
 function check(label, passed, detail = "") {

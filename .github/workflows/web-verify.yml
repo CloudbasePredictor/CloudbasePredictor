@@ -1,0 +1,183 @@
+name: Verify web distribution
+
+# The single definition of "the web app is good". web-ci.yml, web-deploy.yml, and release.yml all
+# call this instead of keeping their own copy of the steps.
+#
+# They used to keep their own copies, and the copies drifted: release.yml never grew the
+# launch-site snapshot step, so its browser gate would have failed on the missing dataset the next
+# time a tag was cut — a breakage that had been sitting there, invisible, since the gates were added,
+# because release.yml only runs on tags.
+#
+# NOTE: `env` from a calling workflow does NOT propagate into a reusable workflow, so BINARYEN_CORES
+# must be set here. Without it wasm-opt segfaults on multi-core runners.
+
+on:
+  workflow_call:
+    inputs:
+      snapshot:
+        description: 'Launch-site snapshot to build: "fixture" (committed sample) or "live" (ParaglidingEarth).'
+        type: string
+        default: fixture
+      min-sites:
+        description: >
+          Minimum launch-site count the snapshot must contain. The live dataset carries ~11.5k sites;
+          verify-snapshot defaults to a floor of 1, which would happily publish a truncated response.
+        type: number
+        default: 1
+      dist-artifact:
+        description: Artifact name for the verified production web distribution.
+        type: string
+        required: true
+      dist-retention-days:
+        type: number
+        default: 14
+      reports-artifact:
+        description: Artifact name for the verification reports.
+        type: string
+        required: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BINARYEN_CORES: 1
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web:
+    name: Verify Kotlin/Wasm web app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Set up Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v2
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run shared tests (JVM and browser Wasm)
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: ./gradlew :shared:allTests
+
+      - name: Run web browser tests
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: ./gradlew :webApp:wasmJsBrowserTest
+
+      - name: Run shared and web static analysis
+        run: ./gradlew :shared:detekt :webApp:detekt
+
+      # The snapshot is gitignored, so it must be generated before the distribution or the browser
+      # release gate fails on the missing dataset. CI uses the committed fixture so the gates stay
+      # deterministic and offline; only the deploy fetches the live ParaglidingEarth dataset, and if
+      # that fetch degrades, --min-sites fails the job here — before any artifact is published — so
+      # the previously deployed site stays live.
+      - name: Build fixture launch-site snapshot
+        if: inputs.snapshot == 'fixture'
+        run: >
+          node scripts/launch-sites/build-snapshot.mjs
+          --input scripts/launch-sites/fixtures/sample.geojson
+          --output webApp/src/wasmJsMain/resources/data/launch-sites
+
+      - name: Build ParaglidingEarth launch-site snapshot
+        if: inputs.snapshot == 'live'
+        run: >
+          node scripts/launch-sites/build-snapshot.mjs
+          --output webApp/src/wasmJsMain/resources/data/launch-sites
+
+      - name: Verify launch-site snapshot
+        run: >
+          node scripts/launch-sites/verify-snapshot.mjs
+          webApp/src/wasmJsMain/resources/data/launch-sites
+          --min-sites ${{ inputs.min-sites }}
+
+      - name: Build production web distribution
+        run: ./gradlew :webApp:wasmJsBrowserDistribution
+
+      - name: Check production bundle budgets
+        run: node scripts/web/check-bundle.mjs
+
+      - name: Run browser release gates
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: node scripts/web/check-browser-release.mjs
+
+      - name: Upload web verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.reports-artifact }}
+          path: |
+            shared/build/reports/tests/
+            shared/build/reports/detekt/
+            webApp/build/reports/tests/
+            webApp/build/reports/detekt/
+            webApp/build/reports/release-gates/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload verified production web distribution
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.dist-artifact }}
+          path: webApp/build/dist/wasmJs/productionExecutable/
+          if-no-files-found: error
+          retention-days: ${{ inputs.dist-retention-days }}
+
+  verify-webkit-input:
+    name: Verify mobile WebKit input
+    needs: verify-web
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install release-gate dependencies
+        run: npm ci
+
+      - name: Install Playwright WebKit
+        run: npx playwright install webkit
+
+      # Runs against the exact bytes verify-web produced, so the gate and the deploy cannot diverge.
+      - name: Download verified production web distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.dist-artifact }}
+          path: webApp/build/dist/wasmJs/productionExecutable
+
+      - name: Run mobile WebKit input release gate
+        run: npm run check:web:webkit-input
+
+      - name: Upload mobile WebKit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.reports-artifact }}-webkit
+          path: webApp/build/reports/release-gates/webkit-input.json
+          if-no-files-found: ignore
+          retention-days: 14
