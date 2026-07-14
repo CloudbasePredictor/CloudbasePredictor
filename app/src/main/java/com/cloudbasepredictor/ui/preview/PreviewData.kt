@@ -64,6 +64,9 @@ object PreviewData {
     val manualFavoriteName = "Brauneck South"
     val manualFavoriteCoordinates = "47.6468, 11.5216"
 
+    // Short sample label for the map favorite/launch-site label pill preview.
+    const val launchSiteLabel = "Brauneck launch"
+
     val paraglidingLaunchSite = ParaglidingLaunchSite(
         id = "6176",
         name = "Saint Hilaire du Touvet",

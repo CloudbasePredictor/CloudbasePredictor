@@ -240,7 +240,6 @@ fun analyzeParcel(
         lclTemperatureC = lclTemperatureC,
         lclPressureHpa = lclResult.pressureHpa,
         surfaceMixingRatio = surfaceMixingRatio,
-        surfacePressureHpa = surfacePressureHpa,
         profile = aboveSurface,
     )
 
@@ -315,8 +314,9 @@ fun estimateSurfaceHeating(input: SurfaceHeatingInput): Float {
         // Radiation-driven: up to ~MAX_SURFACE_HEATING_C at peak radiation
         radiationFraction * MAX_SURFACE_HEATING_C * solarFactor
     } else {
-        // No radiation data: use conservative default with solar curve
-        DEFAULT_SURFACE_HEATING_C * solarFactor * (1f - cloudPenalty)
+        // No radiation data: use conservative default with solar curve.
+        // The cloud penalty is applied once below (shared with the radiation branch).
+        DEFAULT_SURFACE_HEATING_C * solarFactor
     }
 
     val heating = baseHeating * (1f - cloudPenalty) * (1f - precipPenalty)
@@ -640,49 +640,99 @@ private fun computeCapeCin(
     lclTemperatureC: Float,
     lclPressureHpa: Float,
     surfaceMixingRatio: Float,
-    surfacePressureHpa: Float,
     profile: List<ProfileLevel>,
 ): Pair<Float, Float> {
     if (profile.size < 2) return 0f to 0f
 
-    var cape = 0f
-    var cin = 0f
-    var reachedLcl = false
+    var integration = CapeCinIntegration()
 
     for (i in 0 until profile.size - 1) {
+        if (integration.phase == CapeCinPhase.COMPLETE) break
         val lower = profile[i]
         val upper = profile[i + 1]
         val dz = (upper.heightKm - lower.heightKm) * 1000f // meters
         if (dz <= 0f) continue
 
-        // Parcel temperature at midpoint pressure
         val midPressure = (lower.pressureHpa + upper.pressureHpa) / 2f
         val envTempMid = (lower.temperatureC + upper.temperatureC) / 2f
-
-        val parcelTemp = if (!reachedLcl) {
-            val dryTemp = dryAdiabatTempC(parcelThetaK, midPressure)
-            val satMr = satMixingRatioGKg(dryTemp, midPressure)
-            if (satMr <= surfaceMixingRatio) {
-                reachedLcl = true
-                moistAdiabatTempFromPointC(lclTemperatureC, lclPressureHpa, midPressure)
-            } else {
-                dryTemp
-            }
-        } else {
-            moistAdiabatTempFromPointC(lclTemperatureC, lclPressureHpa, midPressure)
+        val parcelLayer = parcelTemperatureAtPressure(
+            parcelThetaK = parcelThetaK,
+            lclTemperatureC = lclTemperatureC,
+            lclPressureHpa = lclPressureHpa,
+            surfaceMixingRatio = surfaceMixingRatio,
+            pressureHpa = midPressure,
+            belowLcl = integration.phase == CapeCinPhase.BELOW_LCL,
+        )
+        if (parcelLayer.reachedLcl) {
+            integration = integration.copy(phase = CapeCinPhase.BELOW_LFC)
         }
-
         val envTempK = envTempMid + 273.15f
-        val buoyancy = G * (parcelTemp - envTempMid) / envTempK * dz
-
-        if (buoyancy > 0) {
-            cape += buoyancy
-        } else {
-            cin -= buoyancy // CIN as positive value
-        }
+        val buoyancy = G * (parcelLayer.temperatureC - envTempMid) / envTempK * dz
+        integration = integration.addBuoyancy(buoyancy)
     }
 
-    return cape to cin
+    return integration.cape to integration.cin
+}
+
+private enum class CapeCinPhase {
+    BELOW_LCL,
+    BELOW_LFC,
+    ABOVE_LFC,
+    COMPLETE,
+}
+
+private data class CapeCinIntegration(
+    val cape: Float = 0f,
+    val cin: Float = 0f,
+    val phase: CapeCinPhase = CapeCinPhase.BELOW_LCL,
+)
+
+private data class ParcelLayerTemperature(
+    val temperatureC: Float,
+    val reachedLcl: Boolean,
+)
+
+private fun parcelTemperatureAtPressure(
+    parcelThetaK: Float,
+    lclTemperatureC: Float,
+    lclPressureHpa: Float,
+    surfaceMixingRatio: Float,
+    pressureHpa: Float,
+    belowLcl: Boolean,
+): ParcelLayerTemperature {
+    val dryTemperatureC = dryAdiabatTempC(parcelThetaK, pressureHpa)
+    return when {
+        !belowLcl -> ParcelLayerTemperature(
+            temperatureC = moistAdiabatTempFromPointC(lclTemperatureC, lclPressureHpa, pressureHpa),
+            reachedLcl = false,
+        )
+        satMixingRatioGKg(dryTemperatureC, pressureHpa) > surfaceMixingRatio ->
+            ParcelLayerTemperature(temperatureC = dryTemperatureC, reachedLcl = false)
+        else -> ParcelLayerTemperature(
+            temperatureC = moistAdiabatTempFromPointC(lclTemperatureC, lclPressureHpa, pressureHpa),
+            reachedLcl = true,
+        )
+    }
+}
+
+private fun CapeCinIntegration.addBuoyancy(buoyancy: Float): CapeCinIntegration = when (phase) {
+    CapeCinPhase.BELOW_LCL -> copy(cin = cin - buoyancy.coerceAtMost(0f))
+    CapeCinPhase.BELOW_LFC -> if (buoyancy > 0f) {
+        // A shallow dry-thermal layer below the LCL is not free moist convection and must not hide
+        // a cap above it. The first positive saturated layer is the LFC and starts CAPE integration.
+        copy(cape = cape + buoyancy, phase = CapeCinPhase.ABOVE_LFC)
+    } else {
+        // CIN is the negative area from the surface to the LFC.
+        copy(cin = cin - buoyancy)
+    }
+    CapeCinPhase.ABOVE_LFC -> if (buoyancy > 0f) {
+        copy(cape = cape + buoyancy)
+    } else {
+        // The first non-positive layer after the LFC marks the equilibrium level. Stable layers
+        // above it are outside both the CAPE and CIN integration bounds.
+        copy(phase = CapeCinPhase.COMPLETE)
+    }
+    CapeCinPhase.COMPLETE -> this
 }
 
 /**

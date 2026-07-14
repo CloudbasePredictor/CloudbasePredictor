@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">ไม่ได้อัปเดตการพยากรณ์: รอ %1$.1f วินาทีก่อนเลื่อนแผนที่อีกครั้ง</string>
     <string name="forecast_map_update_too_close">ไม่ได้อัปเดตการพยากรณ์: เลื่อนออกจากจุดพยากรณ์ปัจจุบันอย่างน้อย %1$d ม.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">วันนี้</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">ท้องฟ้าแจ่มใส</string>
+    <string name="weather_partly_cloudy">มีเมฆบางส่วน</string>
+    <string name="weather_fog">หมอก</string>
+    <string name="weather_drizzle">ฝนละออง</string>
+    <string name="weather_rain">ฝน</string>
+    <string name="weather_snow">หิมะ</string>
+    <string name="weather_rain_showers">ฝนตกเป็นแห่ง ๆ</string>
+    <string name="weather_snow_showers">หิมะตกเป็นแห่ง ๆ</string>
+    <string name="weather_thunderstorm">พายุฝนฟ้าคะนอง</string>
+    <string name="weather_unknown">ไม่ทราบสภาพอากาศ</string>
+    <string name="forecast_summary_pending_thermic">เนื้อหาการพยากรณ์สำหรับ %1$s จะแสดงที่นี่</string>
+    <string name="forecast_summary_pending_stuve">เนื้อหาการพยากรณ์ Stuve สำหรับ %1$s จะแสดงที่นี่</string>
+    <string name="forecast_summary_pending_wind">เนื้อหาการพยากรณ์ลมสำหรับ %1$s จะแสดงที่นี่</string>
+    <string name="forecast_summary_pending_cloud">เนื้อหาการพยากรณ์เมฆสำหรับ %1$s จะแสดงที่นี่</string>
+    <string name="forecast_summary_thermic">%1$s ที่ %2$s %3$s สูงสุด %4$s ต่ำสุด %5$s โปรไฟล์ความร้อนพร้อมสำหรับช่วงระดับความสูงที่เลือก</string>
+    <string name="forecast_summary_stuve">%1$s ที่ %2$s %3$s แผนภาพ Stuve พร้อมสำหรับชั่วโมงที่เลือก</string>
+    <string name="forecast_summary_wind">%1$s ที่ %2$s %3$s โปรไฟล์ลมพร้อมสำหรับช่วงระดับความสูงที่เลือก</string>
+    <string name="forecast_summary_cloud">%1$s ที่ %2$s %3$s ชั้นเมฆ การแผ่รังสี แสงแดด และหยาดน้ำฟ้าพร้อมแล้ว</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">แบบจำลองสภาพอากาศ</string>
     <string name="model_selector_fell_back">เปลี่ยนไปใช้ %1$s</string>

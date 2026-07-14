@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Pronóstico no actualizado: espera %1$.1f segundos antes de volver a mover el mapa.</string>
     <string name="forecast_map_update_too_close">Pronóstico no actualizado: aléjate al menos %1$d m del punto de pronóstico actual.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Hoy</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Cielo despejado</string>
+    <string name="weather_partly_cloudy">Parcialmente nublado</string>
+    <string name="weather_fog">Niebla</string>
+    <string name="weather_drizzle">Llovizna</string>
+    <string name="weather_rain">Lluvia</string>
+    <string name="weather_snow">Nieve</string>
+    <string name="weather_rain_showers">Chubascos</string>
+    <string name="weather_snow_showers">Chubascos de nieve</string>
+    <string name="weather_thunderstorm">Tormenta</string>
+    <string name="weather_unknown">Tiempo desconocido</string>
+    <string name="forecast_summary_pending_thermic">El contenido del pronóstico para %1$s aparecerá aquí.</string>
+    <string name="forecast_summary_pending_stuve">El contenido del pronóstico Stuve para %1$s aparecerá aquí.</string>
+    <string name="forecast_summary_pending_wind">El contenido del pronóstico de viento para %1$s aparecerá aquí.</string>
+    <string name="forecast_summary_pending_cloud">El contenido del pronóstico de nubes para %1$s aparecerá aquí.</string>
+    <string name="forecast_summary_thermic">%1$s en %2$s. %3$s. Máxima %4$s, mínima %5$s. El perfil térmico está listo para el rango de altitud seleccionado.</string>
+    <string name="forecast_summary_stuve">%1$s en %2$s. %3$s. El diagrama Stuve está listo para la hora seleccionada.</string>
+    <string name="forecast_summary_wind">%1$s en %2$s. %3$s. El perfil de viento está listo para el rango de altitud seleccionado.</string>
+    <string name="forecast_summary_cloud">%1$s en %2$s. %3$s. Las capas de nubes, la radiación, el sol y la precipitación están listas.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Modelo meteorológico</string>
     <string name="model_selector_fell_back">Se recurrió a %1$s</string>

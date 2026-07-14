@@ -24,6 +24,8 @@ import com.cloudbasepredictor.data.theme.SharedPrefsThemeRepository
 import com.cloudbasepredictor.data.theme.ThemeRepository
 import com.cloudbasepredictor.data.units.SharedPrefsUnitSettingsRepository
 import com.cloudbasepredictor.data.units.UnitSettingsRepository
+import com.cloudbasepredictor.ui.text.AndroidStringResources
+import com.cloudbasepredictor.ui.text.AppStringResources
 import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.BindingContainer
 
@@ -66,4 +68,7 @@ abstract class RepositoryModule {
     @Binds
     abstract val SharedPrefsLaunchSiteDisplayRepository.bindLaunchSiteDisplayRepository:
         LaunchSiteDisplayRepository
+
+    @Binds
+    abstract val AndroidStringResources.bindAppStringResources: AppStringResources
 }

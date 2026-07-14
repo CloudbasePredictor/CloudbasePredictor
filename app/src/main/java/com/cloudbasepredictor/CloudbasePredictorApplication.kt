@@ -1,7 +1,6 @@
 package com.cloudbasepredictor
 
 import android.app.Application
-import android.os.Build
 import com.cloudbasepredictor.di.AppGraph
 import com.cloudbasepredictor.di.cloudbasePredictorUserAgentInterceptor
 import dev.zacsweers.metro.createGraphFactory
@@ -55,11 +54,12 @@ class CloudbasePredictorApplication : Application() {
 
     private fun mapLibreDispatcher(): Dispatcher {
         return Dispatcher().apply {
-            maxRequestsPerHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                20
-            } else {
-                10
-            }
+            maxRequestsPerHost = MAP_LIBRE_MAX_REQUESTS_PER_HOST
         }
+    }
+
+    private companion object {
+        // Raise the per-host cap from OkHttp's default of 5 so MapLibre can fetch tiles in parallel.
+        const val MAP_LIBRE_MAX_REQUESTS_PER_HOST = 20
     }
 }

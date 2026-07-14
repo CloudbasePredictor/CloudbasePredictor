@@ -24,6 +24,16 @@ data class WebRouteState(
     val hour: Int = DEFAULT_FORECAST_HOUR,
 )
 
+/**
+ * A transition is a *navigation* (deserves a real browser-history entry) when it changes the
+ * destination or the location, and a *transient* view-state change otherwise. Model, mode
+ * (Thermic/Wind/Cloud/Stüve), day-chip, and Stüve-hour changes within the same destination and
+ * location are transient — they should replace the current entry so Back does not step through every
+ * chip tap or scrub before leaving the screen.
+ */
+fun isRouteNavigation(previous: WebRouteState, next: WebRouteState): Boolean =
+    previous.destination != next.destination || previous.location != next.location
+
 object WebRouteStateCodec {
     const val PROJECT_BASE_PATH: String = "/CloudbasePredictor/"
 

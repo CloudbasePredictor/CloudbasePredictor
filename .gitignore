@@ -7,13 +7,12 @@ agent-local/
 /.vscode/
 .DS_Store
 /.claude/
-/build
 **/build/
 /node_modules/
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+/temp/
 app/screenshots/
 # Generated at build time (fixture in CI, live ParaglidingEarth data in the deploy workflow).
 /webApp/src/wasmJsMain/resources/data/launch-sites/

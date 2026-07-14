@@ -38,6 +38,7 @@ import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.i18n.WebLanguage
+import com.cloudbasepredictor.web.i18n.WebStrings
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.presentation.destinationColumnCount
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
@@ -177,8 +178,8 @@ private fun UnitsSection(
         options = UnitPreset.entries,
         selected = selected,
         onSelected = onSelected,
-        label = UnitPreset::displayLabel,
-        supportingText = UnitPreset::supportingText,
+        label = { it.displayLabel(strings) },
+        supportingText = { it.supportingText(strings) },
     )
 }
 
@@ -194,8 +195,8 @@ private fun ThemeSection(
         options = ThemePreference.entries,
         selected = selected,
         onSelected = onSelected,
-        label = ThemePreference::displayLabel,
-        supportingText = ThemePreference::supportingText,
+        label = { it.displayLabel(strings) },
+        supportingText = { it.supportingText(strings) },
     )
 }
 
@@ -212,7 +213,7 @@ private fun MapLayerSection(
         selected = selected,
         onSelected = onSelected,
         label = MapLayerPreference::label,
-        supportingText = MapLayerPreference::supportingText,
+        supportingText = { it.supportingText(strings) },
     )
 }
 
@@ -438,43 +439,38 @@ private fun SettingsCard(
     }
 }
 
-private val UnitPreset.displayLabel: String
-    get() = when (this) {
-        UnitPreset.METRIC_KMH -> "Metric · km/h"
-        UnitPreset.METRIC_MPS -> "Metric · m/s"
-        UnitPreset.IMPERIAL -> "Imperial"
-        UnitPreset.AVIATION -> "Aviation"
-    }
+private fun UnitPreset.displayLabel(strings: WebStrings): String = when (this) {
+    UnitPreset.METRIC_KMH -> strings.unitMetricKmh
+    UnitPreset.METRIC_MPS -> strings.unitMetricMps
+    UnitPreset.IMPERIAL -> strings.unitImperial
+    UnitPreset.AVIATION -> strings.unitAviation
+}
 
-private val UnitPreset.supportingText: String
-    get() = when (this) {
-        UnitPreset.METRIC_KMH -> "Meters, km/h, and m/s"
-        UnitPreset.METRIC_MPS -> "Meters with wind and climb in m/s"
-        UnitPreset.IMPERIAL -> "Feet, mph, and ft/min"
-        UnitPreset.AVIATION -> "Feet, knots, and ft/min"
-    }
+private fun UnitPreset.supportingText(strings: WebStrings): String = when (this) {
+    UnitPreset.METRIC_KMH -> strings.unitMetricKmhDescription
+    UnitPreset.METRIC_MPS -> strings.unitMetricMpsDescription
+    UnitPreset.IMPERIAL -> strings.unitImperialDescription
+    UnitPreset.AVIATION -> strings.unitAviationDescription
+}
 
-private val ThemePreference.displayLabel: String
-    get() = when (this) {
-        ThemePreference.AUTO -> "System"
-        ThemePreference.LIGHT -> "Light"
-        ThemePreference.DARK -> "Dark"
-    }
+private fun ThemePreference.displayLabel(strings: WebStrings): String = when (this) {
+    ThemePreference.AUTO -> strings.themeSystem
+    ThemePreference.LIGHT -> strings.themeLight
+    ThemePreference.DARK -> strings.themeDark
+}
 
-private val ThemePreference.supportingText: String
-    get() = when (this) {
-        ThemePreference.AUTO -> "Follow this device's appearance"
-        ThemePreference.LIGHT -> "Always use the light theme"
-        ThemePreference.DARK -> "Always use the dark theme"
-    }
+private fun ThemePreference.supportingText(strings: WebStrings): String = when (this) {
+    ThemePreference.AUTO -> strings.themeSystemDescription
+    ThemePreference.LIGHT -> strings.themeLightDescription
+    ThemePreference.DARK -> strings.themeDarkDescription
+}
 
-private val MapLayerPreference.supportingText: String
-    get() = when (this) {
-        MapLayerPreference.OPENFREEMAP -> "Fast vector streets and terrain context"
-        MapLayerPreference.OPENTOPOMAP -> "Topographic contours and outdoor detail"
-        MapLayerPreference.NASA_GIBS -> "Daily NASA satellite imagery"
-        MapLayerPreference.ESRI_WORLD_IMAGERY -> "High-resolution Esri satellite imagery"
-    }
+private fun MapLayerPreference.supportingText(strings: WebStrings): String = when (this) {
+    MapLayerPreference.OPENFREEMAP -> strings.mapLayerOpenFreeMapDescription
+    MapLayerPreference.OPENTOPOMAP -> strings.mapLayerOpenTopoMapDescription
+    MapLayerPreference.NASA_GIBS -> strings.mapLayerNasaGibsDescription
+    MapLayerPreference.ESRI_WORLD_IMAGERY -> strings.mapLayerEsriDescription
+}
 
 private val DestinationMaxWidth = 1_080.dp
 private val DestinationPadding = 24.dp

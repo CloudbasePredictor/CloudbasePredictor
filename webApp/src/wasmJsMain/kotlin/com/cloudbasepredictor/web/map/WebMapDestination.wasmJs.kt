@@ -26,6 +26,8 @@ import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.model.mergeColocatedFavoriteLaunchSites
 import com.cloudbasepredictor.model.parseManualFavoriteInput
 import com.cloudbasepredictor.web.WebRouteState
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
+import com.cloudbasepredictor.web.i18n.WebStrings
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebPreviewData
 import kotlinx.browser.document
@@ -55,6 +57,7 @@ internal actual fun WebMapDestination(
     onAddFavorite: (SavedPlace) -> Unit,
     modifier: Modifier,
 ) {
+    val strings = LocalWebStrings.current
     var selectedLocation by remember(routeState.location) { mutableStateOf(routeState.location) }
     var selectedLaunchSite by remember { mutableStateOf<ParaglidingLaunchSite?>(null) }
     var viewportBounds by remember { mutableStateOf<LaunchSiteBounds?>(null) }
@@ -88,6 +91,7 @@ internal actual fun WebMapDestination(
 
     WebMapSurface(
         state = renderState,
+        strings = strings,
         onMapTap = { tapped ->
             // Tapping within ~200 m of a favorite selects the favorite (like Android).
             val nearbyFavorite = favoritePlaces.firstOrNull { favorite ->
@@ -186,6 +190,7 @@ private fun resolveInitialCamera(
 @Composable
 private fun WebMapSurface(
     state: WebMapRenderState,
+    strings: WebStrings,
     onMapTap: (PlaceLocation) -> Unit,
     onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
     onViewportChanged: (LaunchSiteBounds?) -> Unit,
@@ -206,6 +211,7 @@ private fun WebMapSurface(
     val binding = remember {
         MapLibreBinding(
             scope = scope,
+            strings = strings,
             onMapTap = { currentMapTap.value(it) },
             onLaunchSiteTap = { currentLaunchSiteTap.value(it) },
             onViewportChanged = { currentViewportChanged.value(it) },
@@ -222,7 +228,7 @@ private fun WebMapSurface(
             (document.createElement("div") as HTMLDivElement).apply {
                 className = "cloudbase-map-root"
                 setAttribute("data-testid", "web-map-host")
-                setAttribute("aria-label", "Forecast location map")
+                setAttribute("aria-label", strings.mapAriaLabel)
                 style.width = "100%"
                 style.height = "100%"
             }.also { host -> binding.attach(host, state) }
@@ -236,6 +242,7 @@ private fun WebMapSurface(
 @Suppress("LongParameterList")
 private class MapLibreBinding(
     private val scope: CoroutineScope,
+    private val strings: WebStrings,
     private val onMapTap: (PlaceLocation) -> Unit,
     private val onLaunchSiteTap: (ParaglidingLaunchSite) -> Unit,
     private val onViewportChanged: (LaunchSiteBounds?) -> Unit,
@@ -251,13 +258,17 @@ private class MapLibreBinding(
     private var map: MapLibreMap? = null
     private var resizeObserver: WebResizeObserver? = null
     private val subscriptions = mutableListOf<MapLibreSubscription>()
-    private val markers = mutableListOf<MapLibreMarker>()
+    // Keyed by marker id so map updates can diff the delta instead of tearing down and rebuilding
+    // every marker (and regenerating every launch-flag SVG) on each tap. Insertion order is
+    // preserved so the draw order matches the order markers first appear.
+    private val markers = LinkedHashMap<String, TrackedMarker>()
     private var appliedLayer: MapLayerPreference? = null
     private var root: HTMLDivElement? = null
     private var mapContainer: HTMLDivElement? = null
     private var status: HTMLDivElement? = null
     private var northResetButton: HTMLButtonElement? = null
     private var manualForm: HTMLDivElement? = null
+    private var manualFormKeydownListener: ((Event) -> Unit)? = null
     private var manualNameInput: HTMLInputElement? = null
     private var manualCoordinatesInput: HTMLInputElement? = null
     private var manualError: HTMLDivElement? = null
@@ -285,7 +296,7 @@ private class MapLibreBinding(
                 mapModule = module
                 createMap(host, module, latestState ?: state)
             } catch (_: Throwable) {
-                if (!disposed) showStatus("Map could not be loaded. Check the network and retry.", isError = true)
+                if (!disposed) showStatus(strings.mapLoadError, isError = true)
             }
         }
     }
@@ -307,6 +318,10 @@ private class MapLibreBinding(
         mapContainer = null
         status = null
         northResetButton = null
+        manualFormKeydownListener?.let { listener ->
+            manualForm?.removeEventListener("keydown", listener)
+        }
+        manualFormKeydownListener = null
         manualForm = null
         manualNameInput = null
         manualCoordinatesInput = null
@@ -343,7 +358,7 @@ private class MapLibreBinding(
         val toolbar = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-layer-toolbar"
             setAttribute("role", "group")
-            setAttribute("aria-label", "Map layer")
+            setAttribute("aria-label", strings.mapLayerTitle)
         }
         MapLayerPreference.entries.forEach { layer ->
             val button = domButton(layer.label, "cloudbase-map-layer-button") {
@@ -357,16 +372,16 @@ private class MapLibreBinding(
         val geolocate = domButton("◎", "cloudbase-map-geolocate") {
             requestDeviceLocation()
         }.apply {
-            title = "Use my location"
-            setAttribute("aria-label", "Use my location")
+            title = strings.useMyLocation
+            setAttribute("aria-label", strings.useMyLocation)
         }
         host.appendChild(geolocate)
 
         northResetButton = domButton("N", "cloudbase-map-north-reset") {
             map?.resetNorth()
         }.apply {
-            title = "Reset map orientation to north"
-            setAttribute("aria-label", "Reset map orientation to north")
+            title = strings.resetNorthContentDescription
+            setAttribute("aria-label", strings.resetNorthContentDescription)
             style.display = "none"
         }
         host.appendChild(requireNotNull(northResetButton))
@@ -374,8 +389,8 @@ private class MapLibreBinding(
         val addPoint = domButton("＋", "cloudbase-map-add-point") {
             showManualForm()
         }.apply {
-            title = "Add a location manually"
-            setAttribute("aria-label", "Add a location manually")
+            title = strings.addLocationManually
+            setAttribute("aria-label", strings.addLocationManually)
         }
         host.appendChild(addPoint)
         buildManualAddForm(host)
@@ -383,7 +398,7 @@ private class MapLibreBinding(
         status = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-status"
             setAttribute("role", "status")
-            textContent = "Loading map…"
+            textContent = strings.loadingMap
         }.also(host::appendChild)
 
         buildSelectionCard(host)
@@ -411,7 +426,7 @@ private class MapLibreBinding(
             appendChild(detail)
             appendChild(source)
         }
-        confirmButton = domButton("Show forecast", "cloudbase-map-confirm") {
+        confirmButton = domButton(strings.showForecast, "cloudbase-map-confirm") {
             confirmSelection()
         }
         selectionCard = (document.createElement("div") as HTMLDivElement).apply {
@@ -445,21 +460,21 @@ private class MapLibreBinding(
             className = "cloudbase-map-launch-attribution"
             setAttribute("data-testid", "launch-attribution")
             style.display = "none"
-            appendChild(document.createTextNode("Launch-site data: "))
+            appendChild(document.createTextNode(strings.launchSiteDataPrefix))
             appendChild(domLink("ParaglidingEarth", PARAGLIDING_EARTH_HOME))
-            appendChild(document.createTextNode(" · CC BY-SA 3.0"))
+            appendChild(document.createTextNode(strings.launchSiteLicenseSuffix))
         }.also(host::appendChild)
     }
 
     private fun buildManualAddForm(host: HTMLDivElement) {
-        val nameInput = manualInput("Name", "Favorite name", "manual-favorite-name")
+        val nameInput = manualInput(strings.manualNamePlaceholder, strings.manualNameLabel, "manual-favorite-name")
         val coordinatesInput =
-            manualInput("47.3769, 8.5417", "Coordinates", "manual-favorite-coordinates")
+            manualInput("47.3769, 8.5417", strings.manualCoordinatesLabel, "manual-favorite-coordinates")
         manualNameInput = nameInput
         manualCoordinatesInput = coordinatesInput
         val help = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-manual-help"
-            textContent = "Decimal, DMS, or N/E coordinates — e.g. 47.3769, 8.5417"
+            textContent = strings.manualCoordinatesHelp
         }
         manualError = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-manual-error"
@@ -468,18 +483,18 @@ private class MapLibreBinding(
         }
         val actions = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-manual-actions"
-            appendChild(domButton("Cancel", "cloudbase-map-manual-cancel") { hideManualForm() })
-            appendChild(domButton("Save", "cloudbase-map-manual-save") { submitManualForm() })
+            appendChild(domButton(strings.actionCancel, "cloudbase-map-manual-cancel") { hideManualForm() })
+            appendChild(domButton(strings.actionSave, "cloudbase-map-manual-save") { submitManualForm() })
         }
         val heading = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-manual-heading"
-            textContent = "Add a location"
+            textContent = strings.addLocationHeading
         }
         manualForm = (document.createElement("div") as HTMLDivElement).apply {
             className = "cloudbase-map-manual-form"
             setAttribute("data-testid", "manual-favorite-form")
             setAttribute("role", "group")
-            setAttribute("aria-label", "Add a location manually")
+            setAttribute("aria-label", strings.addLocationManually)
             style.display = "none"
             appendChild(heading)
             appendChild(nameInput)
@@ -488,6 +503,17 @@ private class MapLibreBinding(
             appendChild(requireNotNull(manualError))
             appendChild(actions)
         }.also(host::appendChild)
+
+        // Escape cancels the manual-add form to match the Compose overlays. The form is DOM (not
+        // Compose), so listen on the element directly; the listener is detached in [release].
+        val keydownListener: (Event) -> Unit = { event ->
+            if (isEscapeKey(event)) {
+                event.preventDefault()
+                hideManualForm()
+            }
+        }
+        manualForm?.addEventListener("keydown", keydownListener)
+        manualFormKeydownListener = keydownListener
     }
 
     private fun manualInput(placeholderText: String, label: String, testId: String): HTMLInputElement {
@@ -520,7 +546,7 @@ private class MapLibreBinding(
             is ManualFavoriteInputResult.Valid -> {
                 onAddFavorite(result.input.toSavedPlace())
                 hideManualForm()
-                showStatus("Added ${result.input.name} to favorites.", isError = false)
+                showStatus(strings.addedToFavorites.replace("%s", result.input.name), isError = false)
             }
             is ManualFavoriteInputResult.Invalid -> {
                 manualError?.apply {
@@ -532,12 +558,12 @@ private class MapLibreBinding(
     }
 
     private fun manualFavoriteErrorMessage(error: ManualFavoriteInputError): String = when (error) {
-        ManualFavoriteInputError.BLANK_NAME -> "Enter a name for this location."
-        ManualFavoriteInputError.NAME_TOO_LONG -> "The name is too long."
-        ManualFavoriteInputError.BLANK_COORDINATES -> "Enter coordinates for this location."
-        ManualFavoriteInputError.COORDINATES_FORMAT -> "Enter coordinates like 47.3769, 8.5417."
-        ManualFavoriteInputError.LATITUDE_OUT_OF_RANGE -> "Latitude must be between -90 and 90."
-        ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE -> "Longitude must be between -180 and 180."
+        ManualFavoriteInputError.BLANK_NAME -> strings.manualErrorBlankName
+        ManualFavoriteInputError.NAME_TOO_LONG -> strings.manualErrorNameTooLong
+        ManualFavoriteInputError.BLANK_COORDINATES -> strings.manualErrorBlankCoordinates
+        ManualFavoriteInputError.COORDINATES_FORMAT -> strings.manualErrorCoordinatesFormat
+        ManualFavoriteInputError.LATITUDE_OUT_OF_RANGE -> strings.manualErrorLatitudeRange
+        ManualFavoriteInputError.LONGITUDE_OUT_OF_RANGE -> strings.manualErrorLongitudeRange
     }
 
     private fun createMap(host: HTMLDivElement, module: kotlin.js.JsAny, state: WebMapRenderState) {
@@ -576,7 +602,7 @@ private class MapLibreBinding(
             )
         }
         subscriptions += createdMap.on("error") {
-            showStatus("The map provider reported an error.", isError = true)
+            showStatus(strings.mapProviderError, isError = true)
         }
         resizeObserver = createResizeObserver { createdMap.resize() }.also { observer ->
             observer.observe(host)
@@ -590,15 +616,26 @@ private class MapLibreBinding(
             if (!force) currentMap.setStyle(styleFor(state.layer))
             appliedLayer = state.layer
         }
-        markers.forEach(MapLibreMarker::remove)
-        markers.clear()
         val module = mapModule ?: return
+        val desiredById = state.markers.associateBy { it.id }
+
+        // Remove markers that disappeared or whose model changed; unchanged markers (e.g. the launch
+        // flags, which dominate the count) are left in the DOM untouched, so no SVG is regenerated.
+        markers.keys.toList().forEach { id ->
+            val desired = desiredById[id]
+            if (desired == null || desired != markers[id]?.model) {
+                markers.remove(id)?.marker?.remove()
+            }
+        }
+
+        // Add markers that are new or were just invalidated, preserving the intended draw order.
         state.markers.forEach { markerModel ->
+            if (markers.containsKey(markerModel.id)) return@forEach
             val marker = createMapLibreMarker(module, markerOptionsFor(markerModel.kind))
                 .setLngLat(lngLat(markerModel.location.longitude, markerModel.location.latitude))
                 .addTo(currentMap)
             configureMarkerElement(marker.getElement(), markerModel, currentMap)
-            markers += marker
+            markers[markerModel.id] = TrackedMarker(markerModel, marker)
         }
     }
 
@@ -683,18 +720,18 @@ private class MapLibreBinding(
         }
         val source = selectionSource ?: return
         source.textContent = ""
-        source.appendChild(document.createTextNode("Launch-site data: "))
+        source.appendChild(document.createTextNode(strings.launchSiteDataPrefix))
         source.appendChild(domLink("ParaglidingEarth", site.link ?: PARAGLIDING_EARTH_HOME))
-        source.appendChild(document.createTextNode(" · CC BY-SA 3.0"))
+        source.appendChild(document.createTextNode(strings.launchSiteLicenseSuffix))
         source.style.display = "block"
     }
 
     private fun launchDetailText(site: ParaglidingLaunchSite): String {
         return buildList {
-            site.altitudeMeters?.let { add("Altitude: $it m") }
-            LaunchSiteDisplay.windDirectionsSummary(site)?.let { add("Wind: $it") }
-            LaunchSiteDisplay.activitiesSummary(site)?.let { add("Activities: $it") }
-            site.landingName?.let { add("Landing: $it") }
+            site.altitudeMeters?.let { add(strings.launchDetailAltitude.replace("%s", it.toString())) }
+            LaunchSiteDisplay.windDirectionsSummary(site)?.let { add(strings.launchDetailWind.replace("%s", it)) }
+            LaunchSiteDisplay.activitiesSummary(site)?.let { add(strings.launchDetailActivities.replace("%s", it)) }
+            site.landingName?.let { add(strings.launchDetailLanding.replace("%s", it)) }
             LaunchSiteDisplay.shortDescription(site)?.let { add(it) }
             add(formatCoordinates(site.toPlaceLocation()))
         }.joinToString(separator = "\n")
@@ -737,7 +774,7 @@ private class MapLibreBinding(
     }
 
     private fun requestDeviceLocation() {
-        showStatus("Finding your location…", isError = false)
+        showStatus(strings.findingLocation, isError = false)
         scope.launch {
             try {
                 val position = requestBrowserLocation().await()
@@ -756,7 +793,7 @@ private class MapLibreBinding(
                 )
                 showStatus("", isError = false)
             } catch (_: Throwable) {
-                if (!disposed) showStatus("Could not determine your location.", isError = true)
+                if (!disposed) showStatus(strings.locationError, isError = true)
             }
         }
     }
@@ -775,13 +812,20 @@ private class MapLibreBinding(
         resizeObserver = null
         subscriptions.forEach(MapLibreSubscription::unsubscribe)
         subscriptions.clear()
-        markers.forEach(MapLibreMarker::remove)
+        markers.values.forEach { it.marker.remove() }
         markers.clear()
         map?.remove()
         map = null
         mapModule = null
         appliedLayer = null
     }
+
+    // Pairs a live MapLibre marker with the model it was built from, so [syncMap] can tell whether a
+    // marker of the same id still represents the same content and can be left in place.
+    private class TrackedMarker(
+        val model: WebMapMarker,
+        val marker: MapLibreMarker,
+    )
 }
 
 private fun domButton(

@@ -8426,7 +8426,7 @@
         "tconC": 14.689178466796875,
         "cloudBaseKm": null,
         "moistEquilibriumTopKm": null,
-        "computedCapeJKg": 0.10689610987901688,
+        "computedCapeJKg": 0.0,
         "computedCinJKg": 3169.296630859375,
         "modelCapeJKg": 0.0,
         "thermalCells": [],
@@ -8445,7 +8445,7 @@
         "tconC": 14.47088623046875,
         "cloudBaseKm": null,
         "moistEquilibriumTopKm": null,
-        "computedCapeJKg": 39.12462615966797,
+        "computedCapeJKg": 0.0,
         "computedCinJKg": 2379.604736328125,
         "modelCapeJKg": 0.0,
         "thermalCells": [
@@ -8483,8 +8483,8 @@
         "tconC": 11.447235107421875,
         "cloudBaseKm": null,
         "moistEquilibriumTopKm": null,
-        "computedCapeJKg": 165.7620086669922,
-        "computedCinJKg": 1559.26708984375,
+        "computedCapeJKg": 48.24325942993164,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 0.0,
         "thermalCells": [
           {
@@ -8527,8 +8527,8 @@
         "tconC": 9.96868896484375,
         "cloudBaseKm": 2.6010477542877197,
         "moistEquilibriumTopKm": 3.492992877960205,
-        "computedCapeJKg": 162.23036193847656,
-        "computedCinJKg": 1637.2548828125,
+        "computedCapeJKg": 64.24248504638672,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 10.0,
         "thermalCells": [
           {
@@ -8571,8 +8571,8 @@
         "tconC": 10.32720947265625,
         "cloudBaseKm": 2.634126901626587,
         "moistEquilibriumTopKm": 3.5822017192840576,
-        "computedCapeJKg": 241.97654724121094,
-        "computedCinJKg": 1422.824951171875,
+        "computedCapeJKg": 65.60134887695312,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 10.0,
         "thermalCells": [
           {
@@ -8615,8 +8615,8 @@
         "tconC": 10.662445068359375,
         "cloudBaseKm": 2.601986885070801,
         "moistEquilibriumTopKm": 3.64363431930542,
-        "computedCapeJKg": 238.8789520263672,
-        "computedCinJKg": 1209.09326171875,
+        "computedCapeJKg": 120.80486297607422,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 20.0,
         "thermalCells": [
           {
@@ -8659,8 +8659,8 @@
         "tconC": 11.04852294921875,
         "cloudBaseKm": 2.6444427967071533,
         "moistEquilibriumTopKm": 3.7088494300842285,
-        "computedCapeJKg": 166.93157958984375,
-        "computedCinJKg": 1374.845458984375,
+        "computedCapeJKg": 71.11691284179688,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 10.0,
         "thermalCells": [
           {
@@ -8703,8 +8703,8 @@
         "tconC": 11.278900146484375,
         "cloudBaseKm": 2.711430311203003,
         "moistEquilibriumTopKm": 3.79195237159729,
-        "computedCapeJKg": 418.3253173828125,
-        "computedCinJKg": 1111.28955078125,
+        "computedCapeJKg": 185.2572021484375,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 17.5,
         "thermalCells": [
           {
@@ -8753,8 +8753,8 @@
         "tconC": 11.62554931640625,
         "cloudBaseKm": 2.7986223697662354,
         "moistEquilibriumTopKm": 3.8187575340270996,
-        "computedCapeJKg": 353.6740417480469,
-        "computedCinJKg": 1156.666015625,
+        "computedCapeJKg": 140.50205993652344,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 5.0,
         "thermalCells": [
           {
@@ -8803,8 +8803,8 @@
         "tconC": 11.713409423828125,
         "cloudBaseKm": 2.8001949787139893,
         "moistEquilibriumTopKm": 3.8904263973236084,
-        "computedCapeJKg": 257.7193908691406,
-        "computedCinJKg": 1235.8642578125,
+        "computedCapeJKg": 90.76004028320312,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 10.0,
         "thermalCells": [
           {
@@ -8853,8 +8853,8 @@
         "tconC": 11.503814697265625,
         "cloudBaseKm": 2.759711503982544,
         "moistEquilibriumTopKm": 3.903874397277832,
-        "computedCapeJKg": 175.99459838867188,
-        "computedCinJKg": 1265.708984375,
+        "computedCapeJKg": 56.73491668701172,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 10.0,
         "thermalCells": [
           {
@@ -8897,8 +8897,8 @@
         "tconC": 11.009765625,
         "cloudBaseKm": 2.570444107055664,
         "moistEquilibriumTopKm": 4.166651248931885,
-        "computedCapeJKg": 154.02003479003906,
-        "computedCinJKg": 1134.4735107421875,
+        "computedCapeJKg": 96.00483703613281,
+        "computedCinJKg": 0.0,
         "modelCapeJKg": 30.0,
         "thermalCells": [
           {
@@ -8935,8 +8935,8 @@
         "tconC": 10.58245849609375,
         "cloudBaseKm": null,
         "moistEquilibriumTopKm": null,
-        "computedCapeJKg": 65.60961151123047,
-        "computedCinJKg": 1215.8349609375,
+        "computedCapeJKg": 58.143043518066406,
+        "computedCinJKg": 4.584835052490234,
         "modelCapeJKg": 50.0,
         "thermalCells": [
           {

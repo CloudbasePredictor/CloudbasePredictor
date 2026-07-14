@@ -35,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.ui.preview.ForecastPreviewTheme
+import com.cloudbasepredictor.web.dismissibleOverlay
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.preview.WebPreviewData
 
 /**
@@ -57,10 +59,12 @@ internal fun WebSaveFavoriteDialog(
 ) {
     val scrimInteraction = remember { MutableInteractionSource() }
     val cardInteraction = remember { MutableInteractionSource() }
+    val strings = LocalWebStrings.current
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .dismissibleOverlay(onDismiss)
             .clickable(interactionSource = scrimInteraction, indication = null, onClick = onDismiss),
         contentAlignment = Alignment.Center,
     ) {
@@ -90,11 +94,11 @@ internal fun WebSaveFavoriteDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (isFavorite) "Remove from favorites" else "Save to favorites")
+                    Text(if (isFavorite) strings.removeFromFavorites else strings.saveToFavorites)
                 }
                 if (otherFavorites.isNotEmpty()) {
                     Text(
-                        text = "Jump to another favorite",
+                        text = strings.jumpToAnotherFavorite,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelLarge,
                     )
@@ -121,7 +125,7 @@ internal fun WebSaveFavoriteDialog(
                     horizontalArrangement = Arrangement.spacedBy(ActionSpacing, Alignment.End),
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Close")
+                        Text(strings.actionClose)
                     }
                 }
             }
@@ -134,12 +138,13 @@ private fun FavoriteJumpRow(
     place: SavedPlace,
     onClick: () -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {
-                contentDescription = "Jump to ${place.name}"
+                contentDescription = strings.jumpToFavoriteContentDescription.replace("%s", place.name)
             }
             .padding(vertical = RowSpacing),
         verticalAlignment = Alignment.CenterVertically,

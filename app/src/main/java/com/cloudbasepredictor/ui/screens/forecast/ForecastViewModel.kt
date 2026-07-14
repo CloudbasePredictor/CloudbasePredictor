@@ -1,5 +1,6 @@
 package com.cloudbasepredictor.ui.screens.forecast
 
+import com.cloudbasepredictor.R
 import com.cloudbasepredictor.data.forecast.ForecastModeRepository
 import com.cloudbasepredictor.data.forecast.ForecastModelRepository
 import com.cloudbasepredictor.data.forecast.MAX_FORECAST_DAYS
@@ -23,6 +24,9 @@ import com.cloudbasepredictor.model.ForecastSnapshot
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.model.WeatherCode
+import com.cloudbasepredictor.model.WeatherCondition
+import com.cloudbasepredictor.ui.text.AppStringResources
+import com.cloudbasepredictor.util.toFixedDecimalString
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -62,6 +66,7 @@ class ForecastViewModel @Inject constructor(
     private val forecastViewportRepository: ForecastViewportRepository,
     private val mapLayerRepository: MapLayerRepository,
     private val unitSettingsRepository: UnitSettingsRepository,
+    private val stringResources: AppStringResources,
 ) : ViewModel() {
     private val selectedDayIndex = MutableStateFlow(0)
     private val chartViewport = MutableStateFlow(
@@ -189,129 +194,21 @@ class ForecastViewModel @Inject constructor(
         favoritePlaces,
         mapAndUnitPreferences,
     ) { inputs, currentModel, favorites, preferences ->
-        val place = inputs.place
-        val snapshot = inputs.snapshot
-        val currentChartContext = inputs.chartContext
-        val loading = inputs.isLoading
-        val currentError = inputs.errorMessage
-
-        if (place == null) {
-            return@combine ForecastNoPlaceUiState(
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
-                selectedModel = currentModel,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-            )
-        }
-
-        // Only fall back to the full-screen error when there is nothing to display.
-        // A failed background refresh (or extra-day load) while a usable forecast is
-        // already cached must not wipe the chart; the user is notified via the
-        // transient networkErrorEvent toast instead.
-        if (currentError != null && snapshot?.hourlyData == null) {
-            return@combine ForecastErrorUiState(
-                errorMessage = currentError,
-                selectedPlace = place,
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
-                selectedModel = currentModel,
-                resolvedModel = snapshot?.resolvedModel,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-            )
-        }
-
-        if (loading || snapshot == null) {
-            return@combine ForecastLoadingUiState(
-                selectedPlace = place,
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
-                selectedModel = currentModel,
-                resolvedModel = snapshot?.resolvedModel,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-            )
-        }
-
-        val hourlyData = snapshot.hourlyData
-        if (hourlyData == null) {
-            return@combine ForecastErrorUiState(
-                errorMessage = INCOMPLETE_FORECAST_DATA_ERROR,
-                selectedPlace = place,
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
-                selectedModel = currentModel,
-                resolvedModel = snapshot.resolvedModel,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-            )
-        }
-
-        val loadedForecastDays = snapshot.days.size
-        val availableForecastDays = (snapshot.resolvedModel ?: currentModel).visibleForecastDays()
-        val displayedForecastDays = exposedForecastDayCount(
-            loadedForecastDays = loadedForecastDays,
-            selectedDayIndex = currentChartContext.selectedDayIndex,
-            maxForecastDays = availableForecastDays,
-        )
-        val dayChips = buildDisplayedDayChips(
-            loadedDays = snapshot.days,
-            displayedDayCount = displayedForecastDays,
-        )
-        val safeDayIndex = currentChartContext.selectedDayIndex.coerceIn(0, dayChips.lastIndex)
-
-        if (!hourlyData.hasRequiredForecastInputs(
-                dayIndex = safeDayIndex,
-                stuveHour = currentChartContext.stuveHour,
-            )
-        ) {
-            return@combine ForecastErrorUiState(
-                errorMessage = INCOMPLETE_FORECAST_DATA_ERROR,
-                selectedPlace = place,
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = safeDayIndex,
-                selectedModel = currentModel,
-                resolvedModel = snapshot.resolvedModel,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-            )
-        }
-
-        buildForecastReadyUiState(
-            ForecastRenderInput(
-                hourlyData = hourlyData,
-                place = place,
-                requestedModel = currentModel,
-                resolvedModel = snapshot.resolvedModel,
-                selectedForecastMode = currentChartContext.selectedForecastMode,
-                selectedDayIndex = safeDayIndex,
-                stuveHour = currentChartContext.stuveHour,
-                chartViewport = currentChartContext.chartViewport,
-                unitPreset = preferences.unitPreset,
-                displayUnits = preferences.displayUnits,
-                fetchedAtMillis = snapshot.updatedAtUtcMillis,
-                modelGeneratedAtMillis = snapshot.modelGeneratedAtMillis,
-                favoritePlaces = favorites,
-                mapLayer = preferences.mapLayer,
-                dayChips = dayChips,
-                forecastText = buildForecastText(
-                    mode = currentChartContext.selectedForecastMode,
+        reduceForecastUiState(
+            inputs = inputs,
+            selectedModel = currentModel,
+            favoritePlaces = favorites,
+            preferences = preferences,
+            incompleteDataError = INCOMPLETE_FORECAST_DATA_ERROR,
+            buildSummary = { mode, place, snapshot, dayIndex ->
+                buildForecastText(
+                    resources = stringResources,
+                    mode = mode,
                     place = place,
                     snapshot = snapshot,
-                    selectedDayIndex = safeDayIndex,
-                ),
-            ),
+                    selectedDayIndex = dayIndex,
+                )
+            },
         )
     }.stateIn(
         scope = viewModelScope,
@@ -574,14 +471,14 @@ class ForecastViewModel @Inject constructor(
     }
 }
 
-private data class ForecastChartContext(
+internal data class ForecastChartContext(
     val selectedForecastMode: ForecastMode,
     val selectedDayIndex: Int,
     val chartViewport: ForecastChartViewport,
     val stuveHour: Int = 12,
 )
 
-private data class ForecastUiInputs(
+internal data class ForecastUiInputs(
     val place: SavedPlace?,
     val snapshot: ForecastSnapshot?,
     val chartContext: ForecastChartContext,
@@ -589,11 +486,160 @@ private data class ForecastUiInputs(
     val errorMessage: String?,
 )
 
-private data class MapAndUnitPreferences(
+internal data class MapAndUnitPreferences(
     val mapLayer: MapLayerPreference,
     val unitPreset: UnitPreset,
     val displayUnits: DisplayUnits,
 )
+
+/**
+ * Pure state reduction for the forecast screen. Extracted from the [ForecastViewModel.uiState]
+ * `combine` so the branching (no-place, stale-cache preservation, loading, incomplete data,
+ * day-index coercion and the ready happy path) is unit-testable without constructing the view
+ * model or touching Android/coroutine machinery. Mirrors the map module's `shouldRequestLaunchSites`.
+ *
+ * [buildSummary] resolves the localized forecast summary; callers pass a resource-backed
+ * implementation in production and a plain lambda in tests.
+ */
+@Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+internal fun reduceForecastUiState(
+    inputs: ForecastUiInputs,
+    selectedModel: ForecastModel,
+    favoritePlaces: List<SavedPlace>,
+    preferences: MapAndUnitPreferences,
+    incompleteDataError: String,
+    buildSummary: (
+        mode: ForecastMode,
+        place: SavedPlace,
+        snapshot: ForecastSnapshot,
+        dayIndex: Int,
+    ) -> String,
+): ForecastUiState {
+    val place = inputs.place
+    val snapshot = inputs.snapshot
+    val currentChartContext = inputs.chartContext
+    val loading = inputs.isLoading
+    val currentError = inputs.errorMessage
+
+    if (place == null) {
+        return ForecastNoPlaceUiState(
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
+            selectedModel = selectedModel,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+        )
+    }
+
+    // Only fall back to the full-screen error when there is nothing to display.
+    // A failed background refresh (or extra-day load) while a usable forecast is
+    // already cached must not wipe the chart; the user is notified via the
+    // transient networkErrorEvent toast instead.
+    if (currentError != null && snapshot?.hourlyData == null) {
+        return ForecastErrorUiState(
+            errorMessage = currentError,
+            selectedPlace = place,
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
+            selectedModel = selectedModel,
+            resolvedModel = snapshot?.resolvedModel,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+        )
+    }
+
+    if (loading || snapshot == null) {
+        return ForecastLoadingUiState(
+            selectedPlace = place,
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
+            selectedModel = selectedModel,
+            resolvedModel = snapshot?.resolvedModel,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+        )
+    }
+
+    val hourlyData = snapshot.hourlyData
+    if (hourlyData == null) {
+        return ForecastErrorUiState(
+            errorMessage = incompleteDataError,
+            selectedPlace = place,
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = currentChartContext.selectedDayIndex.coerceAtLeast(0),
+            selectedModel = selectedModel,
+            resolvedModel = snapshot.resolvedModel,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+        )
+    }
+
+    val loadedForecastDays = snapshot.days.size
+    val availableForecastDays = (snapshot.resolvedModel ?: selectedModel).visibleForecastDays()
+    val displayedForecastDays = exposedForecastDayCount(
+        loadedForecastDays = loadedForecastDays,
+        selectedDayIndex = currentChartContext.selectedDayIndex,
+        maxForecastDays = availableForecastDays,
+    )
+    val dayChips = buildDisplayedDayChips(
+        loadedDays = snapshot.days,
+        displayedDayCount = displayedForecastDays,
+    )
+    val safeDayIndex = currentChartContext.selectedDayIndex.coerceIn(0, dayChips.lastIndex)
+
+    if (!hourlyData.hasRequiredForecastInputs(
+            dayIndex = safeDayIndex,
+            stuveHour = currentChartContext.stuveHour,
+        )
+    ) {
+        return ForecastErrorUiState(
+            errorMessage = incompleteDataError,
+            selectedPlace = place,
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = safeDayIndex,
+            selectedModel = selectedModel,
+            resolvedModel = snapshot.resolvedModel,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+        )
+    }
+
+    return buildForecastReadyUiState(
+        ForecastRenderInput(
+            hourlyData = hourlyData,
+            place = place,
+            requestedModel = selectedModel,
+            resolvedModel = snapshot.resolvedModel,
+            selectedForecastMode = currentChartContext.selectedForecastMode,
+            selectedDayIndex = safeDayIndex,
+            stuveHour = currentChartContext.stuveHour,
+            chartViewport = currentChartContext.chartViewport,
+            unitPreset = preferences.unitPreset,
+            displayUnits = preferences.displayUnits,
+            fetchedAtMillis = snapshot.updatedAtUtcMillis,
+            modelGeneratedAtMillis = snapshot.modelGeneratedAtMillis,
+            favoritePlaces = favoritePlaces,
+            mapLayer = preferences.mapLayer,
+            dayChips = dayChips,
+            forecastText = buildSummary(
+                currentChartContext.selectedForecastMode,
+                place,
+                snapshot,
+                safeDayIndex,
+            ),
+        ),
+    )
+}
 
 private data class ForecastLoadTarget(
     val place: SavedPlace?,
@@ -616,89 +662,84 @@ internal fun PlaceLocation.resolveForecastPlace(favoritePlaces: List<SavedPlace>
     } ?: routePlace
 }
 
-private fun buildForecastText(
+/**
+ * Builds the localized forecast summary from Android string resources. Pure: it depends only on
+ * the injected [AppStringResources], so it is unit-testable with a fake resolver.
+ *
+ * Temperatures use the app-wide Celsius convention (matching the shared `buildForecastSummary`
+ * and the Stuve chart axes); the value is formatted via [toFixedDecimalString] rather than a
+ * `Locale.US` pattern so it no longer bypasses i18n.
+ */
+internal fun buildForecastText(
+    resources: AppStringResources,
     mode: ForecastMode,
-    place: SavedPlace?,
-    snapshot: ForecastSnapshot?,
+    place: SavedPlace,
+    snapshot: ForecastSnapshot,
     selectedDayIndex: Int,
 ): String {
-    if (place == null) {
-        return "Select a point on the map and open it to see the forecast here."
-    }
-
-    val days = snapshot?.days.orEmpty()
-    val selectedDay = days.getOrNull(selectedDayIndex)
-
-    if (selectedDay == null) {
-        return when (mode) {
-            ForecastMode.THERMIC -> {
-                "Forecast content for ${place.name} will appear here."
-            }
-            ForecastMode.STUVE -> {
-                "Stuve forecast content for ${place.name} will appear here."
-            }
-            ForecastMode.WIND -> {
-                "Wind forecast content for ${place.name} will appear here."
-            }
-            ForecastMode.CLOUD -> {
-                "Cloud forecast content for ${place.name} will appear here."
-            }
+    val selectedDay = snapshot.days.getOrNull(selectedDayIndex)
+        ?: return when (mode) {
+            ForecastMode.THERMIC ->
+                resources.getString(R.string.forecast_summary_pending_thermic, place.name)
+            ForecastMode.STUVE ->
+                resources.getString(R.string.forecast_summary_pending_stuve, place.name)
+            ForecastMode.WIND ->
+                resources.getString(R.string.forecast_summary_pending_wind, place.name)
+            ForecastMode.CLOUD ->
+                resources.getString(R.string.forecast_summary_pending_cloud, place.name)
         }
-    }
 
-    val weather = WeatherCode.present(selectedDay.weatherCode)
+    val weatherLabel = localizedWeatherLabel(resources, selectedDay.weatherCode)
     val dayTitle = if (selectedDayIndex == 0) {
-        "Today"
+        resources.getString(R.string.forecast_summary_today)
     } else {
         selectedDay.date
     }
 
     return when (mode) {
-        ForecastMode.THERMIC -> {
-            buildString {
-                append(dayTitle)
-                append(" in ")
-                append(place.name)
-                append(". ")
-                append(weather.label)
-                append(". High ")
-                append(formatTemperature(selectedDay.maxTemperatureCelsius))
-                append(", low ")
-                append(formatTemperature(selectedDay.minTemperatureCelsius))
-                append(". Thermic profile is ready for the selected altitude range.")
-            }
-        }
-        ForecastMode.STUVE -> {
-            buildString {
-                append(dayTitle)
-                append(" in ")
-                append(place.name)
-                append(". ")
-                append(weather.label)
-                append(". Stuve diagram is ready for the selected hour.")
-            }
-        }
-        ForecastMode.WIND -> {
-            buildString {
-                append(dayTitle)
-                append(" in ")
-                append(place.name)
-                append(". ")
-                append(weather.label)
-                append(". Wind profile is ready for the selected altitude range.")
-            }
-        }
-        ForecastMode.CLOUD -> {
-            buildString {
-                append(dayTitle)
-                append(" in ")
-                append(place.name)
-                append(". ")
-                append(weather.label)
-                append(". Cloud layers, radiation, sunshine, and precipitation are ready.")
-            }
-        }
+        ForecastMode.THERMIC -> resources.getString(
+            R.string.forecast_summary_thermic,
+            dayTitle,
+            place.name,
+            weatherLabel,
+            formatTemperature(resources, selectedDay.maxTemperatureCelsius),
+            formatTemperature(resources, selectedDay.minTemperatureCelsius),
+        )
+        ForecastMode.STUVE -> resources.getString(
+            R.string.forecast_summary_stuve,
+            dayTitle,
+            place.name,
+            weatherLabel,
+        )
+        ForecastMode.WIND -> resources.getString(
+            R.string.forecast_summary_wind,
+            dayTitle,
+            place.name,
+            weatherLabel,
+        )
+        ForecastMode.CLOUD -> resources.getString(
+            R.string.forecast_summary_cloud,
+            dayTitle,
+            place.name,
+            weatherLabel,
+        )
     }
+}
+
+private fun localizedWeatherLabel(resources: AppStringResources, weatherCode: Int): String {
+    val resourceId = when (WeatherCode.condition(weatherCode)) {
+        WeatherCondition.CLEAR_SKY -> R.string.weather_clear_sky
+        WeatherCondition.PARTLY_CLOUDY -> R.string.weather_partly_cloudy
+        WeatherCondition.FOG -> R.string.weather_fog
+        WeatherCondition.DRIZZLE -> R.string.weather_drizzle
+        WeatherCondition.RAIN -> R.string.weather_rain
+        WeatherCondition.SNOW -> R.string.weather_snow
+        WeatherCondition.RAIN_SHOWERS -> R.string.weather_rain_showers
+        WeatherCondition.SNOW_SHOWERS -> R.string.weather_snow_showers
+        WeatherCondition.THUNDERSTORM -> R.string.weather_thunderstorm
+        WeatherCondition.UNKNOWN -> R.string.weather_unknown
+    }
+    return resources.getString(resourceId)
 }
 
 private fun buildDayChips(days: List<DailyForecast>): List<ForecastDayChipUiModel> {
@@ -762,8 +803,11 @@ private fun parseForecastDate(date: String): Date? {
     }.getOrNull()
 }
 
-private fun formatTemperature(value: Double): String {
-    return String.format(Locale.US, "%.1f°C", value)
+private fun formatTemperature(resources: AppStringResources, valueCelsius: Double): String {
+    return resources.getString(
+        R.string.forecast_summary_temperature_celsius,
+        valueCelsius.toFixedDecimalString(1),
+    )
 }
 
 private fun ForecastModel.visibleForecastDays(): Int {

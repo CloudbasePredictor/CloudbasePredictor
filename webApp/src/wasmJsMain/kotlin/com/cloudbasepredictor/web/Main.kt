@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package com.cloudbasepredictor.web
 
 import androidx.compose.runtime.DisposableEffect
@@ -45,8 +47,19 @@ fun main() {
             environment = environment,
             routeState = routeState,
             onNavigate = { newState ->
+                val previous = routeState
                 routeState = newState
-                window.location.hash = WebRouteStateCodec.encodeFragment(newState)
+                val fragment = WebRouteStateCodec.encodeFragment(newState)
+                // Real navigations (destination/location changes) push a history entry; transient
+                // view-state changes (model/mode/day/hour) replace it so Back leaves the screen in
+                // one step instead of stepping through every chip tap. Both use the History API
+                // rather than assigning `location.hash`, which would also fire `hashchange` and
+                // double-apply the route we just set here.
+                if (isRouteNavigation(previous, newState)) {
+                    window.history.pushState(null, "", fragment)
+                } else {
+                    window.history.replaceState(null, "", fragment)
+                }
             },
         )
     }

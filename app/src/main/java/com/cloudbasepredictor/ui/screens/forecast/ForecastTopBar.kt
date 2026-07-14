@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.R
 import com.cloudbasepredictor.model.ForecastMode
+import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 
 @Composable
@@ -153,7 +154,7 @@ private const val MINIMUM_TITLE_WIDTH_PX = 300f
 private fun ForecastTopBarPreview() {
     CloudbasePredictorTheme {
         ForecastTopBar(
-            placeName = "46.5582, 7.8354",
+            placeName = "${PreviewData.savedPlace.latitude}, ${PreviewData.savedPlace.longitude}",
             isFavorite = false,
             selectedMode = ForecastMode.THERMIC,
             onModeSelected = {},
@@ -168,8 +169,8 @@ private fun ForecastTopBarPreview() {
 private fun ForecastTopBarFavoritePreview() {
     CloudbasePredictorTheme {
         ForecastTopBar(
-            placeName = "Interlaken",
-            isFavorite = true,
+            placeName = PreviewData.savedPlace.name,
+            isFavorite = PreviewData.savedPlace.isFavorite,
             selectedMode = ForecastMode.THERMIC,
             onModeSelected = {},
             onFavoriteClick = {},

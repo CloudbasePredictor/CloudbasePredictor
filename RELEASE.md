@@ -10,11 +10,22 @@ The project uses semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR** — new features, backward-compatible
 - **PATCH** — bug fixes only
 
-Version is defined in two places in `app/build.gradle.kts`:
+Version is defined in two places:
+
+- `cloudbaseVersionName` in `gradle.properties` — the human-readable version
+  string. This is the single source of truth: `:app` reads it for `versionName`
+  and `:webApp` bakes it into the web About screen.
+- `versionCode` in `app/build.gradle.kts` — a monotonically increasing integer
+  (required by Google Play).
+
+```properties
+# gradle.properties
+cloudbaseVersionName=0.0.1
+```
 
 ```kotlin
-versionCode = 1        // Monotonically increasing integer (required by Google Play)
-versionName = "0.0.1"  // Human-readable version string
+// app/build.gradle.kts
+versionCode = 1  // Monotonically increasing integer (required by Google Play)
 ```
 
 **Both** must be updated for every release. `versionCode` must always increase.
@@ -76,11 +87,16 @@ For Google Play publishing (optional):
 
 ### 1. Update version
 
-Edit `app/build.gradle.kts`:
+Set the new version string in `gradle.properties`:
+
+```properties
+cloudbaseVersionName=<newVersion>   # new version, for example "1.4.0"
+```
+
+Increment the base version code in `app/build.gradle.kts`:
 
 ```kotlin
-versionCode = <nextBaseCode>     // increment
-versionName = "<newVersion>"     // new version, for example "1.4.0"
+versionCode = <nextBaseCode>        // increment
 ```
 
 ### 2. Update F-Droid metadata

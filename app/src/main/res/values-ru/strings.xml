@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Прогноз не обновлён: подождите %1$.1f с, прежде чем снова двигать карту.</string>
     <string name="forecast_map_update_too_close">Прогноз не обновлён: переместитесь не менее чем на %1$d м от текущей точки прогноза.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Сегодня</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Ясное небо</string>
+    <string name="weather_partly_cloudy">Переменная облачность</string>
+    <string name="weather_fog">Туман</string>
+    <string name="weather_drizzle">Морось</string>
+    <string name="weather_rain">Дождь</string>
+    <string name="weather_snow">Снег</string>
+    <string name="weather_rain_showers">Ливневый дождь</string>
+    <string name="weather_snow_showers">Снежные ливни</string>
+    <string name="weather_thunderstorm">Гроза</string>
+    <string name="weather_unknown">Неизвестная погода</string>
+    <string name="forecast_summary_pending_thermic">Содержимое прогноза для %1$s появится здесь.</string>
+    <string name="forecast_summary_pending_stuve">Содержимое прогноза Stuve для %1$s появится здесь.</string>
+    <string name="forecast_summary_pending_wind">Содержимое прогноза ветра для %1$s появится здесь.</string>
+    <string name="forecast_summary_pending_cloud">Содержимое прогноза облачности для %1$s появится здесь.</string>
+    <string name="forecast_summary_thermic">%1$s, %2$s. %3$s. Максимум %4$s, минимум %5$s. Профиль термичности готов для выбранного диапазона высот.</string>
+    <string name="forecast_summary_stuve">%1$s, %2$s. %3$s. Диаграмма Stuve готова для выбранного часа.</string>
+    <string name="forecast_summary_wind">%1$s, %2$s. %3$s. Профиль ветра готов для выбранного диапазона высот.</string>
+    <string name="forecast_summary_cloud">%1$s, %2$s. %3$s. Слои облаков, радиация, солнце и осадки готовы.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Метеомодель</string>
     <string name="model_selector_fell_back">Выполнен переход на %1$s</string>

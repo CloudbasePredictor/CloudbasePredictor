@@ -150,6 +150,28 @@ class HourlyForecastConversionTest {
     }
 
     @Test
+    fun toHourlyForecastData_skipsMalformedTimestamps() {
+        // A malformed hour must be dropped, not silently mapped to midnight (hour 0),
+        // which would place bad data inside the daytime window filtering downstream.
+        val response = OpenMeteoHourlyForecastResponse(
+            latitude = 47.66,
+            longitude = 11.5,
+            elevation = 1523.0,
+            hourly = OpenMeteoHourlyResponse(
+                time = listOf("2026-04-18T12:00", "2026-04-18Txx:00"),
+                temperature2m = listOf(10.8, 11.0),
+                dewPoint2m = listOf(1.8, 2.0),
+            ),
+        )
+
+        val points = response.toHourlyForecastData().hourlyPoints
+
+        assertEquals(1, points.size, "Malformed timestamp should be skipped")
+        assertEquals(12, points.single().hour)
+        assertEquals("2026-04-18", points.single().date)
+    }
+
+    @Test
     fun toHourlyForecastData_preservesForecastTimezoneMetadata() {
         val response = OpenMeteoHourlyForecastResponse(
             latitude = 47.66,

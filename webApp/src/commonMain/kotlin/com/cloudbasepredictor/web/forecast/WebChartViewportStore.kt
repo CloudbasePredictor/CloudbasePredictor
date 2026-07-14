@@ -10,13 +10,16 @@ class WebChartViewportStore(
     private val storage: KeyValueStorage,
 ) {
     fun readTopAltitudeKm(): Float? =
-        storage.getString(TOP_ALTITUDE_KEY)
-            ?.toFloatOrNull()
+        // Prefer the typed float; fall back to the legacy string form written before this store used
+        // putFloat, so previously persisted zoom levels survive the upgrade until the next write.
+        (storage.getFloat(TOP_ALTITUDE_KEY) ?: storage.getString(TOP_ALTITUDE_KEY)?.toFloatOrNull())
             ?.takeIf { it in MIN_TOP_ALTITUDE_KM..MAX_TOP_ALTITUDE_KM }
 
     fun writeTopAltitudeKm(value: Float) {
         if (value in MIN_TOP_ALTITUDE_KM..MAX_TOP_ALTITUDE_KM) {
-            storage.putString(TOP_ALTITUDE_KEY, value.toString())
+            // Range-checked above, so the value is finite and satisfies putFloat's non-finite guard.
+            // putFloat drops any legacy string stored under this key, completing the migration.
+            storage.putFloat(TOP_ALTITUDE_KEY, value)
         }
     }
 

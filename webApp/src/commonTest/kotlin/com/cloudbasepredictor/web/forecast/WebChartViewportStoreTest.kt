@@ -20,6 +20,22 @@ class WebChartViewportStoreTest {
     }
 
     @Test
+    fun legacyStringValueIsReadAsFallbackThenMigratedToFloat() {
+        val storage = InMemoryKeyValueStorage()
+        // Simulate a value persisted by the previous putString-based implementation.
+        storage.putString("chart_top_altitude_km", "4.5")
+        val store = WebChartViewportStore(storage)
+
+        assertEquals(4.5f, store.readTopAltitudeKm())
+
+        // Writing migrates the key to the typed float slot and clears the legacy string.
+        store.writeTopAltitudeKm(6f)
+        assertEquals(6f, storage.getFloat("chart_top_altitude_km"))
+        assertNull(storage.getString("chart_top_altitude_km"))
+        assertEquals(6f, store.readTopAltitudeKm())
+    }
+
+    @Test
     fun outOfRangeValuesAreRejected() {
         val storage = InMemoryKeyValueStorage()
         val store = WebChartViewportStore(storage)

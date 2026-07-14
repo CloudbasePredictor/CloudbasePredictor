@@ -109,6 +109,9 @@ internal fun lngLat(longitude: Double, latitude: Double): JsAny =
 internal fun flyToOptions(longitude: Double, latitude: Double, zoom: Double): JsAny =
     js("({ center: [longitude, latitude], zoom: zoom })")
 
+// Reads a DOM KeyboardEvent's `key` across the wasmJs interop boundary without an external cast.
+internal fun isEscapeKey(event: JsAny): Boolean = js("event.key === 'Escape'")
+
 internal fun eventLongitude(event: JsAny): Double = js("event.lngLat.lng")
 
 internal fun eventLatitude(event: JsAny): Double = js("event.lngLat.lat")

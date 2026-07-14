@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.ui.preview.PreviewData
 import org.maplibre.compose.expressions.dsl.const
 import org.maplibre.compose.expressions.dsl.image
 import org.maplibre.compose.expressions.value.SymbolAnchor
@@ -194,7 +195,7 @@ private fun FavoriteLabelLayerPreview() {
                 .padding(horizontal = FAVORITE_LABEL_PILL_PADDING_H, vertical = FAVORITE_LABEL_PILL_PADDING_V),
         ) {
             Text(
-                text = "Brauneck launch",
+                text = PreviewData.launchSiteLabel,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = FAVORITE_LABEL_TEXT_SIZE,
                 maxLines = 1,

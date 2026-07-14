@@ -9,8 +9,11 @@ import com.cloudbasepredictor.model.DailyForecast
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.PlaceLocation
+import com.cloudbasepredictor.web.i18n.englishWebForecastStrings
+import com.cloudbasepredictor.web.i18n.russianWebForecastStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class WebForecastPresentationTest {
@@ -33,6 +36,7 @@ class WebForecastPresentationTest {
                 unitPreset = UnitPreset.AVIATION,
                 mapLayer = MapLayerPreference.OPENFREEMAP,
                 favoritePlaces = emptyList(),
+                forecastStrings = englishWebForecastStrings,
             ),
         )
 
@@ -44,6 +48,36 @@ class WebForecastPresentationTest {
         assertTrue(state.thermicChart.timeSlots.isNotEmpty())
         assertTrue(state.windChart.hours.isNotEmpty())
         assertTrue(state.cloudChart.hours.isNotEmpty())
+    }
+
+    @Test
+    fun localizesDayChipWeatherAndSummaryForSelectedWebLanguage() {
+        val state = buildWebForecastReadyState(
+            WebForecastPresentationInput(
+                location = PlaceLocation(47.67, 11.56, "Brauneck"),
+                requestedModel = ForecastModel.ICON_D2,
+                result = WebForecastResult(
+                    hourlyData = sampleHourlyData(),
+                    resolvedModel = ForecastModel.ICON_EU,
+                    fetchedAtMillis = 1_752_225_600_000L,
+                    fromCache = false,
+                ),
+                mode = ForecastMode.THERMIC,
+                dayIndex = 0,
+                hour = 12,
+                visibleTopAltitudeKm = 6f,
+                unitPreset = UnitPreset.METRIC_KMH,
+                mapLayer = MapLayerPreference.OPENFREEMAP,
+                favoritePlaces = emptyList(),
+                forecastStrings = russianWebForecastStrings,
+            ),
+        )
+
+        assertEquals("Сегодня", state.dayChips.single().title)
+        assertTrue(state.forecastText.contains("Переменная облачность"))
+        assertTrue(state.forecastText.contains("Brauneck"))
+        assertFalse(state.forecastText.contains("Partly cloudy"))
+        assertFalse(state.forecastText.contains("Today"))
     }
 
     private fun sampleHourlyData(): HourlyForecastData {

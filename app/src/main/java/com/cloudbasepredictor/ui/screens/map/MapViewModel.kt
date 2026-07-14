@@ -69,6 +69,10 @@ class MapViewModel @Inject constructor(
     private var launchSiteLoadJob: Job? = null
     private var lastLaunchSiteBoundsKey: String? = null
 
+    // The startup camera is read from SharedPreferences once and reused; the UI only consumes it
+    // on first composition, so re-reading it on every uiState emission is wasteful.
+    private val initialCameraPosition: MapCameraData? by lazy { loadCameraPosition() }
+
     val events = mutableEvents.asSharedFlow()
 
     private val mapPreferences = combine(
@@ -97,14 +101,14 @@ class MapViewModel @Inject constructor(
             launchSites = launchSites.takeIf { preferences.showLaunchSites }.orEmpty(),
             showLaunchSites = preferences.showLaunchSites,
             startWithFavorites = preferences.startWithFavorites,
-            initialCamera = loadCameraPosition(),
+            initialCamera = initialCameraPosition,
             mapLayer = preferences.mapLayer,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = MapUiState(
-            initialCamera = loadCameraPosition(),
+            initialCamera = initialCameraPosition,
             mapLayer = mapLayerRepository.selectedLayer.value,
             showLaunchSites = launchSiteDisplayRepository.showLaunchSites.value,
             startWithFavorites = mapStartupRepository.startWithFavorites.value,

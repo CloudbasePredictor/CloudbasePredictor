@@ -2,8 +2,8 @@ package com.cloudbasepredictor.web.i18n
 
 /**
  * Languages offered by the web app's Language setting. [SYSTEM] follows the browser locale. Names are
- * endonyms (shown in their own language) as is conventional for a language picker. Georgian, Thai and
- * Simplified Chinese are selectable but currently fall back to English until real translations exist.
+ * endonyms (shown in their own language) as is conventional for a language picker. Every entry has a
+ * full [WebStrings] translation provided by [webStringsFor].
  */
 enum class WebLanguage(val tag: String?, val displayName: String) {
     SYSTEM(tag = null, displayName = "System"),

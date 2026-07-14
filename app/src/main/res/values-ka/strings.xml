@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">პროგნოზი არ განახლდა: დაელოდეთ %1$.1f წამს, სანამ რუკას ხელახლა გადააადგილებთ.</string>
     <string name="forecast_map_update_too_close">პროგნოზი არ განახლდა: გადაინაცვლეთ მიმდინარე პროგნოზის წერტილიდან მინიმუმ %1$d მ.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">დღეს</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">მოწმენდილი ცა</string>
+    <string name="weather_partly_cloudy">ნაწილობრივ ღრუბლიანი</string>
+    <string name="weather_fog">ნისლი</string>
+    <string name="weather_drizzle">ჟინჟღლი</string>
+    <string name="weather_rain">წვიმა</string>
+    <string name="weather_snow">თოვლი</string>
+    <string name="weather_rain_showers">ხანმოკლე წვიმა</string>
+    <string name="weather_snow_showers">ხანმოკლე თოვლი</string>
+    <string name="weather_thunderstorm">ჭექა-ქუხილი</string>
+    <string name="weather_unknown">უცნობი ამინდი</string>
+    <string name="forecast_summary_pending_thermic">%1$s-ის პროგნოზის შიგთავსი აქ გამოჩნდება.</string>
+    <string name="forecast_summary_pending_stuve">%1$s-ის Stuve-ის პროგნოზის შიგთავსი აქ გამოჩნდება.</string>
+    <string name="forecast_summary_pending_wind">%1$s-ის ქარის პროგნოზის შიგთავსი აქ გამოჩნდება.</string>
+    <string name="forecast_summary_pending_cloud">%1$s-ის ღრუბლების პროგნოზის შიგთავსი აქ გამოჩნდება.</string>
+    <string name="forecast_summary_thermic">%1$s, %2$s. %3$s. მაქსიმუმი %4$s, მინიმუმი %5$s. თერმიკის პროფილი მზადაა არჩეული სიმაღლის დიაპაზონისთვის.</string>
+    <string name="forecast_summary_stuve">%1$s, %2$s. %3$s. Stuve-ის დიაგრამა მზადაა არჩეული საათისთვის.</string>
+    <string name="forecast_summary_wind">%1$s, %2$s. %3$s. ქარის პროფილი მზადაა არჩეული სიმაღლის დიაპაზონისთვის.</string>
+    <string name="forecast_summary_cloud">%1$s, %2$s. %3$s. ღრუბლების ფენები, რადიაცია, მზის შუქი და ნალექი მზადაა.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">ამინდის მოდელი</string>
     <string name="model_selector_fell_back">დაბრუნდა %1$s-ზე</string>

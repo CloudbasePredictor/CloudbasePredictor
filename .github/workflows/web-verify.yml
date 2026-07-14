@@ -84,6 +84,11 @@ jobs:
       - name: Run shared and web static analysis
         run: ./gradlew :shared:detekt :webApp:detekt
 
+      # Unit-tests the launch-site snapshot tooling (build-snapshot / verify-snapshot) with node:test.
+      # Pure Node, no external deps, so it runs without npm ci and fails fast before the snapshot build.
+      - name: Test launch-site snapshot tooling
+        run: npm test
+
       # The snapshot is gitignored, so it must be generated before the distribution or the browser
       # release gate fails on the missing dataset. CI uses the committed fixture so the gates stay
       # deterministic and offline; only the deploy fetches the live ParaglidingEarth dataset, and if

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.web.WebBuildConfig
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 
 /**
  * Web "About" screen. Mirrors the Android AboutScreen attribution content so the four navigation
@@ -45,6 +46,7 @@ fun WebAboutDestination(
 ) {
     val uriHandler = LocalUriHandler.current
     val openUrl: (String) -> Unit = uriHandler::openUri
+    val strings = LocalWebStrings.current
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -57,7 +59,7 @@ fun WebAboutDestination(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(HeaderSpacing)) {
                 Text(
-                    text = "About",
+                    text = strings.aboutTitle,
                     modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineMedium,
                 )
@@ -66,31 +68,31 @@ fun WebAboutDestination(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "Version ${WebBuildConfig.VERSION} · web",
+                    text = "${strings.aboutVersionPrefix} ${WebBuildConfig.VERSION} · ${strings.aboutPlatformWeb}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    text = "Free and open-source software.",
+                    text = strings.aboutFreeSoftware,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                AboutLink(title = "Source code on GitHub", url = SOURCE_CODE_URL, onOpenUrl = openUrl)
+                AboutLink(title = strings.aboutSourceCode, url = SOURCE_CODE_URL, onOpenUrl = openUrl)
             }
 
-            AboutSection(title = "Data sources") {
-                AboutProvider(title = "Forecast data") {
+            AboutSection(title = strings.aboutDataSources) {
+                AboutProvider(title = strings.aboutForecastData) {
                     AboutLink(title = "Open-Meteo", url = OPEN_METEO_URL, onOpenUrl = openUrl)
                 }
-                AboutProvider(title = "Launch sites") {
+                AboutProvider(title = strings.launchSitesTitle) {
                     AboutLink(title = "ParaglidingEarth", url = PARAGLIDINGEARTH_URL, onOpenUrl = openUrl)
                     Text(
-                        text = "Community-maintained paragliding launch and landing database.",
+                        text = strings.aboutLaunchSitesDetail,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                AboutProvider(title = "Map services") {
+                AboutProvider(title = strings.aboutMapServices) {
                     AboutLink(title = "OpenFreeMap", url = OPENFREEMAP_URL, onOpenUrl = openUrl)
                     AboutLink(title = "OpenMapTiles", url = OPENMAPTILES_URL, onOpenUrl = openUrl)
                     AboutLink(title = "OpenStreetMap contributors", url = OPENSTREETMAP_URL, onOpenUrl = openUrl)
@@ -98,7 +100,7 @@ fun WebAboutDestination(
                     AboutLink(title = "NASA GIBS", url = NASA_GIBS_URL, onOpenUrl = openUrl)
                     AboutLink(title = "Esri World Imagery", url = ESRI_WORLD_IMAGERY_URL, onOpenUrl = openUrl)
                 }
-                AboutProvider(title = "Map rendering") {
+                AboutProvider(title = strings.aboutMapRendering) {
                     AboutLink(title = "MapLibre", url = MAPLIBRE_URL, onOpenUrl = openUrl)
                 }
             }

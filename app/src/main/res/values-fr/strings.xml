@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Prévisions non mises à jour : attendez %1$.1f secondes avant de déplacer à nouveau la carte.</string>
     <string name="forecast_map_update_too_close">Prévisions non mises à jour : déplacez-vous d\'au moins %1$d m du point de prévision actuel.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Aujourd\'hui</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Ciel dégagé</string>
+    <string name="weather_partly_cloudy">Partiellement nuageux</string>
+    <string name="weather_fog">Brouillard</string>
+    <string name="weather_drizzle">Bruine</string>
+    <string name="weather_rain">Pluie</string>
+    <string name="weather_snow">Neige</string>
+    <string name="weather_rain_showers">Averses</string>
+    <string name="weather_snow_showers">Averses de neige</string>
+    <string name="weather_thunderstorm">Orage</string>
+    <string name="weather_unknown">Temps inconnu</string>
+    <string name="forecast_summary_pending_thermic">Le contenu des prévisions pour %1$s apparaîtra ici.</string>
+    <string name="forecast_summary_pending_stuve">Le contenu des prévisions Stuve pour %1$s apparaîtra ici.</string>
+    <string name="forecast_summary_pending_wind">Le contenu des prévisions de vent pour %1$s apparaîtra ici.</string>
+    <string name="forecast_summary_pending_cloud">Le contenu des prévisions de nuages pour %1$s apparaîtra ici.</string>
+    <string name="forecast_summary_thermic">%1$s à %2$s. %3$s. Maximale %4$s, minimale %5$s. Le profil thermique est prêt pour la plage d\'altitude sélectionnée.</string>
+    <string name="forecast_summary_stuve">%1$s à %2$s. %3$s. Le diagramme Stuve est prêt pour l\'heure sélectionnée.</string>
+    <string name="forecast_summary_wind">%1$s à %2$s. %3$s. Le profil de vent est prêt pour la plage d\'altitude sélectionnée.</string>
+    <string name="forecast_summary_cloud">%1$s à %2$s. %3$s. Les couches nuageuses, le rayonnement, l\'ensoleillement et les précipitations sont prêts.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Modèle météo</string>
     <string name="model_selector_fell_back">Repli sur %1$s</string>

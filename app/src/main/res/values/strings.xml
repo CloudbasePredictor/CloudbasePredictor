@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Forecast not updated: wait %1$.1f seconds before moving the map again.</string>
     <string name="forecast_map_update_too_close">Forecast not updated: move at least %1$d m from the current forecast point.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Today</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Clear sky</string>
+    <string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_fog">Fog</string>
+    <string name="weather_drizzle">Drizzle</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_snow">Snow</string>
+    <string name="weather_rain_showers">Rain showers</string>
+    <string name="weather_snow_showers">Snow showers</string>
+    <string name="weather_thunderstorm">Thunderstorm</string>
+    <string name="weather_unknown">Unknown weather</string>
+    <string name="forecast_summary_pending_thermic">Forecast content for %1$s will appear here.</string>
+    <string name="forecast_summary_pending_stuve">Stuve forecast content for %1$s will appear here.</string>
+    <string name="forecast_summary_pending_wind">Wind forecast content for %1$s will appear here.</string>
+    <string name="forecast_summary_pending_cloud">Cloud forecast content for %1$s will appear here.</string>
+    <string name="forecast_summary_thermic">%1$s in %2$s. %3$s. High %4$s, low %5$s. Thermic profile is ready for the selected altitude range.</string>
+    <string name="forecast_summary_stuve">%1$s in %2$s. %3$s. Stuve diagram is ready for the selected hour.</string>
+    <string name="forecast_summary_wind">%1$s in %2$s. %3$s. Wind profile is ready for the selected altitude range.</string>
+    <string name="forecast_summary_cloud">%1$s in %2$s. %3$s. Cloud layers, radiation, sunshine, and precipitation are ready.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Weather Model</string>
     <string name="model_selector_fell_back">Fell back to %1$s</string>

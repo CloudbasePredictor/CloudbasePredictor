@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cloudbase Predictor">
-  <title>Cloudbase Predictor</title>
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0f4c81" />
-      <stop offset="1" stop-color="#0a2236" />
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#sky)" />
-  <g fill="none" stroke="#f2b14c" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M200 402q28-34 56 0t56 0" />
-    <path d="M212 452q22-26 44 0t44 0" />
-  </g>
-  <path fill="#fbfdff" d="M170 330a74 74 0 0 1 6-147 94 94 0 0 1 178-20 70 70 0 0 1 8 167z" />
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f4c81"/><stop offset="1" stop-color="#0a2236"/></linearGradient></defs><rect width="512" height="512" fill="url(#sky)"/><g fill="none" stroke="#f2b14c" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M200 402q28-34 56 0t56 0"/><path d="M212 452q22-26 44 0t44 0"/></g><path fill="#fbfdff" d="M170 330a74 74 0 0 1 6-147 94 94 0 0 1 178-20 70 70 0 0 1 8 167z"/></svg>

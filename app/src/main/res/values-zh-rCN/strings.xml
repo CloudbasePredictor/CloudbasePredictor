@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">预报未更新：请等待 %1$.1f 秒后再移动地图。</string>
     <string name="forecast_map_update_too_close">预报未更新：请从当前预报点移动至少 %1$d 米。</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">今天</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">晴</string>
+    <string name="weather_partly_cloudy">多云</string>
+    <string name="weather_fog">雾</string>
+    <string name="weather_drizzle">毛毛雨</string>
+    <string name="weather_rain">雨</string>
+    <string name="weather_snow">雪</string>
+    <string name="weather_rain_showers">阵雨</string>
+    <string name="weather_snow_showers">阵雪</string>
+    <string name="weather_thunderstorm">雷暴</string>
+    <string name="weather_unknown">未知天气</string>
+    <string name="forecast_summary_pending_thermic">%1$s 的预报内容将显示在此处。</string>
+    <string name="forecast_summary_pending_stuve">%1$s 的 Stuve 预报内容将显示在此处。</string>
+    <string name="forecast_summary_pending_wind">%1$s 的风预报内容将显示在此处。</string>
+    <string name="forecast_summary_pending_cloud">%1$s 的云预报内容将显示在此处。</string>
+    <string name="forecast_summary_thermic">%1$s在%2$s。%3$s。最高 %4$s，最低 %5$s。热气流剖面已针对所选高度范围就绪。</string>
+    <string name="forecast_summary_stuve">%1$s在%2$s。%3$s。Stuve 图已针对所选时刻就绪。</string>
+    <string name="forecast_summary_wind">%1$s在%2$s。%3$s。风廓线已针对所选高度范围就绪。</string>
+    <string name="forecast_summary_cloud">%1$s在%2$s。%3$s。云层、辐射、日照和降水已就绪。</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">天气模型</string>
     <string name="model_selector_fell_back">已回退到 %1$s</string>

@@ -39,6 +39,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.ui.preview.ForecastPreviewTheme
+import com.cloudbasepredictor.web.dismissibleOverlay
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 
 // Display order mirrors the Android model selector: the "Best Effort" auto-match is listed last.
 private val WebForecastModelOrder: List<ForecastModel> =
@@ -56,17 +58,18 @@ internal fun WebForecastModelPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     val resolvedSuffix = resolvedModel
         ?.takeIf { it != selectedModel }
-        ?.let { " (resolved: ${it.displayName})" }
+        ?.let { strings.forecastModelResolvedSuffix.replace("%s", it.displayName) }
         .orEmpty()
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.semantics {
-            contentDescription = "Forecast model: ${selectedModel.displayName}$resolvedSuffix"
+            contentDescription = "${strings.forecastModelTitle}: ${selectedModel.displayName}$resolvedSuffix"
         },
     ) {
-        Text("Model: ${selectedModel.displayName}$resolvedSuffix")
+        Text("${strings.forecastModelPillLabel}${selectedModel.displayName}$resolvedSuffix")
     }
 }
 
@@ -80,10 +83,12 @@ internal fun WebForecastModelSheet(
 ) {
     val scrimInteraction = remember { MutableInteractionSource() }
     val cardInteraction = remember { MutableInteractionSource() }
+    val strings = LocalWebStrings.current
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .dismissibleOverlay(onDismiss)
             .clickable(interactionSource = scrimInteraction, indication = null, onClick = onDismiss),
         contentAlignment = Alignment.BottomCenter,
     ) {
@@ -102,7 +107,7 @@ internal fun WebForecastModelSheet(
                 verticalArrangement = Arrangement.spacedBy(SectionSpacing),
             ) {
                 Text(
-                    text = "Forecast model",
+                    text = strings.forecastModelTitle,
                     modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineSmall,
                 )
@@ -129,7 +134,7 @@ internal fun WebForecastModelSheet(
                     horizontalArrangement = Arrangement.spacedBy(ActionSpacing, Alignment.End),
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Close")
+                        Text(strings.actionClose)
                     }
                 }
             }

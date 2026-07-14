@@ -217,6 +217,39 @@ class ParcelAnalysisTest {
         assertTrue(heating < 5f, "Should be conservative")
     }
 
+    @Test
+    fun surfaceHeating_noRadiationData_appliesCloudPenaltyExactlyOnce() {
+        // No radiation data exercises the conservative-default branch. The low-cloud
+        // penalty must be applied once (shared with the final penalty step), not twice.
+        val clear = SurfaceHeatingInput(
+            hourOfDay = 12,
+            shortwaveRadiationWm2 = null,
+            cloudCoverLowPercent = 0f,
+            cloudCoverMidPercent = 0f,
+            cloudCoverHighPercent = 0f,
+            precipitationMm = 0f,
+            isDay = true,
+        )
+        val cloudy = clear.copy(cloudCoverLowPercent = 50f)
+
+        val heatingClear = estimateSurfaceHeating(clear)
+        val heatingCloudy = estimateSurfaceHeating(cloudy)
+
+        // 50% low cloud → penalty = 0.50 * 0.7 = 0.35 in the no-radiation branch.
+        val penalty = 0.35f
+        assertEquals(
+            heatingClear * (1f - penalty),
+            heatingCloudy,
+            0.01f,
+            "Cloud penalty must be applied exactly once in the no-radiation branch",
+        )
+        // Guard against the previous double-application (penalty squared).
+        assertTrue(
+            heatingCloudy > heatingClear * (1f - penalty) * (1f - penalty) + 0.05f,
+            "Penalty must not be applied twice (squared)",
+        )
+    }
+
     // ── Full parcel analysis ──
 
     @Test
@@ -271,6 +304,11 @@ class ParcelAnalysisTest {
             result.dryThermalTopKm < 2f,
             "Dry top should be below 2 km in this stable profile",
         )
+        assertTrue(result.dryThermalTopKm < result.lclKm, "Dry thermal buoyancy must end below the LCL")
+        assertTrue(
+            result.computedCinJKg > 0f,
+            "A shallow dry-thermal layer below the LCL must not erase the cap above it",
+        )
     }
 
     @Test
@@ -287,6 +325,46 @@ class ParcelAnalysisTest {
 
         assertNotNull(result)
         assertTrue(result.computedCapeJKg > 0f, "Computed CAPE should be positive")
+    }
+
+    @Test
+    fun parcelAnalysis_cinExcludesStableLayersAboveEquilibriumLevel() {
+        // The standard profile produces positive CAPE. Appending a strong warm inversion after
+        // that buoyant region adds stable layers above the equilibrium level. Those must not be
+        // counted as convective inhibition, which ends at the LFC.
+        val profileWithUpperInversion = standardProfile + listOf(
+            ProfileLevel(pressureHpa = 450f, temperatureC = 8f, dewPointC = -30f, heightKm = 6.30f),
+            ProfileLevel(pressureHpa = 400f, temperatureC = 6f, dewPointC = -35f, heightKm = 7.20f),
+        )
+
+        val base = analyzeParcel(
+            profile = standardProfile,
+            surfaceTemperatureC = 22f,
+            surfaceDewPointC = 10f,
+            surfacePressureHpa = 955f,
+            elevationKm = 0.58f,
+            heatingInput = standardHeatingInput,
+            modelCapeJKg = 500f,
+        )
+        val withInversion = analyzeParcel(
+            profile = profileWithUpperInversion,
+            surfaceTemperatureC = 22f,
+            surfaceDewPointC = 10f,
+            surfacePressureHpa = 955f,
+            elevationKm = 0.58f,
+            heatingInput = standardHeatingInput,
+            modelCapeJKg = 500f,
+        )
+
+        assertNotNull(base)
+        assertNotNull(withInversion)
+        assertTrue(base.computedCapeJKg > 0f, "Base profile must reach positive buoyancy")
+        assertEquals(
+            base.computedCinJKg,
+            withInversion.computedCinJKg,
+            0.5f,
+            "A stable inversion above the EL must not increase CIN",
+        )
     }
 
     @Test

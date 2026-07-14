@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Previsão não atualizada: aguarde %1$.1f segundos antes de mover novamente o mapa.</string>
     <string name="forecast_map_update_too_close">Previsão não atualizada: afaste-se pelo menos %1$d m do ponto de previsão atual.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Hoje</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Céu limpo</string>
+    <string name="weather_partly_cloudy">Parcialmente nublado</string>
+    <string name="weather_fog">Nevoeiro</string>
+    <string name="weather_drizzle">Chuvisco</string>
+    <string name="weather_rain">Chuva</string>
+    <string name="weather_snow">Neve</string>
+    <string name="weather_rain_showers">Aguaceiros</string>
+    <string name="weather_snow_showers">Aguaceiros de neve</string>
+    <string name="weather_thunderstorm">Trovoada</string>
+    <string name="weather_unknown">Tempo desconhecido</string>
+    <string name="forecast_summary_pending_thermic">O conteúdo da previsão para %1$s aparecerá aqui.</string>
+    <string name="forecast_summary_pending_stuve">O conteúdo da previsão Stuve para %1$s aparecerá aqui.</string>
+    <string name="forecast_summary_pending_wind">O conteúdo da previsão de vento para %1$s aparecerá aqui.</string>
+    <string name="forecast_summary_pending_cloud">O conteúdo da previsão de nuvens para %1$s aparecerá aqui.</string>
+    <string name="forecast_summary_thermic">%1$s em %2$s. %3$s. Máxima %4$s, mínima %5$s. O perfil térmico está pronto para o intervalo de altitude selecionado.</string>
+    <string name="forecast_summary_stuve">%1$s em %2$s. %3$s. O diagrama Stuve está pronto para a hora selecionada.</string>
+    <string name="forecast_summary_wind">%1$s em %2$s. %3$s. O perfil de vento está pronto para o intervalo de altitude selecionado.</string>
+    <string name="forecast_summary_cloud">%1$s em %2$s. %3$s. As camadas de nuvens, a radiação, o sol e a precipitação estão prontas.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Modelo meteorológico</string>
     <string name="model_selector_fell_back">Recorreu a %1$s</string>

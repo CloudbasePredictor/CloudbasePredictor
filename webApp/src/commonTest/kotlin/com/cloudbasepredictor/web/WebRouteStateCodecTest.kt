@@ -5,6 +5,7 @@ import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.PlaceLocation
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class WebRouteStateCodecTest {
@@ -111,6 +112,38 @@ class WebRouteStateCodecTest {
         )
 
         assertEquals(state, WebRouteStateCodec.decode(WebRouteStateCodec.encodeFragment(state)))
+    }
+
+    @Test
+    fun destinationOrLocationChangesCountAsNavigation() {
+        val base = WebRouteState(
+            destination = WebDestination.Forecast,
+            location = PlaceLocation(47.0, 11.0, "A"),
+        )
+
+        assertTrue(
+            isRouteNavigation(base, base.copy(destination = WebDestination.Map)),
+        )
+        assertTrue(
+            isRouteNavigation(base, base.copy(location = PlaceLocation(48.0, 12.0, "B"))),
+        )
+        assertTrue(
+            isRouteNavigation(base, base.copy(location = null)),
+        )
+    }
+
+    @Test
+    fun modeModelDayAndHourChangesAreTransientNotNavigation() {
+        val base = WebRouteState(
+            destination = WebDestination.Forecast,
+            location = PlaceLocation(47.0, 11.0, "A"),
+        )
+
+        assertFalse(isRouteNavigation(base, base.copy(mode = ForecastMode.STUVE)))
+        assertFalse(isRouteNavigation(base, base.copy(model = ForecastModel.ICON_D2)))
+        assertFalse(isRouteNavigation(base, base.copy(dayIndex = 3)))
+        assertFalse(isRouteNavigation(base, base.copy(hour = 15)))
+        assertFalse(isRouteNavigation(base, base))
     }
 
     @Test

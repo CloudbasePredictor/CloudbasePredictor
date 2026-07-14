@@ -46,6 +46,7 @@ import com.cloudbasepredictor.model.forecastMapDistanceMeters
 import com.cloudbasepredictor.model.forecastMapLocationUpdateDecision
 import com.cloudbasepredictor.web.map.MapLibreMap
 import com.cloudbasepredictor.web.map.MapLibreSubscription
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.map.WebForecastPanelInterop
 import com.cloudbasepredictor.web.map.WebResizeObserver
 import com.cloudbasepredictor.web.preview.WebPreviewData
@@ -67,6 +68,7 @@ internal actual fun WebForecastMapPanel(
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val mapAriaLabel = LocalWebStrings.current.mapAriaLabel
     val handleHeightPx = with(density) { HandleHeight.toPx() }
     var parentHeightPx by remember { mutableFloatStateOf(0f) }
     val panelHeight = remember { Animatable(0f) }
@@ -159,6 +161,7 @@ internal actual fun WebForecastMapPanel(
                         binding = binding,
                         initialLocation = currentLocation,
                         mapLayer = mapLayer,
+                        mapAriaLabel = mapAriaLabel,
                     )
                 }
             }
@@ -172,6 +175,7 @@ private fun ForecastPanelMapArea(
     binding: ForecastMapPanelBinding,
     initialLocation: PlaceLocation,
     mapLayer: MapLayerPreference,
+    mapAriaLabel: String,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         HtmlElementView(
@@ -179,7 +183,7 @@ private fun ForecastPanelMapArea(
             factory = {
                 (document.createElement("div") as HTMLDivElement).apply {
                     className = "cloudbase-forecast-map"
-                    setAttribute("aria-label", "Forecast location map")
+                    setAttribute("aria-label", mapAriaLabel)
                     style.width = "100%"
                     style.height = "100%"
                 }.also { host ->

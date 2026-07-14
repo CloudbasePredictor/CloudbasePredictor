@@ -23,10 +23,11 @@ fun OpenMeteoHourlyForecastResponse.toHourlyForecastData(): HourlyForecastData {
     val windDirByPressure = hourly.windDirectionsByPressure().toMap()
     val geoHeightByPressure = hourly.geopotentialHeightsByPressure().toMap()
 
-    val hourlyPoints = times.mapIndexed { i, isoTime ->
+    val hourlyPoints = times.mapIndexedNotNull { i, isoTime ->
         val dateStr = isoTime.substringBefore("T")   // "2026-04-12"
         val hourStr = isoTime.substringAfter("T").substringBefore(":")
-        val hour = hourStr.toIntOrNull() ?: 0
+        // Skip malformed timestamps rather than silently mapping them to midnight.
+        val hour = hourStr.toIntOrNull() ?: return@mapIndexedNotNull null
 
         val pressureLevelData = STANDARD_PRESSURE_LEVELS.mapNotNull { pHpa ->
             val temp = tempByPressure[pHpa]?.getOrNull(i)

@@ -21,6 +21,7 @@ import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.ForecastSnapshot
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
+import com.cloudbasepredictor.ui.text.AppStringResources
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -142,6 +143,7 @@ class ForecastViewModelTest {
                     forecastViewportRepository = FakeForecastViewportRepository(),
                     mapLayerRepository = FakeMapLayerRepository(),
                     unitSettingsRepository = FakeUnitSettingsRepository(),
+                    stringResources = FakeAppStringResources(),
                 ) as T
             }
         }
@@ -297,6 +299,13 @@ private class FakeMapLayerRepository : MapLayerRepository {
     override fun selectLayer(layer: MapLayerPreference) {
         mutableSelectedLayer.value = layer
     }
+}
+
+private class FakeAppStringResources : AppStringResources {
+    override fun getString(resId: Int): String = "res:$resId"
+
+    override fun getString(resId: Int, vararg formatArgs: Any): String =
+        "res:$resId${formatArgs.joinToString(prefix = "(", postfix = ")")}"
 }
 
 private class FakeUnitSettingsRepository : UnitSettingsRepository {

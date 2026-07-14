@@ -34,6 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.util.toFixedDecimalString
+import com.cloudbasepredictor.web.dismissibleOverlay
+import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.preview.WebDestinationPreviewData
 
 /**
@@ -57,10 +59,12 @@ fun WebFavoritesDialog(
 ) {
     val scrimInteraction = remember { MutableInteractionSource() }
     val cardInteraction = remember { MutableInteractionSource() }
+    val strings = LocalWebStrings.current
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+            .dismissibleOverlay(onDismiss)
             .clickable(
                 interactionSource = scrimInteraction,
                 indication = null,
@@ -84,14 +88,13 @@ fun WebFavoritesDialog(
                 verticalArrangement = Arrangement.spacedBy(SectionSpacing),
             ) {
                 Text(
-                    text = "Favorite locations",
+                    text = strings.favoriteLocations,
                     modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 if (savedPlaces.isEmpty()) {
                     Text(
-                        text = "No favorite locations yet. Choose a location on the map and save it " +
-                            "to keep forecasts one tap away.",
+                        text = strings.favoritesEmpty,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -117,7 +120,7 @@ fun WebFavoritesDialog(
                     horizontalArrangement = Arrangement.spacedBy(ActionSpacing, Alignment.End),
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Close")
+                        Text(strings.actionClose)
                     }
                 }
             }
@@ -131,6 +134,7 @@ private fun FavoriteDialogRow(
     onPlaceSelected: (SavedPlace) -> Unit,
     onPlaceDeleted: (SavedPlace) -> Unit,
 ) {
+    val strings = LocalWebStrings.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -154,18 +158,18 @@ private fun FavoriteDialogRow(
             TextButton(
                 onClick = { onPlaceDeleted(place) },
                 modifier = Modifier.semantics {
-                    contentDescription = "Remove ${place.name} from favorites"
+                    contentDescription = strings.removeFavoriteContentDescription.replace("%s", place.name)
                 },
             ) {
-                Text("Remove")
+                Text(strings.actionRemove)
             }
             TextButton(
                 onClick = { onPlaceSelected(place) },
                 modifier = Modifier.semantics {
-                    contentDescription = "Open forecast for ${place.name}"
+                    contentDescription = strings.openForecastContentDescription.replace("%s", place.name)
                 },
             ) {
-                Text("Open forecast")
+                Text(strings.openForecast)
             }
         }
     }

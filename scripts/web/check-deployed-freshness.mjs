@@ -55,10 +55,18 @@ if (deployedCommit === expectedCommit) {
 
 // The site is behind. Say by how much, and in which direction.
 const behind = countCommitsBetween(deployedCommit, expectedCommit);
-const drift =
-  behind === null
-    ? `The deployed commit ${deployedShort} is not in this branch's history (force-push, or a build from elsewhere).`
-    : `The live site is ${behind} commit(s) behind the default branch.`;
+let drift;
+if (behind !== null) {
+  drift = `The live site is ${behind} commit(s) behind the default branch.`;
+} else if (isShallowRepository()) {
+  // On a shallow clone the deployed commit may simply be a normal ancestor beyond the fetch depth,
+  // so don't accuse a force-push we cannot actually see.
+  drift =
+    `Cannot measure the drift: the deployed commit ${deployedShort} is not in this shallow clone's ` +
+    "history. It may be an ordinary ancestor beyond the fetch depth, a force-push, or a build from elsewhere.";
+} else {
+  drift = `The deployed commit ${deployedShort} is not in this branch's history (force-push, or a build from elsewhere).`;
+}
 
 if (headAgeMinutes < graceMinutes) {
   console.log(`\nPASS  ${drift}`);
@@ -101,6 +109,15 @@ function countCommitsBetween(fromCommit, toCommit) {
     return Number(git("rev-list", "--count", `${fromCommit}..${toCommit}`));
   } catch {
     return null;
+  }
+}
+
+/** True when running in a shallow clone, where a missing commit may just be beyond the fetch depth. */
+function isShallowRepository() {
+  try {
+    return git("rev-parse", "--is-shallow-repository") === "true";
+  } catch {
+    return false;
   }
 }
 

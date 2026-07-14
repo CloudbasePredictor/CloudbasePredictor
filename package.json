@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test 'scripts/**/*.test.mjs'",
     "check:web:visual": "node scripts/web/dev-visual-check.mjs",
     "check:web:webkit-input": "node scripts/web/check-webkit-input.mjs"
   },

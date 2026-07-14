@@ -77,6 +77,7 @@ fun WebForecastDestination(
     onTopAltitudeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     val location = routeState.location
     if (location == null) {
         WebForecastNoLocation(
@@ -107,10 +108,7 @@ fun WebForecastDestination(
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
-            WebForecastLoadState.Error(
-                message = exception.message?.takeIf(String::isNotBlank)
-                    ?: "Forecast data could not be loaded.",
-            )
+            WebForecastLoadState.Error(message = strings.forecastLoadError)
         }
     }
 
@@ -132,6 +130,7 @@ fun WebForecastDestination(
                 preferences.unitPreset,
                 preferences.mapLayer,
                 favoritePlaces,
+                strings.forecast,
             ) {
                 buildWebForecastReadyState(
                     WebForecastPresentationInput(
@@ -145,6 +144,7 @@ fun WebForecastDestination(
                         unitPreset = preferences.unitPreset,
                         mapLayer = preferences.mapLayer,
                         favoritePlaces = favoritePlaces,
+                        forecastStrings = strings.forecast,
                     ),
                 )
             }
@@ -246,7 +246,7 @@ private fun WebForecastReadyContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ForecastHeader(
-                title = uiState.selectedPlace?.name ?: "Forecast",
+                title = uiState.selectedPlace?.name ?: strings.navForecast,
                 subtitle = buildString {
                     append(uiState.resolvedModel?.displayName ?: uiState.selectedModel.displayName)
                     append(" · ")
@@ -308,7 +308,7 @@ private fun WebForecastReadyContent(
                     .weight(1f),
             )
             Text(
-                text = "${uiState.forecastText} · Forecast data by Open-Meteo.com",
+                text = "${uiState.forecastText} · ${strings.forecastDataAttribution}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -330,7 +330,7 @@ private fun WebForecastReadyContent(
             WebSaveFavoriteDialog(
                 currentName = uiState.selectedPlace?.name
                     ?: routeState.location?.name
-                    ?: "New location",
+                    ?: strings.newLocation,
                 isFavorite = isFavorite,
                 otherFavorites = otherFavorites,
                 onToggleFavorite = onFavoriteToggle,
@@ -368,7 +368,7 @@ private fun ForecastHeader(
                         .clickable(onClick = onEditFavorite)
                         .semantics {
                             heading()
-                            contentDescription = "Edit favorite: $title"
+                            contentDescription = strings.editFavoriteContentDescription.replace("%s", title)
                         },
                 )
                 Text(
@@ -414,12 +414,13 @@ private fun ForecastChart(
     onHourChanged: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     Box(modifier = modifier) {
         when (mode) {
             ForecastMode.THERMIC -> ThermicForecastView(
                 uiState = uiState,
                 onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
-                noThermalsMessage = "No usable thermals are forecast for this period.",
+                noThermalsMessage = strings.noThermalsMessage,
                 modifier = Modifier.fillMaxSize(),
             )
             ForecastMode.STUVE -> StuveForecastView(
@@ -466,10 +467,11 @@ private fun WebForecastNoLocation(
     onChooseLocation: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     CenteredMessage(modifier) {
-        Text("Choose a location to load a soaring forecast.")
+        Text(strings.chooseLocationPrompt)
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onChooseLocation) { Text("Open map") }
+        Button(onClick = onChooseLocation) { Text(strings.openMap) }
     }
 }
 
@@ -478,10 +480,11 @@ private fun WebForecastLoading(
     location: PlaceLocation,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     CenteredMessage(modifier) {
         CircularProgressIndicator()
         Spacer(Modifier.height(12.dp))
-        Text("Loading forecast for ${location.name ?: "selected location"}…")
+        Text(strings.loadingForecastFor.replace("%s", location.name ?: strings.selectedLocationFallback))
     }
 }
 
@@ -491,10 +494,11 @@ private fun WebForecastError(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalWebStrings.current
     CenteredMessage(modifier) {
         Text(message, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onRetry) { Text("Retry") }
+        Button(onClick = onRetry) { Text(strings.actionRetry) }
     }
 }
 

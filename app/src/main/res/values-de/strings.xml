@@ -94,6 +94,28 @@
     <string name="forecast_map_update_too_frequent">Vorhersage nicht aktualisiert: Warte %1$.1f Sekunden, bevor du die Karte erneut bewegst.</string>
     <string name="forecast_map_update_too_close">Vorhersage nicht aktualisiert: Bewege dich mindestens %1$d m vom aktuellen Vorhersagepunkt weg.</string>
 
+    <!-- Forecast summary -->
+    <string name="forecast_summary_today">Heute</string>
+    <string name="forecast_summary_temperature_celsius">%1$s°C</string>
+    <string name="weather_clear_sky">Klarer Himmel</string>
+    <string name="weather_partly_cloudy">Teilweise bewölkt</string>
+    <string name="weather_fog">Nebel</string>
+    <string name="weather_drizzle">Nieselregen</string>
+    <string name="weather_rain">Regen</string>
+    <string name="weather_snow">Schnee</string>
+    <string name="weather_rain_showers">Regenschauer</string>
+    <string name="weather_snow_showers">Schneeschauer</string>
+    <string name="weather_thunderstorm">Gewitter</string>
+    <string name="weather_unknown">Unbekanntes Wetter</string>
+    <string name="forecast_summary_pending_thermic">Vorhersageinhalt für %1$s erscheint hier.</string>
+    <string name="forecast_summary_pending_stuve">Stuve-Vorhersageinhalt für %1$s erscheint hier.</string>
+    <string name="forecast_summary_pending_wind">Wind-Vorhersageinhalt für %1$s erscheint hier.</string>
+    <string name="forecast_summary_pending_cloud">Wolken-Vorhersageinhalt für %1$s erscheint hier.</string>
+    <string name="forecast_summary_thermic">%1$s in %2$s. %3$s. Höchstwert %4$s, Tiefstwert %5$s. Das Thermikprofil ist für den gewählten Höhenbereich bereit.</string>
+    <string name="forecast_summary_stuve">%1$s in %2$s. %3$s. Das Stuve-Diagramm ist für die gewählte Stunde bereit.</string>
+    <string name="forecast_summary_wind">%1$s in %2$s. %3$s. Das Windprofil ist für den gewählten Höhenbereich bereit.</string>
+    <string name="forecast_summary_cloud">%1$s in %2$s. %3$s. Wolkenschichten, Strahlung, Sonnenschein und Niederschlag sind bereit.</string>
+
     <!-- Model selector -->
     <string name="title_weather_model">Wettermodell</string>
     <string name="model_selector_fell_back">Auf %1$s zurückgegriffen</string>
