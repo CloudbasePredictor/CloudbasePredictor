@@ -7,6 +7,7 @@
     <string name="action_delete">ลบ</string>
     <string name="action_close">ปิด</string>
     <string name="action_retry">ลองอีกครั้ง</string>
+    <string name="action_refresh">รีเฟรช</string>
     <string name="action_open">เปิด</string>
     <string name="action_add_manually">เพิ่มด้วยตนเอง</string>
     <string name="action_about">เกี่ยวกับแอป</string>

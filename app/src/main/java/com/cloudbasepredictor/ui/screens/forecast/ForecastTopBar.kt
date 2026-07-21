@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -46,6 +50,9 @@ internal fun ForecastTopBar(
     selectedMode: ForecastMode,
     onModeSelected: (ForecastMode) -> Unit,
     onFavoriteClick: () -> Unit,
+    isRefreshEnabled: Boolean,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onOpenMap: () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -91,12 +98,47 @@ internal fun ForecastTopBar(
                 onModeSelected = onModeSelected,
             )
 
+            ForecastRefreshButton(
+                enabled = isRefreshEnabled,
+                isRefreshing = isRefreshing,
+                onClick = onRefresh,
+            )
+
             IconButton(onClick = onOpenMap) {
                 Icon(
                     imageVector = Icons.Outlined.Map,
                     contentDescription = stringResource(R.string.cd_open_map),
                 )
             }
+        }
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming")
+private fun ForecastRefreshButton(
+    enabled: Boolean,
+    isRefreshing: Boolean,
+    onClick: () -> Unit,
+) {
+    val refreshDescription = stringResource(R.string.action_refresh)
+    IconButton(
+        onClick = onClick,
+        enabled = enabled && !isRefreshing,
+        modifier = Modifier.semantics {
+            contentDescription = refreshDescription
+        },
+    ) {
+        if (isRefreshing) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.Refresh,
+                contentDescription = null,
+            )
         }
     }
 }
@@ -159,6 +201,9 @@ private fun ForecastTopBarPreview() {
             selectedMode = ForecastMode.THERMIC,
             onModeSelected = {},
             onFavoriteClick = {},
+            isRefreshEnabled = true,
+            isRefreshing = false,
+            onRefresh = {},
             onOpenMap = {},
         )
     }
@@ -174,6 +219,9 @@ private fun ForecastTopBarFavoritePreview() {
             selectedMode = ForecastMode.THERMIC,
             onModeSelected = {},
             onFavoriteClick = {},
+            isRefreshEnabled = true,
+            isRefreshing = true,
+            onRefresh = {},
             onOpenMap = {},
         )
     }

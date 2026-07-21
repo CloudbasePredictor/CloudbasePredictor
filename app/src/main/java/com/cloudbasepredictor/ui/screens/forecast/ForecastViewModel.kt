@@ -552,7 +552,7 @@ internal fun reduceForecastUiState(
         )
     }
 
-    if (loading || snapshot == null) {
+    if (snapshot == null) {
         return ForecastLoadingUiState(
             selectedPlace = place,
             selectedForecastMode = currentChartContext.selectedForecastMode,
@@ -638,7 +638,7 @@ internal fun reduceForecastUiState(
                 safeDayIndex,
             ),
         ),
-    )
+    ).copy(isRefreshing = loading)
 }
 
 private data class ForecastLoadTarget(

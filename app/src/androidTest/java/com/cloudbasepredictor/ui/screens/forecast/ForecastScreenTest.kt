@@ -108,6 +108,32 @@ class ForecastScreenTest {
     }
 
     @Test
+    fun forecastScreen_refreshActionInvokesCallback() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val refreshDescription = context.getString(R.string.action_refresh)
+        var refreshRequested = false
+
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                ForecastScreen(
+                    uiState = SimulatedTestData.forecastUiState(context),
+                    onDateSelected = {},
+                    onRetryLoad = { refreshRequested = true },
+                    onOpenMap = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(refreshDescription)
+            .assertIsDisplayed()
+            .performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(refreshRequested)
+        }
+    }
+
+    @Test
     fun forecastScreen_loadingStateShowsProgress() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val placeName = SimulatedTestData.brauneckPlace.name

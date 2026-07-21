@@ -7,6 +7,7 @@
     <string name="action_delete">Löschen</string>
     <string name="action_close">Schließen</string>
     <string name="action_retry">Wiederholen</string>
+    <string name="action_refresh">Aktualisieren</string>
     <string name="action_open">Öffnen</string>
     <string name="action_add_manually">Manuell hinzufügen</string>
     <string name="action_about">Über die App</string>

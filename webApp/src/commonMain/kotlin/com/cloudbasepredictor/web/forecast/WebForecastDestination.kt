@@ -1,4 +1,4 @@
-@file:Suppress("FunctionNaming", "SwallowedException")
+@file:Suppress("FunctionNaming", "SwallowedException", "TooManyFunctions")
 
 package com.cloudbasepredictor.web.forecast
 
@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
@@ -27,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -90,6 +93,9 @@ fun WebForecastDestination(
     }
 
     var retryGeneration by remember(location, routeState.model) { mutableIntStateOf(0) }
+    var refreshGeneration by remember(location, routeState.model) { mutableIntStateOf(0) }
+    var isRefreshing by remember(location, routeState.model) { mutableStateOf(false) }
+    var refreshFailed by remember(location, routeState.model) { mutableStateOf(false) }
     var loadState by remember(location, routeState.model) {
         mutableStateOf<WebForecastLoadState>(WebForecastLoadState.Loading)
     }
@@ -150,43 +156,58 @@ fun WebForecastDestination(
             }
             val currentId = SavedPlace.fromCoordinates(location.latitude, location.longitude).id
             val isFavorite = favoritePlaces.any { it.id == currentId }
-            var autoRefreshFailed by remember(location, routeState.model) { mutableStateOf(false) }
+            LaunchedEffect(refreshGeneration) {
+                if (refreshGeneration == 0) return@LaunchedEffect
+                isRefreshing = true
+                refreshFailed = false
+                try {
+                    val refreshed = repository.load(
+                        location = location,
+                        requestedModel = routeState.model,
+                        forecastDays = forecastDays,
+                        forceRefresh = true,
+                    )
+                    loadState = WebForecastLoadState.Ready(refreshed)
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    refreshFailed = true
+                } finally {
+                    isRefreshing = false
+                }
+            }
             // Background auto-refresh at the next model run / midnight, keeping the current chart on
             // failure (mirrors Android). The delay cancels automatically when the location/model change.
             LaunchedEffect(state.result.fetchedAtMillis, state.result.resolvedModel) {
                 val waitMillis = autoRefreshDelayMillis(state.result, repository.now())
                 if (waitMillis != null) {
                     delay(waitMillis)
-                    val refreshed = try {
-                        repository.load(location, routeState.model, forecastDays, forceRefresh = true)
-                    } catch (exception: CancellationException) {
-                        throw exception
-                    } catch (exception: Exception) {
-                        null
-                    }
-                    if (refreshed != null) {
-                        loadState = WebForecastLoadState.Ready(refreshed)
-                    } else {
-                        autoRefreshFailed = true
-                    }
+                    refreshGeneration++
                 }
             }
-            LaunchedEffect(autoRefreshFailed) {
-                if (autoRefreshFailed) {
-                    delay(AUTO_REFRESH_NOTICE_MILLIS)
-                    autoRefreshFailed = false
+            LaunchedEffect(refreshFailed) {
+                if (refreshFailed) {
+                    delay(REFRESH_NOTICE_MILLIS)
+                    refreshFailed = false
                 }
             }
             WebForecastReadyContent(
                 routeState = routeState,
                 uiState = readyState,
                 fromCache = state.result.fromCache,
-                autoRefreshFailed = autoRefreshFailed,
+                refreshFailed = refreshFailed,
+                isRefreshing = isRefreshing,
                 isFavorite = isFavorite,
                 onRouteChanged = onRouteChanged,
                 onForecastModelSelected = onForecastModelSelected,
                 onFavoriteToggle = { onFavoriteToggle(location, isFavorite) },
                 onShareRequested = onShareRequested,
+                onRefreshRequested = {
+                    if (!isRefreshing) {
+                        isRefreshing = true
+                        refreshGeneration++
+                    }
+                },
                 onVisibleTopAltitudeChanged = {
                     visibleTopAltitudeKm = it
                     onTopAltitudeChanged(it)
@@ -211,12 +232,14 @@ private fun WebForecastReadyContent(
     routeState: WebRouteState,
     uiState: ForecastReadyUiState,
     fromCache: Boolean,
-    autoRefreshFailed: Boolean,
+    refreshFailed: Boolean,
+    isRefreshing: Boolean,
     isFavorite: Boolean,
     onRouteChanged: (WebRouteState) -> Unit,
     onForecastModelSelected: (ForecastModel) -> Unit,
     onFavoriteToggle: () -> Unit,
     onShareRequested: () -> Unit,
+    onRefreshRequested: () -> Unit,
     onVisibleTopAltitudeChanged: (Float) -> Unit,
     onJumpToFavorite: (SavedPlace) -> Unit,
     otherFavorites: List<SavedPlace>,
@@ -254,11 +277,13 @@ private fun WebForecastReadyContent(
                 },
                 isFavorite = isFavorite,
                 onEditFavorite = { showSaveDialog = true },
+                isRefreshing = isRefreshing,
+                onRefreshRequested = onRefreshRequested,
                 onShareRequested = onShareRequested,
                 onFavoriteToggle = onFavoriteToggle,
             )
 
-            if (autoRefreshFailed) {
+            if (refreshFailed) {
                 Text(
                     text = strings.couldNotRefresh,
                     color = MaterialTheme.colorScheme.error,
@@ -347,6 +372,8 @@ private fun ForecastHeader(
     subtitle: String,
     isFavorite: Boolean,
     onEditFavorite: () -> Unit,
+    isRefreshing: Boolean,
+    onRefreshRequested: () -> Unit,
     onShareRequested: () -> Unit,
     onFavoriteToggle: () -> Unit,
 ) {
@@ -379,28 +406,69 @@ private fun ForecastHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (compactActions) {
-                IconButton(onClick = onShareRequested) {
-                    Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = strings.copyLink,
-                    )
-                }
-                IconButton(onClick = onFavoriteToggle) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        contentDescription = if (isFavorite) strings.removeFavorite else strings.saveFavorite,
-                    )
-                }
+            ForecastHeaderActions(
+                compact = compactActions,
+                isRefreshing = isRefreshing,
+                isFavorite = isFavorite,
+                onRefreshRequested = onRefreshRequested,
+                onShareRequested = onShareRequested,
+                onFavoriteToggle = onFavoriteToggle,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ForecastHeaderActions(
+    compact: Boolean,
+    isRefreshing: Boolean,
+    isFavorite: Boolean,
+    onRefreshRequested: () -> Unit,
+    onShareRequested: () -> Unit,
+    onFavoriteToggle: () -> Unit,
+) {
+    val strings = LocalWebStrings.current
+    if (compact) {
+        IconButton(
+            onClick = onRefreshRequested,
+            enabled = !isRefreshing,
+            modifier = Modifier.semantics {
+                contentDescription = strings.actionRefresh
+            },
+        ) {
+            if (isRefreshing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onShareRequested) {
-                        Text(strings.copyLink)
-                    }
-                    OutlinedButton(onClick = onFavoriteToggle) {
-                        Text(if (isFavorite) strings.removeFavorite else strings.saveFavorite)
-                    }
+                Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null)
+            }
+        }
+        IconButton(onClick = onShareRequested) {
+            Icon(imageVector = Icons.Outlined.ContentCopy, contentDescription = strings.copyLink)
+        }
+        IconButton(onClick = onFavoriteToggle) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                contentDescription = if (isFavorite) strings.removeFavorite else strings.saveFavorite,
+            )
+        }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onRefreshRequested, enabled = !isRefreshing) {
+                if (isRefreshing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(Modifier.width(8.dp))
                 }
+                Text(strings.actionRefresh)
+            }
+            OutlinedButton(onClick = onShareRequested) { Text(strings.copyLink) }
+            OutlinedButton(onClick = onFavoriteToggle) {
+                Text(if (isFavorite) strings.removeFavorite else strings.saveFavorite)
             }
         }
     }
@@ -543,7 +611,7 @@ private const val MAX_WEB_FORECAST_DAYS = 14
 private const val DEFAULT_VISIBLE_TOP_ALTITUDE_KM = 4f
 private const val DAY_MILLIS = 24L * 60L * 60L * 1000L
 private const val MAX_AUTO_REFRESH_DELAY_MILLIS = 26L * 60L * 60L * 1000L
-private const val AUTO_REFRESH_NOTICE_MILLIS = 6000L
+private const val REFRESH_NOTICE_MILLIS = 6000L
 
 @Preview(name = "Web forecast", showBackground = true, widthDp = 1024, heightDp = 760)
 @Composable
@@ -553,12 +621,14 @@ private fun WebForecastReadyContentPreview() {
             routeState = WebPreviewData.forecastRoute,
             uiState = ForecastPreviewData.readyState,
             fromCache = false,
-            autoRefreshFailed = false,
+            refreshFailed = false,
+            isRefreshing = false,
             isFavorite = true,
             onRouteChanged = {},
             onForecastModelSelected = {},
             onFavoriteToggle = {},
             onShareRequested = {},
+            onRefreshRequested = {},
             onVisibleTopAltitudeChanged = {},
             onJumpToFavorite = {},
             otherFavorites = emptyList(),

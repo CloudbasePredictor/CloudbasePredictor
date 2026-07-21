@@ -7,6 +7,7 @@
     <string name="action_delete">删除</string>
     <string name="action_close">关闭</string>
     <string name="action_retry">重试</string>
+    <string name="action_refresh">刷新</string>
     <string name="action_open">打开</string>
     <string name="action_add_manually">手动添加</string>
     <string name="action_about">关于应用</string>

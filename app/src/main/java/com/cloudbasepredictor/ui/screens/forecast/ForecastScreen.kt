@@ -171,6 +171,11 @@ fun ForecastScreen(
                 selectedMode = uiState.selectedForecastMode,
                 onModeSelected = onForecastModeSelected,
                 onFavoriteClick = { showFavoriteDialog = true },
+                isRefreshEnabled = uiState.selectedPlace != null &&
+                    uiState !is ForecastLoadingUiState &&
+                    uiState !is ForecastNoPlaceUiState,
+                isRefreshing = (uiState as? ForecastReadyUiState)?.isRefreshing == true,
+                onRefresh = onRetryLoad,
                 onOpenMap = onOpenMap,
             )
 

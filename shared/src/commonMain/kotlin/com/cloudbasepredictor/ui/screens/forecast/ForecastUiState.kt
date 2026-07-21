@@ -104,6 +104,8 @@ data class ForecastReadyUiState(
     val dayChips: List<ForecastDayChipUiModel>,
     /** Summary text shown at the bottom of the chart. */
     val forecastText: String,
+    /** True while fresher data is requested without hiding the currently rendered forecast. */
+    val isRefreshing: Boolean = false,
     override val selectedModel: ForecastModel = ForecastModel.ICON_SEAMLESS,
     override val resolvedModel: ForecastModel? = null,
     /** Timestamp (UTC millis) when the forecast data was last updated from the server. */

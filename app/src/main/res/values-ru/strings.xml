@@ -7,6 +7,7 @@
     <string name="action_delete">Удалить</string>
     <string name="action_close">Закрыть</string>
     <string name="action_retry">Повторить</string>
+    <string name="action_refresh">Обновить</string>
     <string name="action_open">Открыть</string>
     <string name="action_add_manually">Добавить вручную</string>
     <string name="action_about">О приложении</string>

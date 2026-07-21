@@ -95,7 +95,7 @@ class ForecastReducerTest {
     }
 
     @Test
-    fun loadingWhileSnapshotPresentShowsLoading() {
+    fun loadingWhileSnapshotPresentKeepsForecastVisibleAndMarksItRefreshing() {
         val state = reduce(
             inputs = inputs(
                 place = place,
@@ -104,7 +104,8 @@ class ForecastReducerTest {
             ),
         )
 
-        assertTrue(state is ForecastLoadingUiState)
+        assertTrue(state is ForecastReadyUiState)
+        assertTrue((state as ForecastReadyUiState).isRefreshing)
     }
 
     @Test
