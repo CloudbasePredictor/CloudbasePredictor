@@ -1,0 +1,4 @@
+New in 1.9.0:
+
+- Refresh a forecast manually from the forecast header to check for newly published model data.
+- Keep the current forecast visible while it refreshes, with clear progress and failure feedback.
