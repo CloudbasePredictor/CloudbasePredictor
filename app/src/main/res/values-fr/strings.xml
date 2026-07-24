@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Aide sur les prévisions de vent</string>
     <string name="help_wind_summary">Les couleurs de la vitesse du vent vont du bleu au vert puis au rouge ; le rouge marque le maximum de l\'échelle (km/h) :</string>
+    <string name="help_wind_model_levels_info">Les repères à droite indiquent les altitudes disposant de données de vent directes du modèle. Les valeurs intermédiaires sont interpolées pour l\'heure choisie.</string>
     <string name="help_wind_moisture_title">Indices d\'humidité :</string>
     <string name="help_wind_ccl_line">Ligne CCL orange – base estimée des cumulus lorsque le réchauffement est suffisant.</string>
 

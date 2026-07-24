@@ -386,7 +386,9 @@ fun buildWindChartFromData(
     val elevationKm = elevation.toFloat() / 1000f
     val hours = daytimePoints.map { it.hour }
 
-    // Collect all altitude bands from pressure level data (ASL)
+    // Collect direct model levels only. Missing pressure levels may have been synthesized by the
+    // response converter for thermodynamic calculations; the wind chart instead interpolates from
+    // real model samples so its right-edge markers retain an unambiguous meaning.
     val altitudeSet = mutableSetOf<Float>()
     val cellList = mutableListOf<WindForecastCellUiModel>()
     val pressureSamples = mutableListOf<WindPressureSample>()
@@ -406,10 +408,11 @@ fun buildWindChartFromData(
             )
         }
 
-        hp.pressureLevels.forEach { pl ->
-            val rawHeightAsl = (pl.geopotentialHeightM ?: return@forEach).toFloat() / 1000f
-            val speed = pl.windSpeedKmh ?: return@forEach
-            val dir = pl.windDirectionDeg ?: return@forEach
+        hp.pressureLevels.forEach pressureLevel@{ pl ->
+            if (pl.isSynthetic) return@pressureLevel
+            val rawHeightAsl = (pl.geopotentialHeightM ?: return@pressureLevel).toFloat() / 1000f
+            val speed = pl.windSpeedKmh ?: return@pressureLevel
+            val dir = pl.windDirectionDeg ?: return@pressureLevel
             pressureSamples += WindPressureSample(
                 hour = hp.hour,
                 pressureHpa = pl.pressureHpa,
@@ -486,6 +489,7 @@ fun buildWindChartFromData(
         hours = hours,
         altitudeBandsKm = sortedAlts,
         altitudeBands = altitudeBands,
+        modelLevelAltitudesKm = sortedAlts,
         cells = cellList,
         freezingLevelKm = freezingLevelMarkers,
         cclKm = cclMarkers,

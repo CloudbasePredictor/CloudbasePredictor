@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Wind forecast help</string>
     <string name="help_wind_summary">Wind speed colors run from blue through green to red; red marks the scale maximum (km/h):</string>
+    <string name="help_wind_model_levels_info">Right-edge markers show heights with direct model wind data. Values between them are interpolated for the selected hour.</string>
     <string name="help_wind_moisture_title">Moisture cues:</string>
     <string name="help_wind_ccl_line">Orange CCL line - estimated cumulus base when heating is sufficient.</string>
 

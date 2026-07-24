@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Hilfe zur Windvorhersage</string>
     <string name="help_wind_summary">Die Farben der Windgeschwindigkeit reichen von blau über grün bis rot; rot markiert das Skalenmaximum (km/h):</string>
+    <string name="help_wind_model_levels_info">Markierungen am rechten Rand zeigen Höhen mit direkten Winddaten des Modells. Werte dazwischen werden für die gewählte Stunde interpoliert.</string>
     <string name="help_wind_moisture_title">Feuchtigkeitshinweise:</string>
     <string name="help_wind_ccl_line">Orange CCL-Linie – geschätzte Cumulus-Basis bei ausreichender Erwärmung.</string>
 

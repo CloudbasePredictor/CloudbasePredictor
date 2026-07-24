@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Ayuda del pronóstico de viento</string>
     <string name="help_wind_summary">Los colores de la velocidad del viento van del azul al rojo pasando por el verde; el rojo marca el máximo de la escala (km/h):</string>
+    <string name="help_wind_model_levels_info">Los marcadores del borde derecho indican alturas con datos de viento directos del modelo. Los valores intermedios se interpolan para la hora seleccionada.</string>
     <string name="help_wind_moisture_title">Indicadores de humedad:</string>
     <string name="help_wind_ccl_line">Línea CCL naranja: base estimada de los cúmulos cuando el calentamiento es suficiente.</string>
 

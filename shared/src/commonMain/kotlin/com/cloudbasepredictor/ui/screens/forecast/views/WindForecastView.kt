@@ -60,14 +60,15 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_RENDERER
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_TIME_AXIS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
-import com.cloudbasepredictor.ui.screens.forecast.WindForecastCellUiModel
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
+import com.cloudbasepredictor.ui.screens.forecast.buildWindHourClusters
+import com.cloudbasepredictor.ui.screens.forecast.buildWindProfiles
+import com.cloudbasepredictor.ui.screens.forecast.interpolateWind
+import com.cloudbasepredictor.ui.screens.forecast.windHourIndexAtX
 import com.cloudbasepredictor.ui.screens.forecast.windSpeedColor
 import kotlin.math.PI
-import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
@@ -265,44 +266,44 @@ private fun WindChartCanvas(
         )
 
         val columnWidth = plotWidth / chart.hours.size
-
-        // Use altitude bands for display
-        val visibleBands = chart.altitudeBands.filter {
-            it.topKm > minAltitudeKm && it.bottomKm < effectiveTopAltitudeKm
+        val profileByHour = buildWindProfiles(chart.cells)
+        if (profileByHour.isEmpty()) return@Canvas
+        val availableAltitudes = profileByHour.values.flatten().map { it.altitudeKm }
+        val lowAvailableAltitudeKm = availableAltitudes.minOrNull() ?: return@Canvas
+        val highAvailableAltitudeKm = availableAltitudes.maxOrNull() ?: return@Canvas
+        val visibleModelLevels = chart.modelLevelAltitudesKm.filter {
+            it in minAltitudeKm..effectiveTopAltitudeKm
         }
-        if (visibleBands.isEmpty()) return@Canvas
 
         // Horizontal clustering: skip arrow columns if cells are too narrow.
         val hourCluster = max(1, ceil(arrowSizePx * 1.1f / columnWidth).toInt())
 
-        // Build a fast cell lookup: (hour, altitudeKm) → cell
-        val cellLookup = HashMap<Long, WindForecastCellUiModel>(chart.cells.size)
-        chart.cells.forEach { c ->
-            val key = c.hour.toLong().shl(32) or c.altitudeKm.toBits().toLong()
-            if (key !in cellLookup) {
-                cellLookup[key] = c
-            }
-        }
-
-        // ── Wind speed background using band boundaries ──────────
+        // ── Interpolated wind-speed background ────────────────────
+        // Sample every few display pixels with the same vector interpolation used by arrows and
+        // the cursor. This keeps the color under a cursor consistent with its exact hour/altitude.
+        val backgroundStripHeightPx = max(1f, ceil(2.dp.toPx()))
         chart.hours.forEachIndexed { hourIndex, hour ->
+            val profile = profileByHour[hour] ?: return@forEachIndexed
             val x = plotLeft + hourIndex * columnWidth
-            visibleBands.forEach { band ->
-                val key = hour.toLong().shl(32) or band.centerKm.toBits().toLong()
-                val cell = cellLookup[key] ?: return@forEach
-                val topY = altitudeToY(
-                    band.topKm.coerceAtMost(effectiveTopAltitudeKm),
-                    minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
+            var stripTop = plotTop
+            while (stripTop < plotBottom) {
+                val stripBottom = min(stripTop + backgroundStripHeightPx, plotBottom)
+                val sampleAltitudeKm = yToAltitude(
+                    y = (stripTop + stripBottom) / 2f,
+                    minAltitudeKm = minAltitudeKm,
+                    maxAltitudeKm = effectiveTopAltitudeKm,
+                    plotTop = plotTop,
+                    plotBottom = plotBottom,
                 )
-                val bottomY = altitudeToY(
-                    band.bottomKm.coerceAtLeast(minAltitudeKm),
-                    minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-                )
-                drawRect(
-                    color = windSpeedBgColor(cell.speedKmh),
-                    topLeft = Offset(x, topY),
-                    size = Size(columnWidth, bottomY - topY),
-                )
+                val sample = interpolateWind(profile, sampleAltitudeKm)
+                if (sample != null) {
+                    drawRect(
+                        color = windSpeedBgColor(sample.speedKmh),
+                        topLeft = Offset(x, stripTop),
+                        size = Size(columnWidth, stripBottom - stripTop),
+                    )
+                }
+                stripTop = stripBottom
             }
         }
 
@@ -411,25 +412,14 @@ private fun WindChartCanvas(
         // evenly spaced grid of rows that fills the available vertical room, linearly
         // interpolating the wind (via u/v components, so direction wraps correctly)
         // between the surrounding levels. The lowest level is always the bottom row.
-        val clusteredHours = chart.hours.filterIndexed { i, _ -> i % hourCluster == 0 }
+        val hourClusters = buildWindHourClusters(chart.hours.size, hourCluster)
         val minArrowSpacingPx = arrowSizePx * 1.1f
         val arrowDrawSize = min(arrowSizePx, columnWidth * hourCluster * 0.8f)
 
-        // Per-hour wind profile (ascending altitude) used for interpolation.
-        val profileByHour = HashMap<Int, List<WindSample>>(chart.hours.size)
-        chart.hours.forEach { hour ->
-            val samples = chart.altitudeBandsKm.mapNotNull { altKm ->
-                val key = hour.toLong().shl(32) or altKm.toBits().toLong()
-                val cell = cellLookup[key] ?: return@mapNotNull null
-                WindSample(altKm, cell.speedKmh, cell.directionDeg)
-            }
-            if (samples.isNotEmpty()) profileByHour[hour] = samples
-        }
-
         // Evenly spaced target altitudes from the lowest visible level up to the
         // highest, one arrow row per ~minArrowSpacingPx of vertical space.
-        val lowAltKm = max(minAltitudeKm, visibleBands.first().centerKm)
-        val highAltKm = min(effectiveTopAltitudeKm, visibleBands.last().centerKm)
+        val lowAltKm = max(minAltitudeKm, lowAvailableAltitudeKm)
+        val highAltKm = min(effectiveTopAltitudeKm, highAvailableAltitudeKm)
         val kmPerPx = (effectiveTopAltitudeKm - minAltitudeKm) / plotHeight
         val altStepKm = (minArrowSpacingPx * kmPerPx).coerceAtLeast(0.01f)
         val arrowAltitudes = buildList {
@@ -441,9 +431,9 @@ private fun WindChartCanvas(
             if (isEmpty()) add(lowAltKm)
         }
 
-        clusteredHours.forEach { hour ->
-            val hourIndex = chart.hours.indexOf(hour)
-            val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
+        hourClusters.forEach { cluster ->
+            val hour = chart.hours[cluster.representativeIndex]
+            val cellCenterX = plotLeft + cluster.centerColumn * columnWidth
             val profile = profileByHour[hour] ?: return@forEach
 
             arrowAltitudes.forEach { altKm ->
@@ -534,9 +524,9 @@ private fun WindChartCanvas(
         }
 
         // Speed labels below each drawn arrow
-        clusteredHours.forEach { hour ->
-            val hourIndex = chart.hours.indexOf(hour)
-            val cellCenterX = plotLeft + hourIndex * columnWidth + columnWidth * hourCluster / 2f
+        hourClusters.forEach { cluster ->
+            val hour = chart.hours[cluster.representativeIndex]
+            val cellCenterX = plotLeft + cluster.centerColumn * columnWidth
             val profile = profileByHour[hour] ?: return@forEach
 
             arrowAltitudes.forEach arrowLabel@{ altKm ->
@@ -591,6 +581,24 @@ private fun WindChartCanvas(
             }
         }
 
+        // Compact right-edge markers point to representative heights where the profile contains
+        // direct model data. Every value between these markers uses interpolation.
+        visibleModelLevels.forEach { altitudeKm ->
+            val y = altitudeToY(
+                altitudeKm,
+                minAltitudeKm,
+                effectiveTopAltitudeKm,
+                plotTop,
+                plotBottom,
+            ).coerceIn(plotTop + 1.dp.toPx(), plotBottom - 1.dp.toPx())
+            drawModelLevelMarker(
+                rightEdgeX = plotRight - 1.dp.toPx(),
+                centerY = y,
+                fillColor = surfaceColor,
+                outlineColor = onSurfaceColor,
+            )
+        }
+
         // ── Crosshair overlay ──────────────────────────────────
         crosshairPos?.let { pos ->
             val cx = pos.x.coerceIn(plotLeft, plotRight)
@@ -637,17 +645,21 @@ private fun WindChartCanvas(
             }
 
             val altKm = yToAltitude(cy, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
-            val hourIdx = ((cx - plotLeft) / columnWidth).toInt()
-                .coerceIn(0, chart.hours.size - 1)
+            val hourIdx = windHourIndexAtX(
+                x = cx,
+                plotLeft = plotLeft,
+                columnWidth = columnWidth,
+                hourCount = chart.hours.size,
+            ) ?: return@let
             val hour = chart.hours[hourIdx]
-            val cell = chart.cells
-                .filter { it.hour == hour }
-                .minByOrNull { kotlin.math.abs(it.altitudeKm - altKm) }
+            val sample = profileByHour[hour]?.let { profile ->
+                interpolateWind(profile, altKm)
+            }
 
             val tooltipLines = mutableListOf<String>()
             tooltipLines += "${formatPaddedInt(hour, minimumDigits = 2)}h  ${formatAltitudeKm(altKm, displayUnits)}"
-            if (cell != null) {
-                tooltipLines += "${formatWindSpeed(cell.speedKmh, displayUnits)}  ${cell.directionDeg.toInt()}°"
+            if (sample != null) {
+                tooltipLines += "${formatWindSpeed(sample.speedKmh, displayUnits)}  ${sample.directionDeg.toInt()}°"
             }
 
             val tooltipLayouts = tooltipLines.map { textMeasurer.measureCanvasText(it, tooltipStyle) }
@@ -687,6 +699,28 @@ private fun WindChartCanvas(
             }
         }
     }
+}
+
+private fun DrawScope.drawModelLevelMarker(
+    rightEdgeX: Float,
+    centerY: Float,
+    fillColor: Color,
+    outlineColor: Color,
+) {
+    val width = 8.dp.toPx()
+    val halfHeight = 4.dp.toPx()
+    val marker = Path().apply {
+        moveTo(rightEdgeX - width, centerY)
+        lineTo(rightEdgeX, centerY - halfHeight)
+        lineTo(rightEdgeX, centerY + halfHeight)
+        close()
+    }
+    drawPath(path = marker, color = fillColor)
+    drawPath(
+        path = marker,
+        color = outlineColor.copy(alpha = 0.9f),
+        style = Stroke(width = 1.25.dp.toPx()),
+    )
 }
 
 private fun DrawScope.drawWindArrow(
@@ -741,53 +775,7 @@ private fun DrawScope.drawWindArrow(
     )
 }
 
-/** A wind reading at a single altitude, used to interpolate the profile. */
-private data class WindSample(
-    val altKm: Float,
-    val speedKmh: Float,
-    val directionDeg: Float,
-)
-
-/**
- * Linearly interpolate the wind at [targetKm] from a profile sorted ascending by
- * altitude. Interpolation is done on the u/v vector components so that direction
- * wraps correctly through 360°. Targets outside the profile are clamped to the
- * nearest end (no extrapolation), so edge rows still get a sensible arrow.
- */
-private fun interpolateWind(profile: List<WindSample>, targetKm: Float): WindSample? {
-    if (profile.isEmpty()) return null
-    val first = profile.first()
-    val last = profile.last()
-    if (targetKm <= first.altKm) return first
-    if (targetKm >= last.altKm) return last
-
-    var lowerIndex = 0
-    while (lowerIndex < profile.lastIndex && profile[lowerIndex + 1].altKm <= targetKm) {
-        lowerIndex++
-    }
-    val lower = profile[lowerIndex]
-    val upper = profile[lowerIndex + 1]
-    val span = upper.altKm - lower.altKm
-    if (span <= 0f) return lower
-    val t = ((targetKm - lower.altKm) / span).coerceIn(0f, 1f)
-
-    val (lowerU, lowerV) = windUV(lower.speedKmh, lower.directionDeg)
-    val (upperU, upperV) = windUV(upper.speedKmh, upper.directionDeg)
-    val u = lowerU + (upperU - lowerU) * t
-    val v = lowerV + (upperV - lowerV) * t
-
-    val speed = hypot(u, v)
-    val direction = ((atan2(u, v) * 180f / PI.toFloat()) + 360f) % 360f
-    return WindSample(targetKm, speed, direction)
-}
-
-/** Decompose a wind speed/direction into u/v components for interpolation. */
-private fun windUV(speedKmh: Float, directionDeg: Float): Pair<Float, Float> {
-    val rad = directionDeg * PI.toFloat() / 180f
-    return (speedKmh * sin(rad)) to (speedKmh * cos(rad))
-}
-
-/** Background color for wind cells — same scale as windSpeedColor but with moderate alpha. */
+/** Background color for interpolated wind samples. */
 private fun windSpeedBgColor(speedKmh: Float): Color {
     return windSpeedColor(speedKmh).copy(alpha = 0.68f)
 }

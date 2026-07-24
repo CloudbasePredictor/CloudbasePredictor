@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">วิธีใช้การพยากรณ์ลม</string>
     <string name="help_wind_summary">สีของความเร็วลมไล่จากสีน้ำเงินผ่านสีเขียวไปจนถึงสีแดง สีแดงแสดงค่าสูงสุดของสเกล (km/h):</string>
+    <string name="help_wind_model_levels_info">เครื่องหมายด้านขวาแสดงระดับความสูงที่มีข้อมูลลมโดยตรงจากแบบจำลอง ค่าระหว่างระดับจะถูกประมาณแบบแทรกสำหรับชั่วโมงที่เลือก</string>
     <string name="help_wind_moisture_title">สัญญาณความชื้น:</string>
     <string name="help_wind_ccl_line">เส้น CCL สีส้ม – ฐานเมฆคิวมูลัสโดยประมาณเมื่อมีการให้ความร้อนเพียงพอ</string>
 

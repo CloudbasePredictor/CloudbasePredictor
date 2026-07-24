@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Справка по прогнозу ветра</string>
     <string name="help_wind_summary">Цвета скорости ветра идут от синего через зелёный к красному; красный отмечает максимум шкалы (км/ч):</string>
+    <string name="help_wind_model_levels_info">Маркеры справа показывают высоты с прямыми данными ветра из модели. Значения между ними интерполируются для выбранного часа.</string>
     <string name="help_wind_moisture_title">Признаки влажности:</string>
     <string name="help_wind_ccl_line">Оранжевая линия CCL — оценочная база кучевых облаков при достаточном прогреве.</string>
 

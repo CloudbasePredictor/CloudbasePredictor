@@ -88,6 +88,43 @@ class ForecastChartBuildersWindTest {
         )
     }
 
+    @Test
+    fun buildWindChartFromData_marksOnlyDirectModelLevels() {
+        val chart = buildWindChartFromData(
+            hourlyData = HourlyForecastData(
+                latitude = 46.0,
+                longitude = 11.0,
+                elevation = 1_000.0,
+                hourlyPoints = listOf(
+                    openMeteoFozaHour(
+                        hour = 12,
+                        surfaceWindSpeed = 8.0,
+                        surfaceWindDirection = 220.0,
+                        pressureLevels = listOf(
+                            level(800, 5.0, 0.0, 20.0, 220.0, 2_000.0),
+                            level(
+                                pressureHpa = 700,
+                                temperatureC = -3.0,
+                                dewPointC = -10.0,
+                                windSpeedKmh = 30.0,
+                                windDirectionDeg = 230.0,
+                                geopotentialHeightM = 3_000.0,
+                                isSynthetic = true,
+                            ),
+                        ),
+                    ),
+                ),
+                dailyForecasts = emptyList(),
+            ),
+            dayIndex = 0,
+            maxAltitudeKm = 4.5f,
+        )
+
+        assertTrue(2f in chart.modelLevelAltitudesKm)
+        assertTrue(3f !in chart.modelLevelAltitudesKm)
+        assertTrue(chart.cells.none { it.altitudeKm == 3f })
+    }
+
     private fun openMeteoFozaIconSeamlessWindData(): HourlyForecastData {
         return HourlyForecastData(
             latitude = 45.82,
@@ -199,6 +236,7 @@ class ForecastChartBuildersWindTest {
         windSpeedKmh: Double,
         windDirectionDeg: Double,
         geopotentialHeightM: Double,
+        isSynthetic: Boolean = false,
     ): PressureLevelPoint {
         return PressureLevelPoint(
             pressureHpa = pressureHpa,
@@ -207,6 +245,7 @@ class ForecastChartBuildersWindTest {
             windSpeedKmh = windSpeedKmh,
             windDirectionDeg = windDirectionDeg,
             geopotentialHeightM = geopotentialHeightM,
+            isSynthetic = isSynthetic,
         )
     }
 }

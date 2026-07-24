@@ -34,8 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -125,6 +127,7 @@ internal fun HelpButtonOverlay(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             WindSpeedLegend(displayUnits = uiState.displayUnits)
+                            WindModelLevelLegendRow()
                             Spacer(modifier = Modifier.height(4.dp))
                             WindMoistureLegend()
                         }
@@ -460,6 +463,45 @@ private fun ThermicStrengthLegend(displayUnits: DisplayUnits) {
 }
 
 // ── Wind speed legend (0 → 60 km/h) ────────────────────────────────
+
+@Composable
+@Suppress("FunctionNaming")
+private fun WindModelLevelLegendRow() {
+    val markerFillColor = MaterialTheme.colorScheme.surface
+    val markerOutlineColor = MaterialTheme.colorScheme.onSurface
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Canvas(
+            modifier = Modifier
+                .width(36.dp)
+                .height(16.dp),
+        ) {
+            val rightEdgeX = size.width - 2.dp.toPx()
+            val centerY = size.height / 2f
+            val markerWidth = 8.dp.toPx()
+            val markerHalfHeight = 4.dp.toPx()
+            val marker = Path().apply {
+                moveTo(rightEdgeX - markerWidth, centerY)
+                lineTo(rightEdgeX, centerY - markerHalfHeight)
+                lineTo(rightEdgeX, centerY + markerHalfHeight)
+                close()
+            }
+            drawPath(path = marker, color = markerFillColor)
+            drawPath(
+                path = marker,
+                color = markerOutlineColor.copy(alpha = 0.9f),
+                style = Stroke(width = 1.25.dp.toPx()),
+            )
+        }
+        Text(
+            text = stringResource(R.string.help_wind_model_levels_info),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
 
 @Composable
 private fun WindMoistureLegend() {

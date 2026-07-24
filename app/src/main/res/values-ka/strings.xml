@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">ქარის პროგნოზის დახმარება</string>
     <string name="help_wind_summary">ქარის სიჩქარის ფერები გადადის ლურჯიდან მწვანეზე და წითელზე; წითელი აღნიშნავს სკალის მაქსიმუმს (km/h):</string>
+    <string name="help_wind_model_levels_info">მარჯვენა კიდის ნიშნები აჩვენებს სიმაღლეებს, სადაც მოდელის ქარის პირდაპირი მონაცემებია. შუალედური მნიშვნელობები არჩეული საათისთვის ინტერპოლირდება.</string>
     <string name="help_wind_moisture_title">ტენიანობის ნიშნები:</string>
     <string name="help_wind_ccl_line">ნარინჯისფერი CCL ხაზი – კუმულუსის სავარაუდო ფუძე, როდესაც გათბობა საკმარისია.</string>
 

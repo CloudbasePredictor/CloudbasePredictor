@@ -21,6 +21,8 @@ data class WindForecastChartUiModel(
     val altitudeBandsKm: List<Float>,
     /** Altitude bands with center/bottom/top boundaries for display. */
     val altitudeBands: List<WindAltitudeBand> = emptyList(),
+    /** Representative ASL heights where direct, non-synthetic model wind data is available. */
+    val modelLevelAltitudesKm: List<Float> = altitudeBandsKm,
     /** Grid cells with wind speed and direction per hour × altitude. */
     val cells: List<WindForecastCellUiModel>,
     /** Freezing level per hour (0 °C isotherm), km ASL. */
@@ -114,6 +116,7 @@ fun buildPlaceholderWindForecastChart(
         hours = hours,
         altitudeBandsKm = altitudes,
         altitudeBands = bands,
+        modelLevelAltitudesKm = altitudes,
         cells = cells,
     )
 }

@@ -181,6 +181,7 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">风预报帮助</string>
     <string name="help_wind_summary">风速颜色从蓝色经绿色到红色；红色标记色阶最大值（km/h）：</string>
+    <string name="help_wind_model_levels_info">右侧标记表示具有模型直接风数据的高度。标记之间的数值按所选小时插值。</string>
     <string name="help_wind_moisture_title">湿度提示：</string>
     <string name="help_wind_ccl_line">橙色 CCL 线 — 加热充足时估算的积云底。</string>
 
