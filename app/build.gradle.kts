@@ -55,8 +55,8 @@ android {
         applicationId = "com.cloudbasepredictor"
         minSdk = 25
         targetSdk = 36
-        versionCode = 17
-        versionName = providers.gradleProperty("cloudbaseVersionName").getOrElse("1.9.0")
+        versionCode = 18
+        versionName = providers.gradleProperty("cloudbaseVersionName").getOrElse("1.9.1")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

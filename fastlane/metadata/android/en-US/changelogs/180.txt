@@ -1,0 +1,4 @@
+New in 1.9.1:
+
+- Refresh forecasts manually while keeping the current data visible, with clear progress and failure feedback.
+- Wind profiles now interpolate correctly between pressure levels and use clearer arrow and speed labels.

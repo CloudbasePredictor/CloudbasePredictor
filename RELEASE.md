@@ -121,9 +121,37 @@ checkout's `metadata/com.cloudbasepredictor.yml`.
 ### 3. Run tests locally
 
 ```bash
+# Android release gates
 ./gradlew :app:testDebugUnitTest
+./gradlew :engine:allTests
+./gradlew :app:compileDebugAndroidTestKotlin
+./gradlew :app:detekt :engine:detekt
+
+# Shared and web release gates
+CHROME_BIN=/path/to/chrome ./gradlew :shared:allTests
+CHROME_BIN=/path/to/chrome ./gradlew :webApp:wasmJsBrowserTest
+./gradlew :shared:detekt :webApp:detekt
+npm test
+node scripts/launch-sites/build-snapshot.mjs \
+  --input scripts/launch-sites/fixtures/sample.geojson \
+  --output webApp/src/wasmJsMain/resources/data/launch-sites
+node scripts/launch-sites/verify-snapshot.mjs \
+  webApp/src/wasmJsMain/resources/data/launch-sites \
+  --min-sites 1
+BINARYEN_CORES=1 ./gradlew :webApp:wasmJsBrowserDistribution
+node scripts/web/check-bundle.mjs
+CHROME_BIN=/path/to/chrome node scripts/web/check-browser-release.mjs
+npm ci
+npx playwright install webkit
+npm run check:web:webkit-input
+
+# Release artifact
 ./gradlew :app:assembleRelease  # verify release build works
 ```
+
+Do not create the release tag until every gate passes. In particular, the
+production browser gates enforce the same bundle, runtime, accessibility, and
+persistence contracts that block the tag-driven release workflow.
 
 ### 4. Commit and tag
 
@@ -138,10 +166,11 @@ git push origin master --tags
 
 Pushing the tag triggers the **Release** workflow (`.github/workflows/release.yml`):
 
-1. Runs unit tests
-2. Builds signed ABI APKs and AAB
-3. Creates a GitHub Release with the APKs and AAB attached
-4. Optionally publishes the AAB to Google Play internal track
+1. Runs Android unit/engine tests, instrumentation compilation, and static analysis
+2. Runs shared/web tests, static analysis, snapshot validation, and production browser gates
+3. Builds signed ABI APKs and AAB
+4. Creates a GitHub Release with the APKs and AAB attached
+5. Optionally publishes the AAB to Google Play internal track
 
 ### 6. Promote on Google Play
 

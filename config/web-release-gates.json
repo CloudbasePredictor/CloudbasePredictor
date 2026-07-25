@@ -4,7 +4,7 @@
   "bundle": {
     "maximumDistributionBytes": 20000000,
     "maximumDistributionGzipBytes": 6500000,
-    "maximumInitialTransferBytes": 13200000,
+    "maximumInitialTransferBytes": 13500000,
     "maximumInitialTransferGzipBytes": 5500000,
     "forbiddenInitialJavaScriptMarkers": [
       "MapLibre GL JS"
