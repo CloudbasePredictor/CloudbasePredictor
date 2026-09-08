@@ -33,6 +33,10 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -62,8 +66,10 @@ import com.cloudbasepredictor.web.WebRouteState
 import com.cloudbasepredictor.web.i18n.LocalWebStrings
 import com.cloudbasepredictor.web.preferences.WebPreferencesState
 import com.cloudbasepredictor.web.preview.WebPreviewData
-import kotlin.coroutines.cancellation.CancellationException
-import kotlinx.coroutines.delay
+import com.cloudbasepredictor.data.forecast.ForecastLoadController
+import com.cloudbasepredictor.data.forecast.IncompleteForecastDataException
+import com.cloudbasepredictor.data.forecast.hasRequiredForecastInputs
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -92,45 +98,47 @@ fun WebForecastDestination(
         return
     }
 
-    var retryGeneration by remember(location, routeState.model) { mutableIntStateOf(0) }
-    var refreshGeneration by remember(location, routeState.model) { mutableIntStateOf(0) }
-    var isRefreshing by remember(location, routeState.model) { mutableStateOf(false) }
-    var refreshFailed by remember(location, routeState.model) { mutableStateOf(false) }
-    var loadState by remember(location, routeState.model) {
-        mutableStateOf<WebForecastLoadState>(WebForecastLoadState.Loading)
-    }
-    val forecastDays = routeState.model.availableForecastDays.coerceIn(1, MAX_WEB_FORECAST_DAYS)
-    LaunchedEffect(location, routeState.model, retryGeneration) {
-        loadState = WebForecastLoadState.Loading
-        loadState = try {
-            WebForecastLoadState.Ready(
-                repository.load(
+    val currentRoute by rememberUpdatedState(routeState)
+    val controller = remember(location, routeState.model, repository) {
+        ForecastLoadController(
+            fetch = { forceRefresh ->
+                val result = repository.load(
                     location = location,
                     requestedModel = routeState.model,
-                    forecastDays = forecastDays,
-                    forceRefresh = retryGeneration > 0,
-                ),
-            )
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            WebForecastLoadState.Error(message = strings.forecastLoadError)
-        }
+                    forecastDays = routeState.model.availableForecastDays.coerceIn(1, MAX_WEB_FORECAST_DAYS),
+                    forceRefresh = forceRefresh,
+                )
+                val selectedDay = currentRoute.dayIndex.coerceIn(
+                    0, result.hourlyData.dailyForecasts.lastIndex.coerceAtLeast(0),
+                )
+                if (!result.hourlyData.hasRequiredForecastInputs(selectedDay, currentRoute.hour)) {
+                    throw IncompleteForecastDataException()
+                }
+                result
+            },
+            refreshAtMillis = ::autoRefreshAtMillis,
+            nowMillis = repository::now,
+        )
     }
+    val loadState by controller.state.collectAsState()
+    val scope = key(controller) { rememberCoroutineScope() }
+    LaunchedEffect(controller) { controller.load() }
+    LaunchedEffect(controller) { controller.runAutoRefresh() }
+    val result = loadState.value
 
-    when (val state = loadState) {
-        WebForecastLoadState.Loading -> WebForecastLoading(location, modifier)
-        is WebForecastLoadState.Error -> WebForecastError(
-            message = state.message,
-            onRetry = { retryGeneration++ },
+    when {
+        result == null && loadState.failed -> WebForecastError(
+            message = strings.forecastLoadError,
+            onRetry = { scope.launch { controller.load(forceRefresh = true) } },
             modifier = modifier,
         )
-        is WebForecastLoadState.Ready -> {
+        result == null -> WebForecastLoading(location, modifier)
+        else -> {
             var visibleTopAltitudeKm by remember(location, routeState.model) {
                 mutableFloatStateOf(initialTopAltitudeKm ?: DEFAULT_VISIBLE_TOP_ALTITUDE_KM)
             }
             val readyState = remember(
-                state.result,
+                result,
                 routeState,
                 visibleTopAltitudeKm,
                 preferences.unitPreset,
@@ -138,76 +146,48 @@ fun WebForecastDestination(
                 favoritePlaces,
                 strings.forecast,
             ) {
-                buildWebForecastReadyState(
-                    WebForecastPresentationInput(
-                        location = location,
-                        requestedModel = routeState.model,
-                        result = state.result,
-                        mode = routeState.mode,
-                        dayIndex = routeState.dayIndex,
-                        hour = routeState.hour,
-                        visibleTopAltitudeKm = visibleTopAltitudeKm,
-                        unitPreset = preferences.unitPreset,
-                        mapLayer = preferences.mapLayer,
-                        favoritePlaces = favoritePlaces,
-                        forecastStrings = strings.forecast,
-                    ),
+                try {
+                    buildWebForecastReadyState(
+                        WebForecastPresentationInput(
+                            location = location,
+                            requestedModel = routeState.model,
+                            result = result,
+                            mode = routeState.mode,
+                            dayIndex = routeState.dayIndex,
+                            hour = routeState.hour,
+                            visibleTopAltitudeKm = visibleTopAltitudeKm,
+                            unitPreset = preferences.unitPreset,
+                            mapLayer = preferences.mapLayer,
+                            favoritePlaces = favoritePlaces,
+                            forecastStrings = strings.forecast,
+                        ),
+                    )
+                } catch (_: IncompleteForecastDataException) {
+                    null
+                }
+            }
+            if (readyState == null) {
+                WebForecastError(
+                    message = strings.forecastLoadError,
+                    onRetry = { scope.launch { controller.load(forceRefresh = true) } },
+                    modifier = modifier,
                 )
+                return
             }
             val currentId = SavedPlace.fromCoordinates(location.latitude, location.longitude).id
             val isFavorite = favoritePlaces.any { it.id == currentId }
-            LaunchedEffect(refreshGeneration) {
-                if (refreshGeneration == 0) return@LaunchedEffect
-                isRefreshing = true
-                refreshFailed = false
-                try {
-                    val refreshed = repository.load(
-                        location = location,
-                        requestedModel = routeState.model,
-                        forecastDays = forecastDays,
-                        forceRefresh = true,
-                    )
-                    loadState = WebForecastLoadState.Ready(refreshed)
-                } catch (exception: CancellationException) {
-                    throw exception
-                } catch (exception: Exception) {
-                    refreshFailed = true
-                } finally {
-                    isRefreshing = false
-                }
-            }
-            // Background auto-refresh at the next model run / midnight, keeping the current chart on
-            // failure (mirrors Android). The delay cancels automatically when the location/model change.
-            LaunchedEffect(state.result.fetchedAtMillis, state.result.resolvedModel) {
-                val waitMillis = autoRefreshDelayMillis(state.result, repository.now())
-                if (waitMillis != null) {
-                    delay(waitMillis)
-                    refreshGeneration++
-                }
-            }
-            LaunchedEffect(refreshFailed) {
-                if (refreshFailed) {
-                    delay(REFRESH_NOTICE_MILLIS)
-                    refreshFailed = false
-                }
-            }
             WebForecastReadyContent(
                 routeState = routeState,
                 uiState = readyState,
-                fromCache = state.result.fromCache,
-                refreshFailed = refreshFailed,
-                isRefreshing = isRefreshing,
+                fromCache = result.fromCache,
+                refreshFailed = loadState.failed,
+                isRefreshing = loadState.isLoading,
                 isFavorite = isFavorite,
                 onRouteChanged = onRouteChanged,
                 onForecastModelSelected = onForecastModelSelected,
                 onFavoriteToggle = { onFavoriteToggle(location, isFavorite) },
                 onShareRequested = onShareRequested,
-                onRefreshRequested = {
-                    if (!isRefreshing) {
-                        isRefreshing = true
-                        refreshGeneration++
-                    }
-                },
+                onRefreshRequested = { scope.launch { controller.load(forceRefresh = true) } },
                 onVisibleTopAltitudeChanged = {
                     visibleTopAltitudeKm = it
                     onTopAltitudeChanged(it)
@@ -585,12 +565,6 @@ private fun CenteredMessage(
     )
 }
 
-private sealed interface WebForecastLoadState {
-    data object Loading : WebForecastLoadState
-    data class Ready(val result: WebForecastResult) : WebForecastLoadState
-    data class Error(val message: String) : WebForecastLoadState
-}
-
 internal val ForecastMode.webLabel: String
     get() = when (this) {
         ForecastMode.THERMIC -> "Thermic"
@@ -599,19 +573,15 @@ internal val ForecastMode.webLabel: String
         ForecastMode.CLOUD -> "Cloud"
     }
 
-// Delay until the next model run (or UTC midnight, whichever is sooner) for a background refresh;
-// null when it is not worth scheduling (already due, or absurdly far away).
-private fun autoRefreshDelayMillis(result: WebForecastResult, nowMillis: Long): Long? {
+// Keep the platform's existing UTC-midnight policy; the shared controller owns retries.
+private fun autoRefreshAtMillis(result: WebForecastResult, nowMillis: Long): Long {
     val nextMidnight = ((nowMillis / DAY_MILLIS) + 1) * DAY_MILLIS
-    val target = minOf(result.nextExpectedUpdateMillis, nextMidnight)
-    return (target - nowMillis).takeIf { it in 1..MAX_AUTO_REFRESH_DELAY_MILLIS }
+    return minOf(result.nextExpectedUpdateMillis, nextMidnight)
 }
 
 private const val MAX_WEB_FORECAST_DAYS = 14
 private const val DEFAULT_VISIBLE_TOP_ALTITUDE_KM = 4f
 private const val DAY_MILLIS = 24L * 60L * 60L * 1000L
-private const val MAX_AUTO_REFRESH_DELAY_MILLIS = 26L * 60L * 60L * 1000L
-private const val REFRESH_NOTICE_MILLIS = 6000L
 
 @Preview(name = "Web forecast", showBackground = true, widthDp = 1024, heightDp = 760)
 @Composable

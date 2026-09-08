@@ -1,5 +1,8 @@
 package com.cloudbasepredictor.ui.screens.forecast
 
+import com.cloudbasepredictor.data.forecast.IncompleteForecastDataException
+import com.cloudbasepredictor.data.forecast.hasRequiredForecastInputs
+import com.cloudbasepredictor.data.forecast.hasRequiredForecastWindow
 import com.cloudbasepredictor.data.remote.HourlyForecastData
 import com.cloudbasepredictor.data.remote.HourlyPoint
 import com.cloudbasepredictor.data.remote.PressureLevelPoint
@@ -11,6 +14,7 @@ import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.SavedPlace
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -78,6 +82,180 @@ class ForecastReadyUiStateFactoryTest {
         assertTrue(valid.hasRequiredForecastInputs(dayIndex = 0, stuveHour = 12))
         assertFalse(missingWind.hasRequiredForecastInputs(dayIndex = 0, stuveHour = 12))
     }
+
+    @Test
+    fun factoryRejectsDailyDayWithoutMatchingHourlyDate() {
+        val data = forecastData()
+        val firstDayOnly = data.copy(hourlyPoints = data.hourlyPoints.filter { it.date == "2026-07-11" })
+
+        assertFailsWith<IncompleteForecastDataException> {
+            buildForecastReadyUiState(renderInput(firstDayOnly).copy(selectedDayIndex = 1))
+        }
+    }
+
+    @Test
+    fun factoryRejectsMismatchedDatesEvenWhenCountsMatch() {
+        val data = forecastData()
+        val mismatched = data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(date = "2026-07-13") })
+
+        assertFailsWith<IncompleteForecastDataException> {
+            buildForecastReadyUiState(renderInput(mismatched))
+        }
+    }
+
+    @Test
+    fun extraHourlyDatesCannotSelectADayWithoutADailyLabel() {
+        val data = forecastData()
+        val oneDailyDay = data.copy(dailyForecasts = data.dailyForecasts.take(1))
+
+        val state = buildForecastReadyUiState(renderInput(oneDailyDay).copy(selectedDayIndex = 99))
+
+        assertEquals(0, state.selectedDayIndex)
+        assertEquals(1, state.dayChips.size)
+    }
+
+    @Test
+    fun chartsResolveSelectedDailyDateInsteadOfHourlyPosition() {
+        val data = forecastData()
+        val secondDayOnly = data.copy(
+            hourlyPoints = data.hourlyPoints.filter { it.date == "2026-07-12" }
+                .map { it.copy(temperature2mC = 31.0) },
+        )
+
+        val state = buildForecastReadyUiState(renderInput(secondDayOnly).copy(selectedDayIndex = 1))
+
+        assertEquals(1, state.selectedDayIndex)
+        assertEquals(31f, state.stuveChart.temperatureProfile.first().temperatureC)
+        assertTrue(state.forecastText.contains("2026-07-12"))
+    }
+
+    @Test
+    fun factoryRejectsEmptyDataAndMissingRequiredFields() {
+        val data = forecastData()
+        val invalidData = listOf(
+            data.copy(hourlyPoints = emptyList()),
+            data.copy(dailyForecasts = emptyList()),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(temperature2mC = null) }),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(dewPoint2mC = null) }),
+            data.copy(hourlyPoints = data.hourlyPoints.map {
+                it.copy(windSpeed10mKmh = null, windDirection10mDeg = null, pressureLevels = emptyList())
+            }),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(hour = 2) }),
+        )
+
+        invalidData.forEach { incomplete ->
+            assertFailsWith<IncompleteForecastDataException> {
+                buildForecastReadyUiState(renderInput(incomplete))
+            }
+        }
+    }
+
+    @Test
+    fun syntheticPressureWindCannotMakeAnOtherwiseEmptyWindChartReady() {
+        val data = forecastData()
+        val syntheticWind = data.copy(hourlyPoints = data.hourlyPoints.map { point ->
+            point.copy(
+                windSpeed10mKmh = null,
+                windDirection10mDeg = null,
+                pressureLevels = point.pressureLevels.map { it.copy(isSynthetic = true) },
+            )
+        })
+
+        assertFailsWith<IncompleteForecastDataException> {
+            buildForecastReadyUiState(renderInput(syntheticWind))
+        }
+    }
+
+    @Test
+    fun missingRequestedHourUsesAndLabelsTheClosestAvailableDaytimeHour() {
+        val data = forecastData()
+        val limitedHours = data.copy(hourlyPoints = data.hourlyPoints.filter { it.hour <= 20 })
+
+        val state = buildForecastReadyUiState(renderInput(limitedHours).copy(stuveHour = 99))
+
+        assertEquals(20, state.stuveChart.selectedHour)
+    }
+
+    @Test
+    fun progressiveChipsRemainVisibleButAnUnloadedSelectionIsRejected() {
+        val data = forecastData()
+        val chips = buildForecastDayChips(data.dailyForecasts) + ForecastDayChipUiModel("Mon", "13 Jul")
+        val input = renderInput(data).copy(dayChips = chips)
+
+        assertEquals(chips, buildForecastReadyUiState(input).dayChips)
+        assertFailsWith<IncompleteForecastDataException> {
+            buildForecastReadyUiState(input.copy(selectedDayIndex = 2))
+        }
+    }
+
+    @Test
+    fun forecastWindowRejectsMissingSurfaceInputsAtAnyOfferedDaytimeHour() {
+        val data = forecastData()
+        for (hour in listOf(6, 18, 22)) {
+            for (missingTemperature in listOf(true, false)) {
+                val incomplete = data.copy(hourlyPoints = data.hourlyPoints.map { point ->
+                    when {
+                        point.hour != hour -> point
+                        missingTemperature -> point.copy(temperature2mC = null)
+                        else -> point.copy(dewPoint2mC = null)
+                    }
+                })
+
+                assertTrue(incomplete.hasRequiredForecastInputs(dayIndex = 0, stuveHour = 12))
+                assertFalse(incomplete.hasRequiredForecastWindow(forecastDays = 2), "Missing input at $hour:00")
+            }
+        }
+    }
+
+    @Test
+    fun forecastWindowAcceptsSparseDaytimeHoursAndIgnoresIncompleteNighttimePoints() {
+        val data = forecastData()
+        val sparse = data.copy(hourlyPoints = data.hourlyPoints.filter { it.hour in listOf(9, 18, 21) })
+        val withNighttimeGap = sparse.copy(
+            hourlyPoints = sparse.hourlyPoints + forecastPoint("2026-07-11", 3).copy(
+                temperature2mC = null,
+                dewPoint2mC = null,
+            ),
+        )
+
+        assertTrue(withNighttimeGap.hasRequiredForecastWindow(forecastDays = 5))
+    }
+
+    @Test
+    fun forecastWindowRejectsAnIncompleteLaterRequestedDay() {
+        val data = forecastData()
+        val incompleteSecondDay = data.copy(hourlyPoints = data.hourlyPoints.map { point ->
+            if (point.date == "2026-07-12") point.copy(temperature2mC = null) else point
+        })
+
+        assertTrue(incompleteSecondDay.hasRequiredForecastWindow(forecastDays = 1))
+        assertFalse(incompleteSecondDay.hasRequiredForecastWindow(forecastDays = 2))
+    }
+
+    @Test
+    fun forecastWindowAcceptsACompleteShorterFallbackHorizon() {
+        val data = forecastData()
+
+        assertTrue(data.hasRequiredForecastWindow(forecastDays = 5))
+    }
+
+    @Test
+    fun forecastWindowRejectsEmptyAndMismatchedDates() {
+        val data = forecastData()
+        val missingSecondDate = data.copy(hourlyPoints = data.hourlyPoints.filter { it.date == "2026-07-11" })
+
+        assertFalse(data.copy(dailyForecasts = emptyList()).hasRequiredForecastWindow(forecastDays = 2))
+        assertFalse(data.copy(hourlyPoints = emptyList()).hasRequiredForecastWindow(forecastDays = 2))
+        assertFalse(missingSecondDate.hasRequiredForecastWindow(forecastDays = 2))
+        assertFalse(data.hasRequiredForecastWindow(forecastDays = 0))
+    }
+
+    private fun renderInput(data: HourlyForecastData) = ForecastRenderInput(
+        hourlyData = data,
+        place = SavedPlace.fromCoordinates(data.latitude, data.longitude).copy(name = "Interlaken"),
+        requestedModel = ForecastModel.ICON_D2,
+        fetchedAtMillis = 1_752_220_800_000L,
+    )
 
     private fun forecastData(): HourlyForecastData {
         val dates = listOf("2026-07-11", "2026-07-12")

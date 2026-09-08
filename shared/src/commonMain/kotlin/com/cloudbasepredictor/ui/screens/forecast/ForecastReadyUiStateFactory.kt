@@ -8,9 +8,10 @@
 
 package com.cloudbasepredictor.ui.screens.forecast
 
+import com.cloudbasepredictor.data.forecast.IncompleteForecastDataException
+import com.cloudbasepredictor.data.forecast.validatedSelection
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.remote.HourlyForecastData
-import com.cloudbasepredictor.data.remote.HourlyPoint
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
 import com.cloudbasepredictor.data.units.resolveDisplayUnits
@@ -20,7 +21,6 @@ import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.SavedPlace
 import com.cloudbasepredictor.model.WeatherCode
 import com.cloudbasepredictor.util.toFixedDecimalString
-import kotlin.math.abs
 
 /** All platform-neutral inputs needed to prepare the shared forecast renderer. */
 data class ForecastRenderInput(
@@ -44,36 +44,39 @@ data class ForecastRenderInput(
     val forecastText: String? = null,
 )
 
+/** Builds a validated ready-state, or throws [IncompleteForecastDataException]. */
+fun buildForecastReadyUiState(input: ForecastRenderInput): ForecastReadyUiState =
+    buildForecastReadyUiStateOrNull(input) ?: throw IncompleteForecastDataException()
+
 /**
- * Builds every chart and the complete ready-state in common Kotlin.
+ * Builds all four charts only when the selected daily date has their required hourly inputs.
  *
- * The function is pure: callers own loading, validation, persistence and localization. Android
- * may supply its existing localized day chips/summary, while the web app can use the common
- * defaults and still execute the exact same four chart builders.
+ * Shells may supply localized labels, including progressive day chips whose data has not loaded
+ * yet. Selecting such a day returns null; hourly data from another date is never substituted.
  */
-fun buildForecastReadyUiState(input: ForecastRenderInput): ForecastReadyUiState {
+fun buildForecastReadyUiStateOrNull(input: ForecastRenderInput): ForecastReadyUiState? {
     val resolvedDayChips = input.dayChips ?: buildForecastDayChips(input.hourlyData.dailyForecasts)
-    val availablePointDayCount = input.hourlyData.pointsByDate().size
-    val lastAvailableDayIndex = maxOf(resolvedDayChips.size, availablePointDayCount) - 1
-    val safeDayIndex = input.selectedDayIndex.coerceIn(0, lastAvailableDayIndex.coerceAtLeast(0))
+    if (resolvedDayChips.isEmpty()) return null
+    val safeDayIndex = input.selectedDayIndex.coerceIn(0, resolvedDayChips.lastIndex)
+    val selection = input.hourlyData.validatedSelection(safeDayIndex, input.stuveHour) ?: return null
 
     return ForecastReadyUiState(
         selectedPlace = input.place,
         selectedForecastMode = input.selectedForecastMode,
         selectedDayIndex = safeDayIndex,
         chartViewport = input.chartViewport,
-        thermicChart = buildThermicChartFromData(input.hourlyData, dayIndex = safeDayIndex),
+        thermicChart = buildThermicChartFromData(input.hourlyData, dayIndex = selection.hourlyDayIndex),
         stuveChart = buildStuveChartFromData(
             hourlyData = input.hourlyData,
-            dayIndex = safeDayIndex,
-            hour = input.stuveHour.coerceIn(FIRST_FORECAST_HOUR, LAST_FORECAST_HOUR),
+            dayIndex = selection.hourlyDayIndex,
+            hour = selection.stuveHour,
         ),
         windChart = buildWindChartFromData(
             hourlyData = input.hourlyData,
-            dayIndex = safeDayIndex,
+            dayIndex = selection.hourlyDayIndex,
             maxAltitudeKm = input.chartViewport.visibleTopAltitudeKm,
         ),
-        cloudChart = buildCloudChartFromData(input.hourlyData, dayIndex = safeDayIndex),
+        cloudChart = buildCloudChartFromData(input.hourlyData, dayIndex = selection.hourlyDayIndex),
         dayChips = resolvedDayChips,
         forecastText = input.forecastText ?: buildForecastSummary(
             mode = input.selectedForecastMode,
@@ -91,30 +94,6 @@ fun buildForecastReadyUiState(input: ForecastRenderInput): ForecastReadyUiState 
         unitPreset = input.unitPreset,
         displayUnits = input.displayUnits,
     )
-}
-
-/** Checks the minimum shared inputs required by all four chart renderers. */
-fun HourlyForecastData.hasRequiredForecastInputs(
-    dayIndex: Int,
-    stuveHour: Int,
-): Boolean {
-    val pointsByDate = pointsByDate()
-    val dateKey = pointsByDate.keys.sorted().getOrNull(dayIndex) ?: return false
-    val dayPoints = pointsByDate[dateKey].orEmpty()
-    val daytimePoints = dayPoints.filter { it.hour in FIRST_FORECAST_HOUR..LAST_FORECAST_HOUR }
-    if (daytimePoints.isEmpty()) return false
-
-    val hasThermicSurfaceInputs = daytimePoints.any { point ->
-        point.temperature2mC != null && point.dewPoint2mC != null
-    }
-    if (!hasThermicSurfaceInputs) return false
-
-    val stuvePoint = dayPoints.firstOrNull { it.hour == stuveHour }
-        ?: dayPoints.minByOrNull { point -> abs(point.hour - stuveHour) }
-        ?: return false
-    if (stuvePoint.temperature2mC == null || stuvePoint.dewPoint2mC == null) return false
-
-    return daytimePoints.any { point -> point.hasRenderableWindInputs() }
 }
 
 /** Builds deterministic English day labels without a JVM date or locale dependency. */
@@ -165,16 +144,6 @@ fun buildForecastSummary(
     }
 }
 
-private fun HourlyPoint.hasRenderableWindInputs(): Boolean {
-    val hasSurfaceWind = windSpeed10mKmh != null && windDirection10mDeg != null
-    val hasPressureLevelWind = pressureLevels.any { level ->
-        level.geopotentialHeightM != null &&
-            level.windSpeedKmh != null &&
-            level.windDirectionDeg != null
-    }
-    return hasSurfaceWind || hasPressureLevelWind
-}
-
 private fun formatIsoWeekday(date: String): String? {
     val (year, month, day) = parseIsoDate(date) ?: return null
     val offsets = intArrayOf(0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4)
@@ -215,6 +184,4 @@ private val MONTH_LABELS = listOf(
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 )
 private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-private const val FIRST_FORECAST_HOUR = 6
-private const val LAST_FORECAST_HOUR = 22
 private const val METERS_PER_KILOMETER = 1000f

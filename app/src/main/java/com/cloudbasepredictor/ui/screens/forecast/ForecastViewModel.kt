@@ -7,6 +7,7 @@ import com.cloudbasepredictor.data.forecast.MAX_FORECAST_DAYS
 import com.cloudbasepredictor.data.forecast.ForecastViewportRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cloudbasepredictor.data.forecast.ForecastRefreshScheduler
 import com.cloudbasepredictor.data.forecast.ForecastRepository
 import com.cloudbasepredictor.data.forecast.exposedForecastDayCount
 import com.cloudbasepredictor.data.forecast.nextForecastCacheRefreshMillis
@@ -38,7 +39,6 @@ import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -83,6 +83,8 @@ class ForecastViewModel @Inject constructor(
 
     private val _networkErrorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val networkErrorEvent: SharedFlow<String> = _networkErrorEvent
+
+    private val refreshFailures = MutableStateFlow(0)
 
     private val forecastPlace: StateFlow<SavedPlace?> = placeLocation
         .map { location -> location?.toSavedPlace() }
@@ -223,6 +225,7 @@ class ForecastViewModel @Inject constructor(
                     val place = target.place
                     val model = target.model
                     errorMessage.value = null
+                    refreshFailures.value = 0
 
                     if (place == null) {
                         cancelForecastLoad()
@@ -252,9 +255,10 @@ class ForecastViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            forecastRefreshTarget.collectLatest { refreshTarget ->
-                scheduleRefreshForSnapshot(refreshTarget)
-            }
+            combine(forecastRefreshTarget, refreshFailures) { target, failures -> target to failures }
+                .collectLatest { (refreshTarget, failures) ->
+                    scheduleRefreshForSnapshot(refreshTarget, failures)
+                }
         }
     }
 
@@ -363,11 +367,11 @@ class ForecastViewModel @Inject constructor(
         model: ForecastModel,
         forecastDays: Int,
         forceRefresh: Boolean = false,
-    ) {
+    ): Job {
         val generation = ++forecastLoadGeneration
         forecastLoadJob?.cancel()
         isLoading.value = true
-        forecastLoadJob = viewModelScope.launch {
+        val job = viewModelScope.launch {
             Timber.i(
                 "Loading forecast: model=%s days=%d forceRefresh=%b",
                 model.apiName,
@@ -395,6 +399,8 @@ class ForecastViewModel @Inject constructor(
                 }
             }
         }
+        forecastLoadJob = job
+        return job
     }
 
     private fun cancelForecastLoad() {
@@ -417,6 +423,8 @@ class ForecastViewModel @Inject constructor(
                 model = model,
                 forecastDays = forecastDays,
             )
+        }.onSuccess {
+            refreshFailures.value = 0
         }.onFailure { throwable ->
             if (throwable is CancellationException) {
                 throw throwable
@@ -430,44 +438,49 @@ class ForecastViewModel @Inject constructor(
                 forceRefresh,
             )
             errorMessage.value = msg
+            refreshFailures.update { it + 1 }
             _networkErrorEvent.tryEmit(msg)
         }
     }
 
-    private suspend fun scheduleRefreshForSnapshot(refreshTarget: ForecastRefreshTarget) {
+    private suspend fun scheduleRefreshForSnapshot(
+        refreshTarget: ForecastRefreshTarget,
+        failures: Int,
+    ) {
         val target = refreshTarget.target
         val place = target.place ?: return
         val snapshot = refreshTarget.snapshot ?: return
-        val refreshAtMillis = nextForecastCacheRefreshMillis(
+        val refreshAtMillis = if (failures > 0) {
+            System.currentTimeMillis() + ForecastRefreshScheduler.retryDelayMillis(failures)
+        } else nextForecastCacheRefreshMillis(
             snapshot = snapshot,
             requestedModel = target.model,
             nowMillis = System.currentTimeMillis(),
         )
-        val refreshDelayMillis = (refreshAtMillis - System.currentTimeMillis()).coerceAtLeast(0L)
-        if (refreshDelayMillis > 0L) {
-            delay(refreshDelayMillis)
-        }
-        if (isLoading.value) return
-
-        val requiredForecastDays = requestedForecastDaysForDayIndex(
-            dayIndex = selectedDayIndex.value,
-            maxForecastDays = (uiState.value.resolvedModel ?: target.model).visibleForecastDays(),
-        )
-        if (forecastRepository.isCached(
-                placeId = place.id,
-                model = target.model,
-                minimumForecastDays = requiredForecastDays,
+        ForecastRefreshScheduler(System::currentTimeMillis).refreshWhenDue(refreshAtMillis) {
+            if (isLoading.value) return@refreshWhenDue false
+            val requiredForecastDays = requestedForecastDaysForDayIndex(
+                dayIndex = selectedDayIndex.value,
+                maxForecastDays = (uiState.value.resolvedModel ?: target.model).visibleForecastDays(),
             )
-        ) {
-            return
+            if (failures == 0 && forecastRepository.isCached(
+                    placeId = place.id,
+                    model = target.model,
+                    minimumForecastDays = requiredForecastDays,
+                )
+            ) {
+                return@refreshWhenDue true
+            }
+            errorMessage.value = null
+            val loadJob = startForecastLoad(
+                place = place,
+                model = target.model,
+                forecastDays = requiredForecastDays,
+                forceRefresh = failures > 0,
+            )
+            loadJob.join()
+            !loadJob.isCancelled && errorMessage.value == null
         }
-
-        errorMessage.value = null
-        startForecastLoad(
-            place = place,
-            model = target.model,
-            forecastDays = requiredForecastDays,
-        )
     }
 }
 
@@ -595,26 +608,7 @@ internal fun reduceForecastUiState(
     )
     val safeDayIndex = currentChartContext.selectedDayIndex.coerceIn(0, dayChips.lastIndex)
 
-    if (!hourlyData.hasRequiredForecastInputs(
-            dayIndex = safeDayIndex,
-            stuveHour = currentChartContext.stuveHour,
-        )
-    ) {
-        return ForecastErrorUiState(
-            errorMessage = incompleteDataError,
-            selectedPlace = place,
-            selectedForecastMode = currentChartContext.selectedForecastMode,
-            selectedDayIndex = safeDayIndex,
-            selectedModel = selectedModel,
-            resolvedModel = snapshot.resolvedModel,
-            favoritePlaces = favoritePlaces,
-            mapLayer = preferences.mapLayer,
-            unitPreset = preferences.unitPreset,
-            displayUnits = preferences.displayUnits,
-        )
-    }
-
-    return buildForecastReadyUiState(
+    val readyState = buildForecastReadyUiStateOrNull(
         ForecastRenderInput(
             hourlyData = hourlyData,
             place = place,
@@ -638,7 +632,19 @@ internal fun reduceForecastUiState(
                 safeDayIndex,
             ),
         ),
-    ).copy(isRefreshing = loading)
+    )
+    return readyState?.copy(isRefreshing = loading) ?: ForecastErrorUiState(
+        errorMessage = incompleteDataError,
+        selectedPlace = place,
+        selectedForecastMode = currentChartContext.selectedForecastMode,
+        selectedDayIndex = safeDayIndex,
+        selectedModel = selectedModel,
+        resolvedModel = snapshot.resolvedModel,
+        favoritePlaces = favoritePlaces,
+        mapLayer = preferences.mapLayer,
+        unitPreset = preferences.unitPreset,
+        displayUnits = preferences.displayUnits,
+    )
 }
 
 private data class ForecastLoadTarget(

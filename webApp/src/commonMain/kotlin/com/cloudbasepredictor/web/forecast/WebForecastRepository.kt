@@ -2,6 +2,8 @@ package com.cloudbasepredictor.web.forecast
 
 import com.cloudbasepredictor.data.forecast.ForecastCacheRecord
 import com.cloudbasepredictor.data.forecast.ForecastCacheStore
+import com.cloudbasepredictor.data.forecast.IncompleteForecastDataException
+import com.cloudbasepredictor.data.forecast.hasRequiredForecastWindow
 import com.cloudbasepredictor.data.remote.HourlyForecastData
 import com.cloudbasepredictor.model.ForecastModel
 import com.cloudbasepredictor.model.PlaceLocation
@@ -51,6 +53,7 @@ class WebForecastRepository(
         }
 
         val (resolvedModel, hourlyData) = source.fetch(location, requestedModel, forecastDays)
+        if (!hourlyData.hasRequiredForecastWindow(forecastDays)) throw IncompleteForecastDataException()
         val fetchedAtMillis = nowMillis()
         cacheStore.upsert(
             ForecastCacheRecord(
@@ -94,6 +97,7 @@ class WebForecastRepository(
             json.decodeFromString(HourlyForecastData.serializer(), record.hourlyDataJson)
         }.getOrNull() ?: return null
         if (hourlyData.dailyForecasts.size < minimumForecastDays) return null
+        if (!hourlyData.hasRequiredForecastWindow(minimumForecastDays)) return null
         return WebForecastResult(
             hourlyData = hourlyData,
             resolvedModel = resolvedModel,

@@ -46,9 +46,7 @@ fun buildWebForecastReadyState(input: WebForecastPresentationInput): ForecastRea
     val place = input.location.toSavedPlace(input.favoritePlaces)
     val days = input.result.hourlyData.dailyForecasts
     val dayChips = buildLocalizedWebForecastDayChips(days, input.forecastStrings)
-    val availablePointDayCount = input.result.hourlyData.pointsByDate().size
-    val lastAvailableDayIndex = maxOf(dayChips.size, availablePointDayCount) - 1
-    val safeDayIndex = input.dayIndex.coerceIn(0, lastAvailableDayIndex.coerceAtLeast(0))
+    val safeDayIndex = input.dayIndex.coerceIn(0, dayChips.lastIndex.coerceAtLeast(0))
 
     return buildForecastReadyUiState(
         ForecastRenderInput(

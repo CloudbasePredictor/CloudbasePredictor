@@ -79,6 +79,9 @@ BINARYEN_CORES=1 ./gradlew :webApp:wasmJsBrowserDistribution
 Production bundle, Chromium parity, and mobile WebKit input checks are
 documented in [Web release gates](docs/web-release-gates.md).
 
+The engine also checks [independent atmospheric references](docs/forecast-calculation-references.md),
+with documented sources and numerical tolerances, alongside its golden regression fixtures.
+
 ## Data Sources and Maps
 
 - Forecast data is provided by [Open-Meteo](https://open-meteo.com/), including pressure-level forecast profiles from models such as ICON and GFS.

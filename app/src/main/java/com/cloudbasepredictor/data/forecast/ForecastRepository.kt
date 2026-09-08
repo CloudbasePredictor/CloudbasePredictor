@@ -19,10 +19,15 @@ import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -64,6 +69,10 @@ class InMemoryForecastRepository @Inject constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ForecastRepository {
     private val cachedForecasts = MutableStateFlow<Map<String, ForecastSnapshot>>(emptyMap())
+    // Fetches and DB reads may overlap; commits and invalidation must be ordered together.
+    private val cacheCommitMutex = Mutex()
+    private var cacheGeneration = 0L
+    private var cacheDataSource: DataSourcePreference? = null
 
     override fun observeForecast(placeId: String, model: ForecastModel): Flow<ForecastSnapshot?> {
         return cachedForecasts
@@ -100,11 +109,17 @@ class InMemoryForecastRepository @Inject constructor(
         forecastDays: Int,
     ) = withContext(ioDispatcher) {
         val key = cacheKey(place.id, model)
+        val request = cacheCommitMutex.withLock {
+            val source = dataSourceRepository.preference.value
+            if (source != cacheDataSource) {
+                cacheGeneration += 1
+                cacheDataSource = source
+                cachedForecasts.value = emptyMap()
+            }
 
-        // 1. Check in-memory cache
-        if (!forceRefresh && cachedForecasts.value.containsKey(key)) {
+            // 1. Check the memory cache in the same generation as this request.
             val existing = cachedForecasts.value[key]
-            if (existing != null && isForecastCacheUsable(
+            if (!forceRefresh && existing != null && isForecastCacheUsable(
                     snapshot = existing,
                     requestedModel = model,
                     minimumForecastDays = forecastDays,
@@ -113,19 +128,85 @@ class InMemoryForecastRepository @Inject constructor(
             ) {
                 return@withContext
             }
+            CacheRequest(cacheGeneration, source)
         }
 
         // 2. Check DB cache (only for REAL data source)
-        if (!forceRefresh && dataSourceRepository.preference.value == DataSourcePreference.REAL) {
+        if (!forceRefresh && request.source == DataSourcePreference.REAL) {
             val dbSnapshot = loadFromDbCache(place.id, model, forecastDays)
             if (dbSnapshot != null) {
-                cachedForecasts.value = cachedForecasts.value + (key to dbSnapshot)
+                cacheCommitMutex.withLock {
+                    currentCoroutineContext().ensureActive()
+                    if (isCurrent(request)) {
+                        cachedForecasts.update { it + (key to dbSnapshot) }
+                    }
+                }
                 return@withContext
             }
         }
 
         // 3. Fetch from network, assets, or generate fake data
-        val snapshot = when (dataSourceRepository.preference.value) {
+        val snapshot = fetchSnapshot(place, model, forecastDays, request.source)
+
+        cacheCommitMutex.withLock {
+            currentCoroutineContext().ensureActive()
+            if (!isCurrent(request)) return@withLock
+
+            // Keep the durable write inside the commit so clear cannot be overtaken by it.
+            if (request.source == DataSourcePreference.REAL) {
+                saveToDbCache(
+                    placeId = place.id,
+                    requestedModel = model,
+                    resolvedModel = requireNotNull(snapshot.resolvedModel),
+                    forecastDays = snapshot.forecastDays,
+                    hourlyData = requireNotNull(snapshot.hourlyData),
+                    fetchedAtMillis = snapshot.updatedAtUtcMillis,
+                )
+            }
+
+            currentCoroutineContext().ensureActive()
+            if (isCurrent(request)) {
+                cachedForecasts.update { it + (key to snapshot) }
+            }
+        }
+    }
+
+    override suspend fun cleanupOldForecasts(cutoffMillis: Long) = withContext(ioDispatcher) {
+        try {
+            val deleted = forecastCacheStore.deleteOlderThan(cutoffMillis)
+            if (deleted > 0) {
+                Timber.d("Cleaned up %d old cached forecasts", deleted)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to clean up old forecasts")
+            handleDbError(e)
+        }
+    }
+
+    override suspend fun clearAllCaches() = withContext(ioDispatcher) {
+        cacheCommitMutex.withLock {
+            cacheGeneration += 1
+            cachedForecasts.value = emptyMap()
+            try {
+                forecastCacheStore.deleteAll()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to clear forecast cache")
+                handleDbError(e)
+            }
+        }
+    }
+
+    private suspend fun fetchSnapshot(
+        place: SavedPlace,
+        model: ForecastModel,
+        forecastDays: Int,
+        source: DataSourcePreference,
+    ): ForecastSnapshot {
+        return when (source) {
             DataSourcePreference.FAKE -> {
                 val fakeDays = generateFakeDays(forecastDays)
                 ForecastSnapshot(
@@ -154,10 +235,13 @@ class InMemoryForecastRepository @Inject constructor(
                     requestedModel = model,
                     forecastDays = forecastDays,
                 )
+                if (!hourlyData.hasRequiredForecastWindow(forecastDays)) {
+                    throw IncompleteForecastDataException()
+                }
                 val now = System.currentTimeMillis()
-                val modelGenEstimate = estimateModelRunTime(now, resolvedModel)
+                val modelGenEstimate = estimateModelRunTimeInternal(now, resolvedModel)
                 val loadedForecastDays = hourlyData.dailyForecasts.size.coerceAtMost(forecastDays)
-                val snapshot = ForecastSnapshot(
+                ForecastSnapshot(
                     days = hourlyData.dailyForecasts,
                     updatedAtUtcMillis = now,
                     hourlyData = hourlyData,
@@ -165,42 +249,16 @@ class InMemoryForecastRepository @Inject constructor(
                     forecastDays = loadedForecastDays,
                     modelGeneratedAtMillis = modelGenEstimate,
                 )
-
-                // Store in DB cache
-                saveToDbCache(place.id, model, resolvedModel, loadedForecastDays, hourlyData, now)
-
-                snapshot
             }
         }
-
-        cachedForecasts.value = cachedForecasts.value + (key to snapshot)
     }
 
-    override suspend fun cleanupOldForecasts(cutoffMillis: Long) = withContext(ioDispatcher) {
-        try {
-            val deleted = forecastCacheStore.deleteOlderThan(cutoffMillis)
-            if (deleted > 0) {
-                Timber.d("Cleaned up %d old cached forecasts", deleted)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to clean up old forecasts")
-            handleDbError(e)
-        }
-    }
+    /** Called while holding [cacheCommitMutex]. */
+    private fun isCurrent(request: CacheRequest): Boolean =
+        request.generation == cacheGeneration &&
+            request.source == dataSourceRepository.preference.value
 
-    override suspend fun clearAllCaches() = withContext(ioDispatcher) {
-        cachedForecasts.value = emptyMap()
-        try {
-            forecastCacheStore.deleteAll()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to clear forecast cache")
-            handleDbError(e)
-        }
-    }
+    private data class CacheRequest(val generation: Long, val source: DataSourcePreference)
 
     private suspend fun loadFromDbCache(
         placeId: String,
@@ -215,6 +273,11 @@ class InMemoryForecastRepository @Inject constructor(
             if (entity.forecastDays < minForecastDays) return null
 
             val hourlyData = json.decodeFromString<HourlyForecastData>(entity.hourlyDataJson)
+            if (hourlyData.dailyForecasts.size < minForecastDays ||
+                !hourlyData.hasRequiredForecastWindow(minForecastDays)
+            ) {
+                return null
+            }
             val resolvedModel = ForecastModel.fromApiName(entity.resolvedModelApiName) ?: model
             if (now >= entity.nextExpectedUpdateMillis) return null
 
@@ -224,7 +287,7 @@ class InMemoryForecastRepository @Inject constructor(
                 hourlyData = hourlyData,
                 resolvedModel = resolvedModel,
                 forecastDays = entity.forecastDays,
-                modelGeneratedAtMillis = estimateModelRunTime(entity.fetchedAtMillis, resolvedModel),
+                modelGeneratedAtMillis = estimateModelRunTimeInternal(entity.fetchedAtMillis, resolvedModel),
             )
             if (!isForecastCacheUsable(
                     snapshot = snapshot,
@@ -279,13 +342,10 @@ class InMemoryForecastRepository @Inject constructor(
             databaseErrorManager.reportError(e)
         }
     }
+}
 
-    private fun cacheKey(placeId: String, model: ForecastModel): String {
-        return "$placeId:${model.apiName}"
-    }
-
-    private fun estimateModelRunTime(fetchedAtMillis: Long, model: ForecastModel): Long =
-        estimateModelRunTimeInternal(fetchedAtMillis, model)
+private fun cacheKey(placeId: String, model: ForecastModel): String {
+    return "$placeId:${model.apiName}"
 }
 
 /**

@@ -1,5 +1,6 @@
 package com.cloudbasepredictor.web.forecast
 
+import com.cloudbasepredictor.data.forecast.IncompleteForecastDataException
 import com.cloudbasepredictor.data.map.MapLayerPreference
 import com.cloudbasepredictor.data.remote.HourlyForecastData
 import com.cloudbasepredictor.data.remote.HourlyPoint
@@ -13,6 +14,7 @@ import com.cloudbasepredictor.web.i18n.englishWebForecastStrings
 import com.cloudbasepredictor.web.i18n.russianWebForecastStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -40,6 +42,7 @@ class WebForecastPresentationTest {
             ),
         )
 
+        assertEquals(20, state.stuveChart.selectedHour)
         assertEquals(0, state.selectedDayIndex)
         assertEquals(ForecastMode.STUVE, state.selectedForecastMode)
         assertEquals(ForecastModel.ICON_EU, state.resolvedModel)
@@ -79,6 +82,66 @@ class WebForecastPresentationTest {
         assertFalse(state.forecastText.contains("Partly cloudy"))
         assertFalse(state.forecastText.contains("Today"))
     }
+
+    @Test
+    fun incompleteForecastsCannotBecomeReadyOnTheWeb() {
+        val data = sampleHourlyData()
+        val invalidData = listOf(
+            data.copy(hourlyPoints = emptyList()),
+            data.copy(dailyForecasts = emptyList()),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(date = "2026-07-12") }),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(temperature2mC = null) }),
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(dewPoint2mC = null) }),
+            data.copy(hourlyPoints = data.hourlyPoints.map {
+                it.copy(windSpeed10mKmh = null, windDirection10mDeg = null, pressureLevels = emptyList())
+            }),
+        )
+
+        invalidData.forEach { incomplete ->
+            assertFailsWith<IncompleteForecastDataException> {
+                buildWebForecastReadyState(presentationInput(incomplete))
+            }
+        }
+    }
+
+    @Test
+    fun dailyDateWithoutHourlyDataCannotBecomeReadyOnTheWeb() {
+        val data = sampleHourlyData()
+        val secondDailyDay = data.copy(
+            dailyForecasts = data.dailyForecasts + DailyForecast("2026-07-12", 25.0, 13.0, 2),
+        )
+
+        assertFailsWith<IncompleteForecastDataException> {
+            buildWebForecastReadyState(presentationInput(secondDailyDay).copy(dayIndex = 1))
+        }
+    }
+
+    @Test
+    fun extraHourlyDateDoesNotExtendTheWebDaySelection() {
+        val data = sampleHourlyData()
+        val extraHourlyDay = data.copy(
+            hourlyPoints = data.hourlyPoints + data.hourlyPoints.map { it.copy(date = "2026-07-12") },
+        )
+
+        val state = buildWebForecastReadyState(presentationInput(extraHourlyDay).copy(dayIndex = 99))
+
+        assertEquals(0, state.selectedDayIndex)
+        assertTrue(state.forecastText.contains("Today"))
+    }
+
+    private fun presentationInput(data: HourlyForecastData) = WebForecastPresentationInput(
+        location = PlaceLocation(47.67, 11.56, "Brauneck"),
+        requestedModel = ForecastModel.ICON_D2,
+        result = WebForecastResult(data, ForecastModel.ICON_EU, 1_752_225_600_000L, false),
+        mode = ForecastMode.THERMIC,
+        dayIndex = 0,
+        hour = 12,
+        visibleTopAltitudeKm = 6f,
+        unitPreset = UnitPreset.METRIC_KMH,
+        mapLayer = MapLayerPreference.OPENFREEMAP,
+        favoritePlaces = emptyList(),
+        forecastStrings = englishWebForecastStrings,
+    )
 
     private fun sampleHourlyData(): HourlyForecastData {
         val pressureLevels = listOf(
