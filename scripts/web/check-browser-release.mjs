@@ -1537,6 +1537,8 @@ async function launchChrome() {
     "--disable-dev-shm-usage",
     "--no-first-run",
     "--no-default-browser-check",
+    // This disposable test profile must not wait for an unavailable desktop keyring to open cookies.
+    "--password-store=basic",
     "--enable-unsafe-swiftshader",
     "--use-gl=angle",
     "--use-angle=swiftshader",

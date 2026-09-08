@@ -26,6 +26,12 @@ size and prevents MapLibre from being linked into a script loaded directly by
 gzip, starts headless Chromium at a mobile viewport, and uses the Chrome
 DevTools Protocol (CDP) to measure startup and exercise the release build.
 
+Chromium uses a disposable profile with `--password-store=basic` so startup does
+not depend on a desktop keyring. On a headless Linux host, opening the cookie
+store otherwise stalled for about 25 seconds before the first localhost HTTP
+request. The existing startup and forecast-ready budgets cover this regression;
+they include the entire navigation and are not relaxed for environment delays.
+
 The browser gate verifies:
 
 - time until the Compose viewport is visible;
