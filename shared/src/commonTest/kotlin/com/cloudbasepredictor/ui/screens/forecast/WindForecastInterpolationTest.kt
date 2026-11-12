@@ -3,6 +3,8 @@ package com.cloudbasepredictor.ui.screens.forecast
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -19,6 +21,7 @@ class WindForecastInterpolationTest {
         )
 
         assertNotNull(sample)
+        assertTrue(sample.isInterpolated)
         assertEquals(3f, sample.altitudeKm, absoluteTolerance = 0.001f)
         assertEquals(20f, sample.speedKmh, absoluteTolerance = 0.001f)
         assertEquals(270f, sample.directionDeg, absoluteTolerance = 0.001f)
@@ -36,6 +39,7 @@ class WindForecastInterpolationTest {
         )
 
         assertNotNull(sample)
+        assertFalse(sample.isInterpolated)
         assertEquals(3f, sample.altitudeKm, absoluteTolerance = 0.001f)
         assertEquals(23f, sample.speedKmh, absoluteTolerance = 0.001f)
         assertEquals(315f, sample.directionDeg, absoluteTolerance = 0.001f)
@@ -79,7 +83,7 @@ class WindForecastInterpolationTest {
     }
 
     @Test
-    fun windHourIndexAtX_splitsVisualClusterIntoHourlyColumns() {
+    fun windHourIndexAtX_selectsEachHourlyColumn() {
         val plotLeft = 60f
         val columnWidth = 30f
 
@@ -89,17 +93,33 @@ class WindForecastInterpolationTest {
     }
 
     @Test
-    fun buildWindHourClusters_usesCenterHourWithoutAveraging() {
-        val clusters = buildWindHourClusters(hourCount = 6, clusterSize = 3)
+    fun interpolateWind_neverExtrapolatesAndPreservesEndpoints() {
+        val profile = listOf(WindSample(1.01f, 0f, 0f, isSurface10m = true), WindSample(3f, 25f, 350f))
+        assertEquals(profile.first(), interpolateWind(profile, 1.01f))
+        assertEquals(profile.last(), interpolateWind(profile, 3f))
+        assertNull(interpolateWind(profile, 1f))
+        assertNull(interpolateWind(profile, 3.001f))
+        assertNull(interpolateWind(profile.take(1), 1.02f))
+        assertNull(interpolateWind(emptyList(), 1f))
+        assertNull(interpolateWind(profile, Float.NaN))
+    }
 
-        assertEquals(
-            listOf(
-                WindHourCluster(startIndex = 0, endIndexExclusive = 3, representativeIndex = 1),
-                WindHourCluster(startIndex = 3, endIndexExclusive = 6, representativeIndex = 4),
-            ),
-            clusters,
-        )
-        assertEquals(listOf(1.5f, 4.5f), clusters.map { it.centerColumn })
+    @Test
+    fun layoutWindLabelCenters_separatesCloseLevelsWithoutMovingAnchors() {
+        val anchors = listOf(1f, 2f, 150f, 198f, 199f)
+        val centers = layoutWindLabelCenters(anchors, 14f, 186f, 28f)
+        assertTrue(centers.zipWithNext().all { (a, b) -> b - a >= 28f })
+        assertTrue(centers.all { it in 14f..186f })
+        assertEquals(listOf(1f, 2f, 150f, 198f, 199f), anchors)
+    }
+
+    @Test
+    fun buildWindProfiles_doesNotTurnMissingOrInvalidWindIntoCalm() {
+        val profiles = buildWindProfiles(listOf(
+            cell(6, 1f, Float.NaN), cell(7, 1f, -1f), cell(8, 1f, 0f),
+        ))
+        assertTrue(6 !in profiles && 7 !in profiles)
+        assertEquals(0f, profiles.getValue(8).single().speedKmh)
     }
 
     private fun cell(

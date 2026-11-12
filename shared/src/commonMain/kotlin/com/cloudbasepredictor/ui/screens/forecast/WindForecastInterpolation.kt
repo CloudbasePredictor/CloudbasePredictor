@@ -1,5 +1,8 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.cloudbasepredictor.ui.screens.forecast
 
+import kotlin.math.abs
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -17,16 +20,9 @@ internal data class WindSample(
     val altitudeKm: Float,
     val speedKmh: Float,
     val directionDeg: Float,
+    val isSurface10m: Boolean = false,
+    val isInterpolated: Boolean = false,
 )
-
-internal data class WindHourCluster(
-    val startIndex: Int,
-    val endIndexExclusive: Int,
-    val representativeIndex: Int,
-) {
-    val centerColumn: Float
-        get() = (startIndex + endIndexExclusive) / 2f
-}
 
 internal fun buildWindProfiles(
     cells: List<WindForecastCellUiModel>,
@@ -35,6 +31,10 @@ internal fun buildWindProfiles(
         .groupBy { it.hour }
         .mapValues { (_, hourCells) ->
             hourCells
+                .filter {
+                    it.altitudeKm.isFinite() && it.speedKmh.isFinite() &&
+                        it.speedKmh >= 0f && it.directionDeg.isFinite()
+                }
                 .sortedBy { it.altitudeKm }
                 .distinctBy { it.altitudeKm.toBits() }
                 .map { cell ->
@@ -42,60 +42,67 @@ internal fun buildWindProfiles(
                         altitudeKm = cell.altitudeKm,
                         speedKmh = cell.speedKmh,
                         directionDeg = cell.directionDeg,
+                        isSurface10m = cell.isSurface10m,
                     )
                 }
         }
         .filterValues { it.isNotEmpty() }
 }
 
-/**
- * Interpolates wind at [targetAltitudeKm] using vector components, preserving direction wrapping
- * through north. Values outside the available profile are clamped to its nearest end.
- */
+/** Interpolates vector components only between source levels; never extrapolates. */
 internal fun interpolateWind(
     profile: List<WindSample>,
     targetAltitudeKm: Float,
 ): WindSample? {
-    if (profile.isEmpty()) return null
-    val first = profile.first()
-    val last = profile.last()
+    if (profile.isEmpty() || !targetAltitudeKm.isFinite()) return null
+    // Tolerate floating-point error when converting an exact source Y back to altitude.
+    val directSample = profile.firstOrNull {
+        abs(it.altitudeKm - targetAltitudeKm) <= WIND_SOURCE_ALTITUDE_TOLERANCE_KM
+    }
+    val upperIndex = profile.indexOfFirst { it.altitudeKm > targetAltitudeKm }
     return when {
-        targetAltitudeKm <= first.altitudeKm -> first.copy(altitudeKm = targetAltitudeKm)
-        targetAltitudeKm >= last.altitudeKm -> last.copy(altitudeKm = targetAltitudeKm)
+        directSample != null -> directSample
+        targetAltitudeKm < profile.first().altitudeKm ||
+            targetAltitudeKm > profile.last().altitudeKm || upperIndex <= 0 -> null
         else -> {
-            var lowerIndex = 0
-            while (
-                lowerIndex < profile.lastIndex &&
-                profile[lowerIndex + 1].altitudeKm <= targetAltitudeKm
-            ) {
-                lowerIndex++
-            }
-            val lower = profile[lowerIndex]
-            val upper = profile[lowerIndex + 1]
-            val span = upper.altitudeKm - lower.altitudeKm
-            if (span <= 0f) {
-                lower.copy(altitudeKm = targetAltitudeKm)
-            } else {
-                val fraction =
-                    ((targetAltitudeKm - lower.altitudeKm) / span).coerceIn(0f, 1f)
-                val (lowerU, lowerV) = windComponents(lower.speedKmh, lower.directionDeg)
-                val (upperU, upperV) = windComponents(upper.speedKmh, upper.directionDeg)
-                val u = lowerU + (upperU - lowerU) * fraction
-                val v = lowerV + (upperV - lowerV) * fraction
-
-                WindSample(
-                    altitudeKm = targetAltitudeKm,
-                    speedKmh = hypot(u, v),
-                    directionDeg = ((atan2(u, v) * 180f / PI.toFloat()) + 360f) % 360f,
-                )
-            }
+            val lower = profile[upperIndex - 1]
+            val upper = profile[upperIndex]
+            val fraction = (targetAltitudeKm - lower.altitudeKm) / (upper.altitudeKm - lower.altitudeKm)
+            val (lowerU, lowerV) = windComponents(lower.speedKmh, lower.directionDeg)
+            val (upperU, upperV) = windComponents(upper.speedKmh, upper.directionDeg)
+            val u = lowerU + (upperU - lowerU) * fraction
+            val v = lowerV + (upperV - lowerV) * fraction
+            WindSample(
+                altitudeKm = targetAltitudeKm,
+                speedKmh = hypot(u, v),
+                directionDeg = ((atan2(u, v) * 180f / PI.toFloat()) + 360f) % 360f,
+                isInterpolated = true,
+            )
         }
     }
 }
 
+/** Packs labels in screen order without changing their source anchors. */
+internal fun layoutWindLabelCenters(
+    anchorYs: List<Float>,
+    minCenterY: Float,
+    maxCenterY: Float,
+    spacing: Float,
+): List<Float> {
+    if (anchorYs.isEmpty()) return emptyList()
+    val centers = anchorYs.map { it.coerceIn(minCenterY, maxCenterY) }.toMutableList()
+    for (index in 1..centers.lastIndex) {
+        centers[index] = maxOf(centers[index], centers[index - 1] + spacing)
+    }
+    centers[centers.lastIndex] = minOf(centers.last(), maxCenterY)
+    for (index in centers.lastIndex - 1 downTo 0) {
+        centers[index] = minOf(centers[index], centers[index + 1] - spacing)
+    }
+    return centers
+}
+
 /**
- * Maps an X coordinate to its exact hourly column. Visual arrow clusters do not affect this
- * mapping: a three-hour cluster is still split into three equal interactive columns.
+ * Maps an X coordinate to its exact hourly column. Each visible column belongs to one hour.
  */
 internal fun windHourIndexAtX(
     x: Float,
@@ -109,31 +116,6 @@ internal fun windHourIndexAtX(
         .coerceIn(0, hourCount - 1)
 }
 
-/**
- * Groups narrow visual columns while selecting the actual center hour as their representative.
- * No time averaging is performed.
- */
-internal fun buildWindHourClusters(
-    hourCount: Int,
-    clusterSize: Int,
-): List<WindHourCluster> {
-    if (hourCount <= 0 || clusterSize <= 0) return emptyList()
-    return buildList {
-        var startIndex = 0
-        while (startIndex < hourCount) {
-            val endIndexExclusive = (startIndex + clusterSize).coerceAtMost(hourCount)
-            add(
-                WindHourCluster(
-                    startIndex = startIndex,
-                    endIndexExclusive = endIndexExclusive,
-                    representativeIndex = startIndex + (endIndexExclusive - startIndex) / 2,
-                ),
-            )
-            startIndex = endIndexExclusive
-        }
-    }
-}
-
 private fun windComponents(
     speedKmh: Float,
     directionDeg: Float,
@@ -141,3 +123,5 @@ private fun windComponents(
     val radians = directionDeg * PI.toFloat() / 180f
     return (speedKmh * sin(radians)) to (speedKmh * cos(radians))
 }
+
+private const val WIND_SOURCE_ALTITUDE_TOLERANCE_KM = 0.000001f

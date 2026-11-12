@@ -7,6 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -14,12 +18,16 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.testutil.SimulatedTestData
+import com.cloudbasepredictor.ui.preview.ForecastPreviewData
 import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.screens.forecast.DEFAULT_TOP_ALTITUDE_KM
 import com.cloudbasepredictor.ui.screens.forecast.ForecastScreen
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.STUVE_CHART_CANVAS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.map.MapScreen
@@ -184,6 +192,46 @@ class ScreenshotCaptureTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun captureSparseWindForecast() {
+        val baseState = ForecastPreviewData.stateForMode(ForecastMode.WIND)
+        var visibleTopAltitudeKm by mutableFloatStateOf(DEFAULT_TOP_ALTITUDE_KM)
+        composeRule.setContent {
+            CloudbasePredictorTheme(darkTheme = false) {
+                ForecastScreen(
+                    uiState = baseState.copy(chartViewport = baseState.chartViewport.copy(
+                        visibleTopAltitudeKm = visibleTopAltitudeKm,
+                    )),
+                    onDateSelected = {},
+                    onForecastViewportTopChanged = { visibleTopAltitudeKm = it },
+                    onOpenMap = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        if (InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.screenHeightDp < 480) {
+            composeRule.onNodeWithTag(WIND_VIEW).performScrollTo()
+        }
+        captureCurrentContent("forecast_wind_sparse")
+        val density = InstrumentationRegistry.getInstrumentation()
+            .targetContext.resources.displayMetrics.density
+        val windCanvas = composeRule.onNodeWithTag(WIND_CHART_CANVAS)
+        windCanvas.performTouchInput {
+            click(Offset(76f * density, height - 92f * density))
+        }
+        composeRule.waitForIdle()
+        windCanvas.assert(SemanticsMatcher("selected 10 m wind") {
+            val description = it.config.getOrNull(SemanticsProperties.ContentDescription)
+                .orEmpty().joinToString("; ")
+            it.config.getOrNull(SemanticsProperties.StateDescription) == "cursor" &&
+                listOf("06h", "10 m AGL", "8 km/h", "350°").all(description::contains)
+        })
+        captureCurrentContent("forecast_wind_sparse_selected")
+        composeRule.runOnIdle { visibleTopAltitudeKm = 0.75f }
+        composeRule.waitForIdle()
+        captureCurrentContent("forecast_wind_sparse_zoomed")
     }
 
     @Test

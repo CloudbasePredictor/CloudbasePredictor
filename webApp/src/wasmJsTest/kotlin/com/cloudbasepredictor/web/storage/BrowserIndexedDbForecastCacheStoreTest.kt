@@ -350,14 +350,17 @@ private fun readRawValueInterop(
             const database = request.result;
             const transaction = database.transaction("forecast_cache", "readonly");
             const read = transaction.objectStore("forecast_cache").get(key);
+            let value = null;
             read.onsuccess = () => {
-                const value = read.result === undefined ? null : JSON.stringify(read.result);
+                value = read.result === undefined ? null : JSON.stringify(read.result);
+            };
+            transaction.oncomplete = () => {
                 database.close();
                 onSuccess(value);
             };
-            read.onerror = () => {
+            transaction.onabort = () => {
                 database.close();
-                onFailure(read.error?.name ?? "UnknownError");
+                onFailure(transaction.error?.name ?? "AbortError");
             };
         };
     }""",

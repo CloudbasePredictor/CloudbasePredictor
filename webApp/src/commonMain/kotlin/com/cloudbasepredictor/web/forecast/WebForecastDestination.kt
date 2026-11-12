@@ -4,6 +4,7 @@ package com.cloudbasepredictor.web.forecast
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -235,7 +236,10 @@ private fun WebForecastReadyContent(
     val shownDayCount = maxOf(visibleDayCount, uiState.selectedDayIndex + 1)
         .coerceAtMost(uiState.dayChips.size)
 
-    Box(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // Keep source labels and the 10 m row usable when browser chrome leaves little height.
+        val scrollWindContent = routeState.mode == ForecastMode.WIND && maxHeight < 480.dp
+        val verticalScroll = rememberScrollState()
         Column(
             // Cap and center the content on wide desktop screens so the header actions no longer
             // drift to the far edge and the chart stops stretching edge-to-edge. Mirrors the
@@ -245,6 +249,7 @@ private fun WebForecastReadyContent(
                 .align(Alignment.TopCenter)
                 .widthIn(max = ForecastContentMaxWidth)
                 .fillMaxSize()
+                .then(if (scrollWindContent) Modifier.verticalScroll(verticalScroll) else Modifier)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -310,7 +315,7 @@ private fun WebForecastReadyContent(
                 onHourChanged = { hour -> onRouteChanged(routeState.copy(hour = hour)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .then(if (scrollWindContent) Modifier.height(160.dp) else Modifier.weight(1f)),
             )
             Text(
                 text = "${uiState.forecastText} · ${strings.forecastDataAttribution}",

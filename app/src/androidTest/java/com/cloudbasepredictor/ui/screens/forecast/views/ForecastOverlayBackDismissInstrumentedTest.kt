@@ -14,6 +14,7 @@ import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.testutil.SimulatedTestData
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_CURSOR_PANEL
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.THERMIC_VIEW
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Rule
@@ -78,7 +79,7 @@ class ForecastOverlayBackDismissInstrumentedTest {
         composeRule.waitForIdle()
 
         // Tap to place the crosshair overlay.
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput { click(center) }
+        composeRule.onNodeWithTag(WIND_VIEW).performTouchInput { click(center) }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(WIND_CHART_CANVAS)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "cursor"))
