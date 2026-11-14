@@ -17,12 +17,6 @@ import kotlin.math.sin
 data class WindForecastChartUiModel(
     /** Local hours of day (e.g. 6..22). */
     val hours: List<Int>,
-    /** Union of source altitudes across hours, km ASL; each cell keeps its hourly height. */
-    val altitudeBandsKm: List<Float>,
-    /** Altitude bands with center/bottom/top boundaries for display. */
-    val altitudeBands: List<WindAltitudeBand> = emptyList(),
-    /** Union of direct source heights. Render source markers from each hour's cells. */
-    val modelLevelAltitudesKm: List<Float> = altitudeBandsKm,
     /** Grid cells with wind speed and direction per hour × altitude. */
     val cells: List<WindForecastCellUiModel>,
     /** Freezing level per hour (0 °C isotherm), km ASL. */
@@ -31,13 +25,6 @@ data class WindForecastChartUiModel(
     val cclKm: List<WindLevelMarker> = emptyList(),
     /** Hourly CCL results for all available methods and hours. */
     val cclResults: List<CclHourlyResult> = emptyList(),
-)
-
-/** Band boundaries around a data level for wind chart display. */
-data class WindAltitudeBand(
-    val centerKm: Float,
-    val bottomKm: Float,
-    val topKm: Float,
 )
 
 data class WindLevelMarker(
@@ -104,21 +91,8 @@ fun buildPlaceholderWindForecastChart(
         }
     }
 
-    val bands = altitudes.mapIndexed { index, center ->
-        val bottom = if (index > 0) (altitudes[index - 1] + center) / 2f else center - altitudeStepKm / 2f
-        val top = if (index < altitudes.lastIndex) {
-            (center + altitudes[index + 1]) / 2f
-        } else {
-            center + altitudeStepKm / 2f
-        }
-        WindAltitudeBand(centerKm = center, bottomKm = bottom, topKm = top)
-    }
-
     return WindForecastChartUiModel(
         hours = hours,
-        altitudeBandsKm = altitudes,
-        altitudeBands = bands,
-        modelLevelAltitudesKm = altitudes,
         cells = cells,
     )
 }

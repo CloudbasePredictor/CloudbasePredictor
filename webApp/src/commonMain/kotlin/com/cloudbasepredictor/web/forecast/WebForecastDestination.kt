@@ -237,7 +237,7 @@ private fun WebForecastReadyContent(
         .coerceAtMost(uiState.dayChips.size)
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // Keep source labels and the 10 m row usable when browser chrome leaves little height.
+        // As on Android, short wind screens scroll the page so the chart keeps a usable fixed height.
         val scrollWindContent = routeState.mode == ForecastMode.WIND && maxHeight < 480.dp
         val verticalScroll = rememberScrollState()
         Column(
@@ -315,7 +315,7 @@ private fun WebForecastReadyContent(
                 onHourChanged = { hour -> onRouteChanged(routeState.copy(hour = hour)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (scrollWindContent) Modifier.height(160.dp) else Modifier.weight(1f)),
+                    .then(if (scrollWindContent) Modifier.height(ShortScreenWindChartHeight) else Modifier.weight(1f)),
             )
             Text(
                 text = "${uiState.forecastText} · ${strings.forecastDataAttribution}",
@@ -504,6 +504,10 @@ private val COMPACT_FORECAST_ACTIONS_MAX_WIDTH = 600.dp
 // screen caps and centers its content at the same width on wide desktop displays.
 private val ForecastContentMaxWidth = 1_080.dp
 
+// The Android wind view height on short screens (ForecastScreen.kt): its 420 dp chart area minus the 24 dp
+// collapsed map handle. The web map panel sits outside the scrolling content, so the chart gets it directly.
+private val ShortScreenWindChartHeight = 396.dp
+
 @Composable
 private fun ScrollableChipRow(content: @Composable () -> Unit) {
     Row(
@@ -595,6 +599,30 @@ private fun WebForecastReadyContentPreview() {
         WebForecastReadyContent(
             routeState = WebPreviewData.forecastRoute,
             uiState = ForecastPreviewData.readyState,
+            fromCache = false,
+            refreshFailed = false,
+            isRefreshing = false,
+            isFavorite = true,
+            onRouteChanged = {},
+            onForecastModelSelected = {},
+            onFavoriteToggle = {},
+            onShareRequested = {},
+            onRefreshRequested = {},
+            onVisibleTopAltitudeChanged = {},
+            onJumpToFavorite = {},
+            otherFavorites = emptyList(),
+        )
+    }
+}
+
+// A landscape phone browser: the page scrolls and the wind chart keeps its fixed short-screen height.
+@Preview(name = "Web forecast short wind", showBackground = true, widthDp = 844, heightDp = 218)
+@Composable
+private fun WebForecastShortWindPreview() {
+    ForecastPreviewTheme {
+        WebForecastReadyContent(
+            routeState = WebPreviewData.windForecastRoute,
+            uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
             fromCache = false,
             refreshFailed = false,
             isRefreshing = false,

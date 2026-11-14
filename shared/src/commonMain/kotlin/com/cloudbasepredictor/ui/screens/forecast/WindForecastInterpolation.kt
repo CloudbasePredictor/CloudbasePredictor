@@ -53,9 +53,11 @@ internal fun buildWindProfiles(
 /**
  * Interpolates vector components between source levels.
  *
- * Beyond the profile the nearest upper-air level is held: above the highest one, and below the lowest
- * one down to the terrain when there is no 10 m value to interpolate from. Held values are marked as
- * interpolated. A profile with only a 10 m value is not stretched upward.
+ * Beyond the profile the nearest sample is held and marked as interpolated: the highest upper-air level
+ * above it, and the lowest sample below it down to the terrain. That lowest sample is the 10 m value when
+ * there is one, so the thin strip between the terrain and 10 m above it shows the 10 m wind instead of a
+ * gap; otherwise it is the lowest upper-air level. A profile without any upper-air level is not stretched
+ * up or down: it only returns its exact 10 m sample.
  */
 internal fun interpolateWind(
     profile: List<WindSample>,
@@ -69,6 +71,7 @@ internal fun interpolateWind(
     val upperIndex = profile.indexOfFirst { it.altitudeKm > targetAltitudeKm }
     return when {
         directSample != null -> directSample
+        profile.all { it.isSurface10m } -> null
         upperIndex < 0 -> profile.lastOrNull { !it.isSurface10m }?.heldAt(targetAltitudeKm)
         upperIndex == 0 -> profile.first().heldAt(targetAltitudeKm)
         else -> {
@@ -92,7 +95,10 @@ internal fun interpolateWind(
 private fun WindSample.heldAt(altitudeKm: Float): WindSample =
     copy(altitudeKm = altitudeKm, isSurface10m = false, isInterpolated = true)
 
-/** A source level picked for drawing, with the Y its glyph is drawn at. */
+/**
+ * A source level with the screen Y it is shown at: where its glyph is drawn, or for a cursor snap
+ * ([snapWindLevel]) where the reticle sits.
+ */
 internal data class ReadableWindLevel(
     val index: Int,
     val drawY: Float,
@@ -104,8 +110,8 @@ internal data class ReadableWindLevel(
  * [anchorYs] are the true screen Ys of the levels, ordered from the lowest altitude upward (screen Y
  * decreasing). Levels outside [plotTop]..[plotBottom] are not visible. A visible level too close to an
  * edge keeps its glyph fully inside the plot by drawing it up to [glyphHalfHeight] away from its true
- * height. Lower levels win when two drawn glyphs are closer than [minSpacing]; skipped levels stay
- * reachable through the cursor.
+ * height. Lower levels win when two drawn glyphs are closer than [minSpacing]; skipped levels can still
+ * be read through the cursor (see [snapWindLevel]).
  */
 internal fun pickReadableWindLevels(
     anchorYs: List<Float>,
@@ -132,6 +138,67 @@ internal fun pickReadableWindLevels(
 internal fun windGlyphHourStride(columnWidth: Float, minSlotWidth: Float): Int {
     if (columnWidth <= 0f) return 1
     return maxOf(1, ceil(minSlotWidth / columnWidth - WIND_STRIDE_EPSILON).toInt())
+}
+
+/**
+ * Picks the source level the cursor snaps to at [pointerY], with the Y its reticle sits on.
+ *
+ * [drawnLevels] are the glyphs the hour draws, as picked by [pickReadableWindLevels] from [anchorYs]. They
+ * are hit-tested at their drawn Y first, so the readout always matches the glyph under the finger, even
+ * when the glyph is shifted away from its true height at a plot edge. Only when no drawn glyph is within
+ * [snapDistance] does a hidden level snap, at its true Y. Hidden levels outside [plotRange] never snap,
+ * and neither do hidden levels within [snapDistance] of a drawn glyph: that glyph stands for them, and
+ * snapping to them would put the reticle on a glyph that shows a different value.
+ */
+internal fun snapWindLevel(
+    anchorYs: List<Float>,
+    drawnLevels: List<ReadableWindLevel>,
+    pointerY: Float,
+    plotRange: ClosedFloatingPointRange<Float>,
+    snapDistance: Float,
+): ReadableWindLevel? {
+    val drawnHit = drawnLevels
+        .filter { abs(it.drawY - pointerY) <= snapDistance }
+        .minByOrNull { abs(it.drawY - pointerY) }
+    if (drawnHit != null) return drawnHit
+    val drawnIndices = drawnLevels.mapTo(HashSet()) { it.index }
+    return anchorYs.withIndex()
+        .filter { (index, y) -> index !in drawnIndices && y in plotRange }
+        .filter { (_, y) -> drawnLevels.none { abs(it.drawY - y) <= snapDistance } }
+        .filter { (_, y) -> abs(y - pointerY) <= snapDistance }
+        .minByOrNull { (_, y) -> abs(y - pointerY) }
+        ?.let { (index, y) -> ReadableWindLevel(index, y) }
+}
+
+/**
+ * Hour columns that draw glyphs: every [windGlyphHourStride]-th hour counted from the first hour, so they
+ * line up with the hour labels and the 3-hour grid. A trailing column whose speed pill would not fit to
+ * the right of its arrow ([rightExtent] past the column center) is skipped instead of flipping the pill
+ * onto its neighbor; when no column has room, the first one is drawn alone.
+ */
+internal fun windGlyphColumns(
+    hourCount: Int,
+    columnWidth: Float,
+    minSlotWidth: Float,
+    rightExtent: Float,
+): List<Int> {
+    if (hourCount <= 0 || columnWidth <= 0f) return emptyList()
+    val stride = windGlyphHourStride(columnWidth, minSlotWidth)
+    // Column centers sit half a column in from their right edge; err on the safe side of the boundary.
+    val lastWithRoom = floor(hourCount - 0.5f - rightExtent / columnWidth - WIND_STRIDE_EPSILON)
+        .toInt()
+        .coerceIn(0, hourCount - 1)
+    return (0..lastWithRoom step stride).toList()
+}
+
+/** Hour columns that carry an hour label: every [windGlyphHourStride]-th hour from the first hour. */
+internal fun windHourLabelColumns(
+    hourCount: Int,
+    columnWidth: Float,
+    minSlotWidth: Float,
+): List<Int> {
+    if (hourCount <= 0 || columnWidth <= 0f) return emptyList()
+    return (0 until hourCount step windGlyphHourStride(columnWidth, minSlotWidth)).toList()
 }
 
 /**

@@ -21,7 +21,6 @@ class ForecastChartBuildersWindTest {
 
         val cellsByHour = chart.cells.groupBy { it.hour }
         assertEquals(listOf(6, 8, 12, 16, 22), chart.hours)
-        assertTrue(chart.altitudeBandsKm.size >= 6, "Regression data should include several altitude bands")
 
         data.hourlyPoints.forEach { point ->
             val cells = cellsByHour.getValue(point.hour)
@@ -126,8 +125,7 @@ class ForecastChartBuildersWindTest {
             maxAltitudeKm = 4.5f,
         )
 
-        assertTrue(2f in chart.modelLevelAltitudesKm)
-        assertTrue(3f !in chart.modelLevelAltitudesKm)
+        assertTrue(chart.cells.any { it.altitudeKm == 2f && !it.isSurface10m })
         assertTrue(chart.cells.none { it.altitudeKm == 3f })
     }
 

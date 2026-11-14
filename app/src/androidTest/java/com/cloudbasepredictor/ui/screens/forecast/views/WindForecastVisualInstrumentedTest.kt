@@ -32,6 +32,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Uses simulated forecast data only, so the test never depends on the real forecast backend.
@@ -55,9 +56,14 @@ class WindForecastVisualInstrumentedTest {
         }
         composeRule.waitForIdle()
 
+        // Count the plot only: the legend below it and the altitude axis are excluded, because the legend
+        // keys use the same CCL and 0 °C colors as the lines.
         val image = composeRule.onNodeWithTag(WIND_VIEW).captureToImage()
-        val pixels = IntArray(image.width * image.height)
-        image.readPixels(pixels)
+        val plotLeft = (AXIS_DP * density()).roundToInt()
+        val plotWidth = image.width - plotLeft
+        val plotHeight = image.height - (BOTTOM_CHROME_DP * density()).roundToInt()
+        val pixels = IntArray(plotWidth * plotHeight)
+        image.readPixels(pixels, startX = plotLeft, startY = 0, width = plotWidth, height = plotHeight)
 
         assertTrue(
             "Wind forecast should draw the CCL overlay on top of the wind-speed background.",

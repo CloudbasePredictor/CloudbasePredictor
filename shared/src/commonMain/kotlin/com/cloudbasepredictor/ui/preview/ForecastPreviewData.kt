@@ -54,7 +54,6 @@ object ForecastPreviewData {
     // Sparse sources, close low levels, changing hourly heights, calm wind and missing hours.
     val sparseWindChart = WindForecastChartUiModel(
         hours = (6..9).toList(),
-        altitudeBandsKm = listOf(0.59f, 0.614f, 0.620f, 0.625f, 1.5f, 2.357f, 2.398f),
         cells = listOf(
             WindForecastCellUiModel(6, 0.59f, 8f, 350f, isSurface10m = true),
             WindForecastCellUiModel(6, 0.614f, 12f, 10f),

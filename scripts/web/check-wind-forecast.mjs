@@ -17,16 +17,24 @@ const rendererName = "Wind forecast chart renderer";
 const profiles = [
   { name: "desktop", width: 1280, height: 900 },
   { name: "phone", width: 390, height: 844 },
-  { name: "landscape", width: 844, height: 390 },
+  // Less than 480 dp of forecast content: the page scrolls and the chart keeps a fixed height.
+  { name: "landscape", width: 844, height: 390, shortScreen: true },
 ];
-// Mirrors the wind chart layout: the whole day fits the width; below the plot are a 26 dp 10 m row,
-// a 28 dp legend and a 16 dp hour axis. Declared before the top-level checks run so they are initialized.
+// Mirrors WindForecastView.kt (1 dp is 1 px here): a 60 dp altitude axis (WIND_AXIS_WIDTH), and below the plot
+// a 26 dp 10 m row, a 28 dp legend and a 16 dp hour axis. The whole day, 06-22 h, fits the width.
+// Declared before the top-level checks run so they are initialized.
 const WIND_AXIS_WIDTH = 60;
-const WIND_BOTTOM_CHROME = 26 + 28 + 16;
-const FIXTURE_ELEVATION_KM = 0.58;
-// The plot spans from the fixture elevation up to DEFAULT_TOP_ALTITUDE_KM (ASL) in ForecastChartViewport.kt.
-const DEFAULT_TOP_ALTITUDE_KM = 4.5;
+const WIND_SURFACE_ROW_HEIGHT = 26;
+const WIND_BOTTOM_CHROME = WIND_SURFACE_ROW_HEIGHT + 28 + 16;
 const FIXTURE_HOURS = 17;
+const FIXTURE_ELEVATION_KM = 0.58;
+// The plot spans from the terrain up to elevationKm + visibleTopAltitudeKm (WindForecastView.kt), and a fresh
+// browser profile starts at DEFAULT_VISIBLE_TOP_ALTITUDE_KM = 4 km (WebForecastDestination.kt).
+const VISIBLE_ALTITUDE_RANGE_KM = 4;
+// ShortScreenWindChartHeight in WebForecastDestination.kt. At 844x390 it is taller than the area between the
+// top app bar and the navigation bar, so each tap scrolls its target into view first.
+const SHORT_SCREEN_WIND_CHART_HEIGHT = 396;
+const REVEAL_MARGIN = 10;
 const failures = [];
 const results = [];
 
@@ -74,11 +82,7 @@ try {
       });
       const renderer = page.getByLabel(new RegExp(`^${rendererName}`, "u"));
       await renderer.waitFor({ state: "attached", timeout: 60_000 });
-      if (profile.name === "landscape") {
-        await page.mouse.move(profile.width / 2, profile.height / 2);
-        await page.mouse.wheel(0, 400);
-        await page.waitForTimeout(300);
-      }
+      if (profile.shortScreen) await scrollToEnd(page, renderer, 1);
       await renderer.waitFor({ state: "visible", timeout: 10_000 });
       await page.mouse.move(profile.width / 2, profile.height / 2);
       await page.waitForTimeout(500);
@@ -107,7 +111,7 @@ try {
       ];
 
       for (const [index, selection] of selections.entries()) {
-        await clickHour(page, renderer, selection.hourIndex, selection.y, selection.xOffset);
+        await clickChart(page, renderer, profile, selection);
         for (let attempt = 0; attempt < 30; attempt++) {
           const current = await readCursorState(renderer);
           if (selection.expected.every((pattern) => pattern.test(current.value))) break;
@@ -196,22 +200,127 @@ function sparseWindFixture(source) {
 }
 
 function surfaceRowY(height) {
-  return height - 28 - 16 - 13;
+  return height - WIND_BOTTOM_CHROME + WIND_SURFACE_ROW_HEIGHT / 2;
 }
 
 function altitudeY(height, altitudeKm) {
   const plotBottom = height - WIND_BOTTOM_CHROME;
-  return plotBottom * (1 - (altitudeKm - FIXTURE_ELEVATION_KM) / (DEFAULT_TOP_ALTITUDE_KM - FIXTURE_ELEVATION_KM));
+  return plotBottom * (1 - (altitudeKm - FIXTURE_ELEVATION_KM) / VISIBLE_ALTITUDE_RANGE_KM);
 }
 
-async function clickHour(page, renderer, hourIndex, yForHeight, xOffset) {
-  const box = await renderer.boundingBox();
-  if (!box) throw new Error("Wind renderer has no visible bounds");
+async function clickChart(page, renderer, profile, { hourIndex, y, xOffset }) {
+  let box;
+  let top;
+  let relativeY;
+  if (profile.shortScreen) {
+    relativeY = y(SHORT_SCREEN_WIND_CHART_HEIGHT);
+    ({ box, top } = await revealShortScreenChartY(page, renderer, SHORT_SCREEN_WIND_CHART_HEIGHT, relativeY));
+  } else {
+    box = await settledBox(page, renderer);
+    if (!isShown(box)) throw new Error("Wind renderer has no visible bounds");
+    relativeY = y(box.height);
+    top = box.y;
+  }
   const columnWidth = (box.width - WIND_AXIS_WIDTH) / FIXTURE_HOURS;
   const targetX = box.x + WIND_AXIS_WIDTH + hourIndex * columnWidth + (xOffset ?? columnWidth / 2);
   if (targetX >= page.viewportSize().width) throw new Error("The selected fixture column is offscreen");
-  await page.mouse.click(targetX, box.y + yForHeight(box.height));
+  await page.mouse.click(targetX, top + relativeY);
   await page.waitForTimeout(100);
+}
+
+// Scrolls the page until a point of the partly visible chart is on screen and returns the chart top edge. The
+// renderer's accessibility bounds cover only the visible part of the chart, so its full position is known only
+// while one of its edges is visible.
+async function revealShortScreenChartY(page, renderer, chartHeight, relativeY) {
+  // At the end of the page the chart bottom sits above the footer and its top is clipped by the visible area.
+  let box = await scrollToEnd(page, renderer, 1);
+  if (!isShown(box) || box.height >= chartHeight - 0.5) {
+    throw new Error(
+      `Expected the ${chartHeight} px short-screen chart to be partly scrolled out; bounds: ${JSON.stringify(box)}`,
+    );
+  }
+  const visibleTop = box.y;
+  const bottomAnchoredTop = box.y + box.height - chartHeight;
+  if (bottomAnchoredTop + relativeY >= visibleTop + REVEAL_MARGIN) return { box, top: bottomAnchoredTop };
+
+  // Otherwise scroll down from the start of the page until the chart top edge is visible and the point fits
+  // between it and the clipped chart bottom. Wheel units are calibrated against the visible top edge.
+  box = await scrollToEnd(page, renderer, -1);
+  let pixelsPerWheelUnit = 1;
+  let hiddenWheel = 1;
+  let maxWheel = Infinity;
+  let lastWheel = 0;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const topVisible = isShown(box) && box.y > visibleTop + 0.5;
+    if (isShown(box) && !topVisible) {
+      // Scrolled past the chart top: undo the last step and continue with smaller ones.
+      await wheelForecast(page, lastWheel > 0 ? -lastWheel : -5_000);
+      if (lastWheel > 0) maxWheel = Math.max(1, Math.floor(lastWheel / 2));
+      lastWheel = 0;
+      box = await settledBox(page, renderer);
+      continue;
+    }
+    let wheel;
+    if (topVisible) {
+      const highestTop = box.y + box.height - relativeY - REVEAL_MARGIN;
+      if (box.y <= highestTop) return { box, top: box.y };
+      // The chart bottom is clipped here, so box.y + box.height is the bottom of the visible area.
+      if (highestTop <= visibleTop + 0.5) {
+        throw new Error(`The visible area is too short to show the chart point ${relativeY} px below its top`);
+      }
+      wheel = Math.round((box.y - (visibleTop + highestTop) / 2) / pixelsPerWheelUnit);
+    } else {
+      wheel = hiddenWheel;
+      hiddenWheel *= 2;
+    }
+    lastWheel = Math.min(maxWheel, Math.max(1, wheel));
+    await wheelForecast(page, lastWheel);
+    const next = await settledBox(page, renderer);
+    if (topVisible && isShown(next) && next.y > visibleTop + 0.5 && next.y < box.y) {
+      pixelsPerWheelUnit = (box.y - next.y) / lastWheel;
+    }
+    box = next;
+  }
+  throw new Error(`Could not scroll the short-screen chart point ${relativeY} px below its top into view`);
+}
+
+async function scrollToEnd(page, renderer, direction) {
+  let box = await settledBox(page, renderer);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await wheelForecast(page, direction * 5_000);
+    const next = await settledBox(page, renderer);
+    if (sameBox(box, next)) return next;
+    box = next;
+  }
+  return box;
+}
+
+async function wheelForecast(page, deltaY) {
+  // The viewport center is inside the scrolling forecast content; the chart does not consume wheel events.
+  const viewport = page.viewportSize();
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  await page.mouse.wheel(0, deltaY);
+  await page.waitForTimeout(300);
+}
+
+async function settledBox(page, renderer) {
+  let box = await renderer.boundingBox();
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await page.waitForTimeout(150);
+    const next = await renderer.boundingBox();
+    if (sameBox(box, next)) return next;
+    box = next;
+  }
+  return box;
+}
+
+function isShown(box) {
+  return box != null && box.width >= 1 && box.height >= 1;
+}
+
+function sameBox(first, second) {
+  if (!isShown(first) || !isShown(second)) return isShown(first) === isShown(second);
+  return ["x", "y", "width", "height"].every((key) => Math.abs(first[key] - second[key]) < 0.5);
 }
 
 async function readCursorState(renderer) {

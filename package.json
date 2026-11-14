@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test 'scripts/**/*.test.mjs'",
     "check:web:visual": "node scripts/web/dev-visual-check.mjs",
-    "check:web:webkit-input": "node scripts/web/check-webkit-input.mjs"
+    "check:web:webkit-input": "node scripts/web/check-webkit-input.mjs",
+    "check:web:wind": "node scripts/web/check-wind-forecast.mjs"
   },
   "devDependencies": {
     "playwright": "1.61.1"

@@ -2,6 +2,7 @@ package com.cloudbasepredictor.web.preview
 
 import com.cloudbasepredictor.data.launch.LaunchSiteBounds
 import com.cloudbasepredictor.data.launch.LaunchSiteRepository
+import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.model.ParaglidingLaunchSite
 import com.cloudbasepredictor.model.PlaceLocation
 import com.cloudbasepredictor.model.SavedPlace
@@ -24,6 +25,7 @@ object WebPreviewData {
         destination = WebDestination.Forecast,
         location = brauneck,
     )
+    val windForecastRoute = forecastRoute.copy(mode = ForecastMode.WIND)
     val mapRoute = WebRouteState(
         destination = WebDestination.Map,
         location = brauneck,
