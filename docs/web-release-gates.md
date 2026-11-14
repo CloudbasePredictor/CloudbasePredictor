@@ -262,7 +262,7 @@ The callers differ only in inputs:
 | --- | --- | --- | --- |
 | `web-ci.yml` | fixture | 1 | nothing |
 | `web-deploy.yml` | live (ParaglidingEarth), else the published snapshot | 8000 | GitHub Pages |
-| `release.yml` | fixture | 1 | nothing (APK/AAB only) |
+| `release.yml` | fixture | 1 | nothing (APK/AAB only; the result does not block them) |
 
 `min-sites` guards the unattended weekly refresh. `verify-snapshot.mjs` defaults to a
 floor of 1, so a truncated ParaglidingEarth response would otherwise publish a

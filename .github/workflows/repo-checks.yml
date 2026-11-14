@@ -1,0 +1,57 @@
+name: Repository Checks
+
+# Fast checks that need no build. They cover what no other pull-request job can: the release, deploy
+# and scheduled workflows never run for a pull request, so a mistake in them used to surface only on
+# the next tag or the next cron run.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflows-and-scripts:
+    name: Workflows and Scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ACTIONLINT_VERSION: "1.7.12"
+      ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # Checks every workflow, including the expressions and the shell in `run:` steps (through
+      # shellcheck, which the runner provides). The release binary is pinned by checksum.
+      - name: Lint GitHub Actions workflows
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --quiet
+          tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
+
+      - name: Lint shell scripts
+        run: |
+          git ls-files -z -- '*.sh' | xargs -0 --no-run-if-empty shellcheck
+
+      # The files a release edits by hand must agree with each other, and every tag the F-Droid
+      # metadata builds from must exist (the tag of the version in progress may still be missing).
+      - name: Check release version consistency
+        run: node scripts/release/verify-version.mjs --remote-tags
+
+      - name: Test repository scripts
+        run: npm test
