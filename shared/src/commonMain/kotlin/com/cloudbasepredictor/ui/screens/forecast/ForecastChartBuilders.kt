@@ -365,22 +365,19 @@ fun buildThermicChartFromData(
 
 // --- Wind chart from real data ---
 
+/**
+ * Builds the wind chart of day [dayIndex] from model values only: the 10 m wind and every non-synthetic pressure
+ * level at or above the terrain, including levels above any visible altitude range, which support interpolation up
+ * to its top edge. A day without daytime hours falls back to the placeholder chart.
+ */
 fun buildWindChartFromData(
     hourlyData: HourlyForecastData,
     dayIndex: Int,
-    maxAltitudeKm: Float,
 ): WindForecastChartUiModel {
     val pointsByDate = hourlyData.pointsByDate()
-    val dates = pointsByDate.keys.sorted()
-    val dateKey = dates.getOrNull(dayIndex)
-        ?: return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-    val dayPoints = pointsByDate[dateKey]
-        ?: return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-
+    val dayPoints = pointsByDate.keys.sorted().getOrNull(dayIndex)?.let { pointsByDate[it] }.orEmpty()
     val daytimePoints = dayPoints.filter { it.hour in 6..22 }
-    if (daytimePoints.isEmpty()) {
-        return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-    }
+    if (daytimePoints.isEmpty()) return buildPlaceholderWindForecastChart(dayIndex)
 
     val elevation = hourlyData.elevation ?: 0.0
     val elevationKm = elevation.toFloat() / 1000f

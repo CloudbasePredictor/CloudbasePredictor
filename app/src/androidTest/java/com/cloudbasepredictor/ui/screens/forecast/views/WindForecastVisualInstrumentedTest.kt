@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
@@ -29,6 +30,7 @@ import com.cloudbasepredictor.ui.preview.ForecastPreviewData
 import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.ForecastScreen
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
+import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_RENDERER_DESCRIPTION
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Assert.assertEquals
@@ -144,9 +146,42 @@ class WindForecastVisualInstrumentedTest {
         }
         composeRule.waitForIdle()
 
+        // The previous day's cursor is not carried over to the new chart.
+        assertNoCursor()
+
         // A tap on another column must still move the cursor and read the new day's values.
         tapSparse(hourIndex = 2, y = { surfaceRowY() })
         assertCursor("12h  10 m AGL", "10 km/h  90°")
+    }
+
+    @Test
+    fun sparseWind_dragFromSurfaceRowClampsToChartEdges() {
+        showSparseWind()
+        val canvas = composeRule.onNodeWithTag(WIND_CHART_CANVAS)
+        canvas.performTouchInput { down(Offset(sparseColumnX(hourIndex = 1), surfaceRowY())) }
+        assertCursor("07h  10 m AGL", "No data")
+
+        // Down into the legend, the cursor stays on the 10 m row instead of disappearing.
+        canvas.performTouchInput { dragTo(Offset(sparseColumnX(hourIndex = 1), legendY())) }
+        assertCursor("07h  10 m AGL", "No data")
+
+        // Then left over the altitude axis, it stops on the first hour.
+        canvas.performTouchInput { dragTo(Offset(AXIS_DP * density() / 3f, legendY())) }
+        assertCursor("06h  10 m AGL", "8 km/h  350°")
+
+        canvas.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertCursor("06h  10 m AGL", "8 km/h  350°")
+    }
+
+    @Test
+    fun sparseWind_tapOnLegendClearsCursor() {
+        showSparseWind()
+        tapSparse(hourIndex = 0, y = { surfaceRowY() })
+        assertCursor("06h  10 m AGL", "8 km/h  350°")
+
+        tapSparse(hourIndex = 0, y = { legendY() })
+        assertNoCursor()
     }
 
     @Test
@@ -187,12 +222,22 @@ class WindForecastVisualInstrumentedTest {
         composeRule.onNodeWithTag(WIND_VIEW).performScrollTo()
         val density = density()
 
-        // Inside the plot the cursor owns the drag, so the page stays where it is.
+        // Inside the plot the cursor owns the drag: it follows the finger up while the page stays where it is.
         val plotDragTop = windViewTop()
-        dragUpOnCanvas { Offset(AXIS_DP * density + (width - AXIS_DP * density) / 2f, plotBottomY() * 0.85f) }
+        val canvas = composeRule.onNodeWithTag(WIND_CHART_CANVAS)
+        canvas.performTouchInput { down(Offset(sparseColumnX(hourIndex = 2), plotBottomY() * 0.85f)) }
+        val pressedAltitude = cursorAltitudeMeters(hour = "08")
+        canvas.performTouchInput {
+            dragTo(checkNotNull(currentPosition()) - Offset(0f, DRAG_DISTANCE_DP * density))
+            up()
+        }
+        composeRule.waitForIdle()
+        val draggedAltitude = cursorAltitudeMeters(hour = "08")
         assertEquals("A drag inside the plot must not scroll the page", plotDragTop, windViewTop(), 0.5f)
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "cursor"))
+        assertTrue(
+            "A drag up the plot should raise the cursor; it went from $pressedAltitude m to $draggedAltitude m",
+            draggedAltitude > pressedAltitude,
+        )
 
         // The altitude axis column leaves vertical drags to the page.
         dragUpOnCanvas { Offset(AXIS_DP * density / 3f, plotBottomY() * 0.85f) }
@@ -201,7 +246,7 @@ class WindForecastVisualInstrumentedTest {
         // So do the legend and hour rows below the 10 m row.
         composeRule.onNodeWithTag(WIND_VIEW).performScrollTo()
         val legendDragTop = windViewTop()
-        dragUpOnCanvas { Offset(width / 2f, height - 30f * density) }
+        dragUpOnCanvas { Offset(width / 2f, legendY()) }
         assertPageScrolledFrom(legendDragTop, "legend")
     }
 
@@ -238,13 +283,20 @@ class WindForecastVisualInstrumentedTest {
     /** Taps the center of an hourly column of the sparse four-hour chart. */
     private fun tapSparse(hourIndex: Int, y: TouchInjectionScope.() -> Float) {
         composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            val plotLeft = AXIS_DP * density()
-            click(Offset(plotLeft + (width - plotLeft) * (hourIndex + 0.5f) / 4f, y()))
+            click(Offset(sparseColumnX(hourIndex), y()))
         }
+    }
+
+    /** The center of an hourly column of the sparse four-hour chart. */
+    private fun TouchInjectionScope.sparseColumnX(hourIndex: Int): Float {
+        val plotLeft = AXIS_DP * density()
+        return plotLeft + (width - plotLeft) * (hourIndex + 0.5f) / 4f
     }
 
     // Mirrors the wind chart layout: 26 dp 10 m row, 28 dp legend and 16 dp hour axis below the plot.
     private fun TouchInjectionScope.surfaceRowY(): Float = height - (28f + 16f + 13f) * density()
+
+    private fun TouchInjectionScope.legendY(): Float = height - (16f + 14f) * density()
 
     private fun TouchInjectionScope.plotBottomY(): Float = height - BOTTOM_CHROME_DP * density()
 
@@ -257,14 +309,19 @@ class WindForecastVisualInstrumentedTest {
     private fun dragUpOnCanvas(start: TouchInjectionScope.() -> Offset) {
         composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
             val from = start()
-            val distance = DRAG_DISTANCE_DP * density()
             down(from)
-            repeat(DRAG_STEPS) { step ->
-                moveTo(from - Offset(0f, distance * (step + 1) / DRAG_STEPS))
-            }
+            dragTo(from - Offset(0f, DRAG_DISTANCE_DP * density()))
             up()
         }
         composeRule.waitForIdle()
+    }
+
+    /** Moves the finger that is down to [target] in small steps; the gesture may span several touch inputs. */
+    private fun TouchInjectionScope.dragTo(target: Offset) {
+        val from = checkNotNull(currentPosition()) { "dragTo needs a finger down" }
+        repeat(DRAG_STEPS) { step ->
+            moveTo(from + (target - from) * ((step + 1f) / DRAG_STEPS))
+        }
     }
 
     /** Top of the whole wind view in the root, unclipped, so it moves exactly with the page scroll. */
@@ -287,6 +344,22 @@ class WindForecastVisualInstrumentedTest {
             it.config.getOrNull(SemanticsProperties.StateDescription) == "cursor" &&
                 lines.size == 2 && hourLine.matches(lines[0]) && valueLine.matches(lines[1])
         })
+    }
+
+    /** Asserts that no cursor is shown: the description is the renderer name alone. */
+    private fun assertNoCursor() {
+        composeRule.onNodeWithTag(WIND_CHART_CANVAS)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "idle"))
+            .assertContentDescriptionEquals(WIND_RENDERER_DESCRIPTION)
+    }
+
+    /** The height of a shown cursor at [hour] (two digits) above sea level, e.g. 2357 for "06h  2357 m ASL". */
+    private fun cursorAltitudeMeters(hour: String): Int {
+        val hourLine = composeRule.onNodeWithTag(WIND_CHART_CANVAS).fetchSemanticsNode().cursorLines().firstOrNull()
+        val match = Regex("""${hour}h  (\d+) m ASL""").matchEntire(hourLine.orEmpty())
+        return checkNotNull(match) { "Expected a ${hour}h cursor above sea level, the readout was \"$hourLine\"" }
+            .groupValues[1]
+            .toInt()
     }
 
     /** The readout lines after the renderer name; the chart joins them with "; " in its description. */

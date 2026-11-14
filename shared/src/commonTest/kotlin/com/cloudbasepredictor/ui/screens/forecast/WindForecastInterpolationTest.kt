@@ -344,6 +344,85 @@ class WindForecastInterpolationTest {
     }
 
     @Test
+    fun windCursorArea_containsItsEdgesAndKeepsDragsLeavingItOnTheNearestEdge() {
+        // A 360 dp phone at 1x: the plot from the 60 dp altitude axis to the right edge, the 10 m row ending at 570.
+        val area = WindCursorArea(left = 60f, top = 0f, right = 360f, bottom = 570f)
+        assertTrue(area.contains(60f, 0f) && area.contains(360f, 570f) && area.contains(200f, 300f))
+        assertFalse(area.contains(59f, 300f), "altitude axis")
+        assertFalse(area.contains(200f, 571f), "legend")
+
+        // A drag from the 10 m row into the legend stays on the row's bottom edge, one left of the first hour on the
+        // plot's left edge, and one above the plot on its top edge; inside the area nothing moves.
+        assertEquals(570f, area.clampY(600f))
+        assertEquals(60f, area.clampX(20f))
+        assertEquals(0f, area.clampY(-30f))
+        assertEquals(360f, area.clampX(400f))
+        assertEquals(200f, area.clampX(200f))
+        assertEquals(300f, area.clampY(300f))
+
+        // A canvas too small for the area contains nothing and clamps onto the area's start instead of failing.
+        val collapsed = WindCursorArea(left = 60f, top = 0f, right = 40f, bottom = -10f)
+        assertFalse(collapsed.contains(50f, 0f))
+        assertEquals(60f, collapsed.clampX(100f))
+        assertEquals(0f, collapsed.clampY(5f))
+    }
+
+    @Test
+    fun windLegendLabelCenters_keepsLabelsThatFitAndThinsTheRestEvenly() {
+        // The legend of a 360 dp phone: nine items from the 60 dp axis to the CCL and 0 °C keys at 272 dp, 9 sp
+        // monospace labels (5.4 dp per character at 1x) kept 1 dp clear of each other, of the unit label at 8 dp and
+        // of the first key's label at 278 dp.
+        val itemWidth = (272f - 60f) / 9
+        val itemCenters = List(9) { 60f + (it + 0.5f) * itemWidth }
+        fun legend(characters: List<Int>, unitCharacters: Int, fontScale: Float): Map<Int, Float> =
+            windLegendLabelCenters(
+                labelWidths = characters.map { it * 5.4f * fontScale },
+                left = 60f,
+                itemWidth = itemWidth,
+                bounds = (8f + unitCharacters * 5.4f * fontScale + 1f)..(272f + 6f - 1f),
+                gap = 1f,
+            )
+        val kmh = listOf(1, 1, 2, 2, 2, 2, 2, 2, 2)
+        // "0.0" to "8.3", then "11.1", "13.9" and "16.7".
+        val mps = listOf(3, 3, 3, 3, 3, 3, 4, 4, 4)
+        val everyLabel = itemCenters.withIndex().associate { it.index to it.value }
+
+        // Every label keeps its place under its swatch: km/h up to 2x, m/s at 1x with 2 dp between the widest ones.
+        assertLegendCenters(everyLabel, legend(kmh, unitCharacters = 4, fontScale = 1f))
+        assertLegendCenters(everyLabel, legend(kmh, unitCharacters = 4, fontScale = 2f))
+        assertLegendCenters(everyLabel, legend(mps, unitCharacters = 3, fontScale = 1f))
+        // From about 1.05x, m/s labels would touch: every second one is drawn, still under its swatch.
+        assertLegendCenters(
+            (0..8 step 2).associateWith { itemCenters[it] },
+            legend(mps, unitCharacters = 3, fontScale = 1.1f),
+        )
+        // At 2x the last label, kept clear of the CCL key, would crowd the one before it, so every third is drawn.
+        assertLegendCenters(
+            (0..8 step 3).associateWith { itemCenters[it] },
+            legend(mps, unitCharacters = 3, fontScale = 2f),
+        )
+
+        // A label crossing the unit label is moved right of it, which leaves no room for the next label.
+        assertLegendCenters(
+            mapOf(0 to 25f, 2 to 50f),
+            windLegendLabelCenters(listOf(20f, 4f, 4f), left = 0f, itemWidth = 20f, bounds = 15f..60f, gap = 1f),
+        )
+        // A label wider than the room still shows, from the start of the room.
+        assertLegendCenters(
+            mapOf(0 to 50f),
+            windLegendLabelCenters(listOf(100f), left = 0f, itemWidth = 20f, bounds = 0f..50f, gap = 1f),
+        )
+        assertEquals(emptyMap(), windLegendLabelCenters(emptyList(), 0f, 20f, 0f..50f, 1f))
+    }
+
+    private fun assertLegendCenters(expected: Map<Int, Float>, actual: Map<Int, Float>) {
+        assertEquals(expected.keys.toList(), actual.keys.toList(), "drawn labels")
+        expected.forEach { (index, center) ->
+            assertEquals(center, actual.getValue(index), absoluteTolerance = 0.01f, "label $index")
+        }
+    }
+
+    @Test
     fun buildWindProfiles_doesNotTurnMissingOrInvalidWindIntoCalm() {
         val profiles = buildWindProfiles(listOf(
             cell(6, 1f, Float.NaN), cell(7, 1f, -1f), cell(8, 1f, 0f),

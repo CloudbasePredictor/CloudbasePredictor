@@ -9,6 +9,13 @@ import androidx.compose.ui.input.pointer.positionChanged
 import com.cloudbasepredictor.ui.screens.forecast.zoomedTopAltitudeKm
 import kotlin.math.abs
 
+/**
+ * Pinch zoom of a forecast chart's visible altitude range.
+ *
+ * Each pinch starts from [currentTopAltitudeKm] as it is when the pinch starts zooming, so that a range changed
+ * between gestures (another day, a reset) is picked up, and then follows its own zoom steps, which the chart state
+ * may not have caught up with yet.
+ */
 suspend fun PointerInputScope.detectForecastZoomGestures(
     currentTopAltitudeKm: () -> Float,
     onVisibleTopAltitudeChange: (Float) -> Unit,
@@ -16,7 +23,7 @@ suspend fun PointerInputScope.detectForecastZoomGestures(
     awaitEachGesture {
         var cumulativeZoom = 1f
         var pastTouchSlop = false
-        var gestureTopAltitudeKm = currentTopAltitudeKm()
+        var gestureTopAltitudeKm: Float? = null
 
         awaitFirstDown(requireUnconsumed = false)
         do {
@@ -34,11 +41,12 @@ suspend fun PointerInputScope.detectForecastZoomGestures(
                 }
 
                 if (pastTouchSlop && zoomChange != 1f) {
-                    gestureTopAltitudeKm = zoomedTopAltitudeKm(
-                        currentTopAltitudeKm = gestureTopAltitudeKm,
+                    val topAltitudeKm = zoomedTopAltitudeKm(
+                        currentTopAltitudeKm = gestureTopAltitudeKm ?: currentTopAltitudeKm(),
                         zoomChange = zoomChange,
                     )
-                    onVisibleTopAltitudeChange(gestureTopAltitudeKm)
+                    gestureTopAltitudeKm = topAltitudeKm
+                    onVisibleTopAltitudeChange(topAltitudeKm)
                     event.changes.forEach { change ->
                         if (change.positionChanged()) {
                             change.consume()

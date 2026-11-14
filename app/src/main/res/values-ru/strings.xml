@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Прогноз не обновлён: подождите %1$.1f с, прежде чем снова двигать карту.</string>
     <string name="forecast_map_update_too_close">Прогноз не обновлён: переместитесь не менее чем на %1$d м от текущей точки прогноза.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <string name="wind_chart_no_data">Нет данных</string>
+    <string name="wind_chart_above_sea_level">н.у.м.</string>
+    <string name="wind_chart_above_ground">над землёй</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Сегодня</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>

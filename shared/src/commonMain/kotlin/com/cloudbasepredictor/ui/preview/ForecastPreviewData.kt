@@ -66,12 +66,49 @@ object ForecastPreviewData {
         ),
     )
 
+    // 10 m wind at Interlaken: a light down-valley breeze in the morning, the up-valley breeze through the
+    // afternoon, and a fresher down-valley breeze in the evening. The two-digit 21h value gives the trailing glyph
+    // column of narrow phones a wide 10 m pill, so their previews show how that column fits its 10 m glyph.
+    private val surfaceWindCells = listOf(
+        // Hour, speed (km/h), direction the wind comes from (degrees).
+        Triple(6, 4f, 70f),
+        Triple(7, 5f, 75f),
+        Triple(8, 4f, 80f),
+        Triple(9, 3f, 120f),
+        Triple(10, 5f, 220f),
+        Triple(11, 8f, 235f),
+        Triple(12, 11f, 240f),
+        Triple(13, 13f, 245f),
+        Triple(14, 15f, 250f),
+        Triple(15, 16f, 250f),
+        Triple(16, 14f, 245f),
+        Triple(17, 12f, 240f),
+        Triple(18, 9f, 235f),
+        Triple(19, 6f, 200f),
+        Triple(20, 8f, 80f),
+        Triple(21, 11f, 75f),
+        Triple(22, 9f, 70f),
+    ).map { (hour, speedKmh, directionDeg) ->
+        WindForecastCellUiModel(
+            hour = hour,
+            altitudeKm = PREVIEW_ELEVATION_KM + SURFACE_WIND_HEIGHT_KM,
+            speedKmh = speedKmh,
+            directionDeg = directionDeg,
+            isSurface10m = true,
+        )
+    }
+
+    /** Placeholder upper-air wind with 10 m values, so wind previews show the 10 m row. */
+    val windChart: WindForecastChartUiModel = buildPlaceholderWindForecastChart(dayIndex = 2).let { chart ->
+        chart.copy(cells = chart.cells + surfaceWindCells)
+    }
+
     val readyState = ForecastReadyUiState(
         selectedPlace = savedPlace,
         selectedDayIndex = 2,
         thermicChart = buildPlaceholderThermicForecastChart(dayIndex = 2),
         stuveChart = buildPlaceholderStuveChart(hour = 12, dayIndex = 2),
-        windChart = buildPlaceholderWindForecastChart(dayIndex = 2),
+        windChart = windChart,
         cloudChart = buildPlaceholderCloudForecastChart(dayIndex = 2),
         dayChips = dayChips,
         forecastText = "Monday in Interlaken. Partly cloudy with usable afternoon lift.",
@@ -79,7 +116,7 @@ object ForecastPreviewData {
         resolvedModel = ForecastModel.ICON_D2,
         forecastUpdatedAtMillis = 1_752_220_800_000L,
         modelGeneratedAtMillis = 1_752_199_200_000L,
-        elevationKm = 0.58f,
+        elevationKm = PREVIEW_ELEVATION_KM,
         favoritePlaces = favoritePlaces,
     )
 
@@ -96,6 +133,10 @@ object ForecastPreviewData {
     fun sparseWindState(
         topAltitudeKm: Float = ForecastChartViewport().visibleTopAltitudeKm,
     ): ForecastReadyUiState = stateForMode(ForecastMode.WIND, topAltitudeKm).copy(windChart = sparseWindChart)
+
+    // Interlaken terrain, and the 10 m wind above it, km ASL.
+    private const val PREVIEW_ELEVATION_KM = 0.58f
+    private const val SURFACE_WIND_HEIGHT_KM = 0.01f
 }
 
 @Composable

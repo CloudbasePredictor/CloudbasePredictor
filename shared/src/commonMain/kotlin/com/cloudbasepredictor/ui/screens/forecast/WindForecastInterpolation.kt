@@ -329,6 +329,57 @@ internal fun windHourIndexAtX(
         .coerceIn(0, hourCount - 1)
 }
 
+/**
+ * Where the wind cursor reads values, in screen pixels: the plot and the 10 m row under it, [left]..[right] by
+ * [top]..[bottom], edges included.
+ */
+internal data class WindCursorArea(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+) {
+    fun contains(x: Float, y: Float): Boolean = x in left..right && y in top..bottom
+
+    /** [x] moved onto the area, so that a drag leaving it keeps the cursor on the nearest edge. */
+    fun clampX(x: Float): Float = x.coerceIn(left, max(left, right))
+
+    /** [y] moved onto the area, so that a drag leaving it keeps the cursor on the nearest edge. */
+    fun clampY(y: Float): Float = y.coerceIn(top, max(top, bottom))
+}
+
+/**
+ * The speed labels the wind legend draws, by item index, with the X each one is centered on.
+ *
+ * Item `i` starts at [left] + `i` × [itemWidth]. Its label, `labelWidths[i]` wide, is centered under it and moved
+ * inside [bounds] where it would cross them (the unit label on the left, the line keys or the chart edge on the
+ * right). Every label is drawn while each keeps [gap] to the next; otherwise every second, third, … label from the
+ * first, with the smallest step that keeps that gap. Swatches are not thinned: the caller draws all of them.
+ */
+internal fun windLegendLabelCenters(
+    labelWidths: List<Float>,
+    left: Float,
+    itemWidth: Float,
+    bounds: ClosedFloatingPointRange<Float>,
+    gap: Float,
+): Map<Int, Float> = (1..max(1, labelWidths.size)).asSequence()
+    .map { stride ->
+        (labelWidths.indices step stride).associateWith { index ->
+            val halfWidth = labelWidths[index] / 2f
+            val itemCenter = left + (index + 0.5f) * itemWidth
+            val leftmost = bounds.start + halfWidth
+            itemCenter.coerceIn(leftmost, max(leftmost, bounds.endInclusive - halfWidth))
+        }
+    }
+    .firstOrNull { centers ->
+        centers.entries.zipWithNext().all { (previous, next) ->
+            val previousRight = previous.value + labelWidths[previous.key] / 2f
+            val nextLeft = next.value - labelWidths[next.key] / 2f
+            nextLeft - previousRight >= gap - WIND_STRIDE_EPSILON
+        }
+    }
+    .orEmpty()
+
 private fun windComponents(
     speedKmh: Float,
     directionDeg: Float,

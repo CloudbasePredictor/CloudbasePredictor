@@ -485,6 +485,7 @@ private fun ForecastChart(
             ForecastMode.WIND -> WindForecastView(
                 uiState = uiState,
                 onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                labels = strings.windChartLabels,
                 modifier = Modifier.fillMaxSize(),
             )
             ForecastMode.CLOUD -> CloudForecastView(

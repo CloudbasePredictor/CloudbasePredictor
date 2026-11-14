@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.web.i18n
 
 import com.cloudbasepredictor.model.WeatherCondition
+import com.cloudbasepredictor.ui.screens.forecast.views.WindChartLabels
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -68,6 +69,17 @@ class WebLanguageTest {
             WeatherCondition.entries.forEach { condition ->
                 assertTrue(forecast.weatherLabel(condition.ordinal).isNotBlank(), language.name)
             }
+        }
+    }
+
+    @Test
+    fun windChartLabelsKeepEnglishDefaultsAndOtherLanguagesTranslateNoData() {
+        // The browser wind check asserts the English readout, e.g. "06h  10 m AGL; No data".
+        assertEquals(WindChartLabels(), englishWebStrings.windChartLabels)
+        WebLanguage.entries.filter { webStringsFor(it) !== englishWebStrings }.forEach { language ->
+            val labels = webStringsFor(language).windChartLabels
+            assertNotEquals(WindChartLabels().noData, labels.noData, language.name)
+            assertTrue(labels.aboveSeaLevel.isNotBlank() && labels.aboveGround.isNotBlank(), language.name)
         }
     }
 

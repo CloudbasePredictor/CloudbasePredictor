@@ -65,6 +65,7 @@ import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.StuveForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.ThermicForecastView
+import com.cloudbasepredictor.ui.screens.forecast.views.WindChartLabels
 import com.cloudbasepredictor.ui.screens.forecast.views.WindForecastView
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -384,9 +385,15 @@ private fun ForecastReadyContent(
                     )
                 }
                 ForecastMode.WIND -> {
+                    val noData = stringResource(R.string.wind_chart_no_data)
+                    val aboveSeaLevel = stringResource(R.string.wind_chart_above_sea_level)
+                    val aboveGround = stringResource(R.string.wind_chart_above_ground)
                     WindForecastView(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
+                        labels = remember(noData, aboveSeaLevel, aboveGround) {
+                            WindChartLabels(noData = noData, aboveSeaLevel = aboveSeaLevel, aboveGround = aboveGround)
+                        },
                         overlayBackHandler = { enabled, onBack ->
                             BackHandler(enabled = enabled, onBack = onBack)
                         },

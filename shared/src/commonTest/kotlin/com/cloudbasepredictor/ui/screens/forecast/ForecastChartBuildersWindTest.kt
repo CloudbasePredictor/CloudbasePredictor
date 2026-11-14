@@ -16,7 +16,6 @@ class ForecastChartBuildersWindTest {
         val chart = buildWindChartFromData(
             hourlyData = data,
             dayIndex = 0,
-            maxAltitudeKm = 4.5f,
         )
 
         val cellsByHour = chart.cells.groupBy { it.hour }
@@ -83,7 +82,6 @@ class ForecastChartBuildersWindTest {
                 dailyForecasts = emptyList(),
             ),
             dayIndex = 0,
-            maxAltitudeKm = 4.5f,
         )
 
         val ml50 = chart.cclResults.first { it.method == CclMethod.ML50 }
@@ -122,7 +120,6 @@ class ForecastChartBuildersWindTest {
                 dailyForecasts = emptyList(),
             ),
             dayIndex = 0,
-            maxAltitudeKm = 4.5f,
         )
 
         assertTrue(chart.cells.any { it.altitudeKm == 2f && !it.isSurface10m })
@@ -146,14 +143,15 @@ class ForecastChartBuildersWindTest {
                     )),
                     base.copy(hour = 8, windSpeed10mKmh = null, pressureLevels = emptyList()),
                 ), dailyForecasts = emptyList(),
-            ), dayIndex = 0, maxAltitudeKm = 0.75f,
+            ), dayIndex = 0,
         )
         assertEquals(listOf(6, 7, 8), chart.hours)
         assertTrue(chart.cells.none { it.altitudeKm < 1f })
         assertEquals(1.0123f, chart.cells.single { it.hour == 7 }.altitudeKm, 0.000001f)
         assertTrue(chart.cells.none { it.hour == 8 })
         assertTrue(chart.cells.single { it.isSurface10m }.speedKmh == 0f)
-        // Keep the next source above the viewport to support honest interpolation at its edge.
+        // Levels far above even the narrowest altitude range (0.75 km here) are kept: they support honest
+        // interpolation up to its top edge.
         assertTrue(chart.cells.any { it.hour == 6 && it.altitudeKm == 3.1234f })
     }
 
@@ -163,10 +161,26 @@ class ForecastChartBuildersWindTest {
         val chart = buildWindChartFromData(
             data.copy(hourlyPoints = data.hourlyPoints.map {
                 it.copy(windSpeed10mKmh = null, pressureLevels = emptyList())
-            }), dayIndex = 0, maxAltitudeKm = 4.5f,
+            }), dayIndex = 0,
         )
         assertEquals(listOf(6, 8, 12, 16, 22), chart.hours)
         assertTrue(chart.cells.isEmpty())
+    }
+
+    @Test
+    fun buildWindChartFromData_dayWithoutHourlyPointsFallsBackWithoutTenMetreWind() {
+        val data = openMeteoFozaIconSeamlessWindData()
+        val missingDay = buildWindChartFromData(data, dayIndex = 3)
+        val nightOnly = buildWindChartFromData(
+            data.copy(hourlyPoints = data.hourlyPoints.map { it.copy(hour = 3) }), dayIndex = 0,
+        )
+
+        listOf(missingDay, nightOnly).forEach { chart ->
+            assertEquals((6..22).toList(), chart.hours)
+            assertTrue(chart.cells.isNotEmpty())
+            // The placeholder never invents a 10 m wind: its 10 m row reads "no data".
+            assertTrue(chart.cells.none { it.isSurface10m })
+        }
     }
 
     private fun openMeteoFozaIconSeamlessWindData(): HourlyForecastData {

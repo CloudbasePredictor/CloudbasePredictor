@@ -45,6 +45,12 @@ data class WindForecastCellUiModel(
     val isSurface10m: Boolean = false,
 )
 
+/**
+ * Synthetic upper-air wind for previews and for [buildWindChartFromData] on a day without hourly points.
+ *
+ * It has no 10 m values on purpose, so its 10 m row reads "no data" instead of showing an invented surface wind;
+ * previews that show the 10 m row add their own values (see `ForecastPreviewData.windChart`).
+ */
 fun buildPlaceholderWindForecastChart(
     dayIndex: Int = 0,
     minAltitudeKm: Float = 0.4f,

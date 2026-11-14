@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Prévisions non mises à jour : attendez %1$.1f secondes avant de déplacer à nouveau la carte.</string>
     <string name="forecast_map_update_too_close">Prévisions non mises à jour : déplacez-vous d\'au moins %1$d m du point de prévision actuel.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <string name="wind_chart_no_data">Aucune donnée</string>
+    <string name="wind_chart_above_sea_level">alt.</string>
+    <string name="wind_chart_above_ground">sol</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Aujourd\'hui</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>

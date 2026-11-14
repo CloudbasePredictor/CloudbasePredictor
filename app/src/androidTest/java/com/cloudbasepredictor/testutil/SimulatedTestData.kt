@@ -63,7 +63,7 @@ object SimulatedTestData {
             chartViewport = ForecastChartViewport(visibleTopAltitudeKm = topAltitudeKm),
             thermicChart = buildThermicChartFromData(hourlyData, dayIndex = dayIndex),
             stuveChart = buildStuveChartFromData(hourlyData, dayIndex = dayIndex, hour = 12),
-            windChart = buildWindChartFromData(hourlyData, dayIndex = dayIndex, maxAltitudeKm = topAltitudeKm),
+            windChart = buildWindChartFromData(hourlyData, dayIndex = dayIndex),
             cloudChart = buildCloudChartFromData(hourlyData, dayIndex = dayIndex),
             dayChips = dayChips,
             forecastText = "Sat in Brauneck Süd. ICON Seamless simulated forecast.",
