@@ -333,7 +333,7 @@ private fun LanguageSection(
     PreferenceOptionSection(
         title = strings.languageTitle,
         description = strings.languageDescription,
-        options = WebLanguage.entries,
+        options = WebLanguage.menuOptions,
         selected = selected,
         onSelected = onSelected,
         label = WebLanguage::displayName,
