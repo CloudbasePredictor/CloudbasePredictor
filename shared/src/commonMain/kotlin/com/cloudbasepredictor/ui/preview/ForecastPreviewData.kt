@@ -17,6 +17,8 @@ import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderCloudForecastC
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderStuveChart
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderThermicForecastChart
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderWindForecastChart
+import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
+import com.cloudbasepredictor.ui.screens.forecast.WindForecastCellUiModel
 import androidx.compose.ui.tooling.preview.Preview
 
 /** Realistic, deterministic forecast fixtures shared by all forecast UI previews. */
@@ -49,6 +51,22 @@ object ForecastPreviewData {
         ForecastDayChipUiModel(title = "Tue", subtitle = "14 Jul"),
     )
 
+    // Sparse sources, close low levels, changing hourly heights, calm wind and missing hours.
+    val sparseWindChart = WindForecastChartUiModel(
+        hours = (6..9).toList(),
+        altitudeBandsKm = listOf(0.59f, 0.614f, 0.620f, 0.625f, 1.5f, 2.357f, 2.398f),
+        cells = listOf(
+            WindForecastCellUiModel(6, 0.59f, 8f, 350f, isSurface10m = true),
+            WindForecastCellUiModel(6, 0.614f, 12f, 10f),
+            WindForecastCellUiModel(6, 0.620f, 16f, 90f),
+            WindForecastCellUiModel(6, 2.357f, 30f, 270f),
+            WindForecastCellUiModel(7, 0.625f, 0f, 0f),
+            WindForecastCellUiModel(7, 2.398f, 24f, 90f),
+            WindForecastCellUiModel(8, 0.59f, 0f, 0f, isSurface10m = true),
+            WindForecastCellUiModel(8, 1.5f, 18f, 180f),
+        ),
+    )
+
     val readyState = ForecastReadyUiState(
         selectedPlace = savedPlace,
         selectedDayIndex = 2,
@@ -74,6 +92,11 @@ object ForecastPreviewData {
         chartViewport = ForecastChartViewport(visibleTopAltitudeKm = topAltitudeKm),
         forecastText = "$mode layered forecast preview for Interlaken.",
     )
+
+    /** Wind state with sparse sources, close low levels, calm wind and missing hours. */
+    fun sparseWindState(
+        topAltitudeKm: Float = ForecastChartViewport().visibleTopAltitudeKm,
+    ): ForecastReadyUiState = stateForMode(ForecastMode.WIND, topAltitudeKm).copy(windChart = sparseWindChart)
 }
 
 @Composable

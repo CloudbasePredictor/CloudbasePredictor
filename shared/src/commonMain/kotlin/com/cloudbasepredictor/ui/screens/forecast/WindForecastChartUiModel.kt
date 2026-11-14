@@ -17,11 +17,11 @@ import kotlin.math.sin
 data class WindForecastChartUiModel(
     /** Local hours of day (e.g. 6..22). */
     val hours: List<Int>,
-    /** Sorted altitude center points, km ASL. */
+    /** Union of source altitudes across hours, km ASL; each cell keeps its hourly height. */
     val altitudeBandsKm: List<Float>,
     /** Altitude bands with center/bottom/top boundaries for display. */
     val altitudeBands: List<WindAltitudeBand> = emptyList(),
-    /** Representative ASL heights where direct, non-synthetic model wind data is available. */
+    /** Union of direct source heights. Render source markers from each hour's cells. */
     val modelLevelAltitudesKm: List<Float> = altitudeBandsKm,
     /** Grid cells with wind speed and direction per hour × altitude. */
     val cells: List<WindForecastCellUiModel>,
@@ -54,6 +54,8 @@ data class WindForecastCellUiModel(
     val speedKmh: Float,
     /** Wind direction, degrees (meteorological: 0/360=N, 90=E, 180=S, 270=W — FROM). */
     val directionDeg: Float,
+    /** True only for the explicit forecast wind at 10 m above terrain. */
+    val isSurface10m: Boolean = false,
 )
 
 fun buildPlaceholderWindForecastChart(

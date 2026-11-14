@@ -32,10 +32,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -48,25 +50,29 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cloudbasepredictor.data.units.AltitudeUnit
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.altitudeAxisUnitLabel
 import com.cloudbasepredictor.data.units.formatAltitudeAxisValue
-import com.cloudbasepredictor.data.units.formatAltitudeKm
 import com.cloudbasepredictor.data.units.formatWindSpeed
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.ui.preview.ForecastPreviewData
 import com.cloudbasepredictor.ui.preview.ForecastPreviewTheme
+import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_RENDERER_DESCRIPTION
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_TIME_AXIS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
-import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
-import com.cloudbasepredictor.ui.screens.forecast.buildWindHourClusters
+import com.cloudbasepredictor.ui.screens.forecast.WindLevelMarker
+import com.cloudbasepredictor.ui.screens.forecast.WindSample
 import com.cloudbasepredictor.ui.screens.forecast.buildWindProfiles
 import com.cloudbasepredictor.ui.screens.forecast.interpolateWind
+import com.cloudbasepredictor.ui.screens.forecast.pickReadableWindLevels
+import com.cloudbasepredictor.ui.screens.forecast.windGlyphHourStride
 import com.cloudbasepredictor.ui.screens.forecast.windHourIndexAtX
 import com.cloudbasepredictor.ui.screens.forecast.windSpeedColor
 import kotlin.math.PI
@@ -75,6 +81,7 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 @Composable
@@ -90,6 +97,7 @@ fun WindForecastView(
             .background(MaterialTheme.colorScheme.surface)
             .testTag(WIND_VIEW),
     ) {
+        // The whole day fits the viewport, as in the other forecast charts.
         WindChartCanvas(
             chart = uiState.windChart,
             visibleTopAltitudeKm = uiState.chartViewport.visibleTopAltitudeKm,
@@ -121,9 +129,9 @@ private fun WindChartCanvas(
     overlayBackHandler: ForecastOverlayBackHandler,
 ) {
     val density = LocalDensity.current
-    val axisLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val axisTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     val gridBackgroundColor = lerp(
         start = MaterialTheme.colorScheme.surface,
         stop = MaterialTheme.colorScheme.onSurface,
@@ -132,27 +140,8 @@ private fun WindChartCanvas(
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
 
     val textMeasurer = rememberTextMeasurer()
-    val axisLabelStyle = remember(axisLabelColor) {
-        TextStyle(
-            color = axisLabelColor,
-            fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
-    val unitLabelStyle = remember(axisLabelColor) {
-        TextStyle(
-            color = axisLabelColor,
-            fontSize = 11.sp,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
     val speedLabelStyle = remember(onSurfaceColor) {
-        TextStyle(
-            color = onSurfaceColor,
-            fontSize = 9.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-        )
+        TextStyle(color = onSurfaceColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
     val tooltipStyle = remember(onSurfaceColor) {
         TextStyle(
@@ -162,51 +151,50 @@ private fun WindChartCanvas(
             fontWeight = FontWeight.Bold,
         )
     }
-    val legendLabelStyle = remember(axisLabelColor) {
+    val timeLabelStyle = remember(onSurfaceColor) {
         TextStyle(
-            color = axisLabelColor,
-            fontSize = 9.sp,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
-    val timeLabelStyle = remember(axisLabelColor) {
-        TextStyle(
-            color = axisLabelColor,
+            color = onSurfaceColor,
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
         )
     }
-    val cclLabelStyle = remember {
-        TextStyle(
-            color = Color(0xFFFF8C00),
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-        )
+    val axisStyle = remember(axisTextColor) {
+        TextStyle(color = axisTextColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
     }
-    val freezingLabelStyle = remember {
-        TextStyle(
-            color = Color(0xFF00BCD4),
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-        )
+    var crosshairPos by remember(chart) { mutableStateOf<Offset?>(null) }
+    var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+    val profileByHour = remember(chart.cells) { buildWindProfiles(chart.cells) }
+    val geometry = WindChartGeometry(
+        width = canvasSize.width.toFloat(),
+        height = canvasSize.height.toFloat(),
+        hourCount = chart.hours.size,
+        density = density.density,
+    )
+    val effectiveTopAltitudeKm = max(
+        elevationKm + visibleTopAltitudeKm, elevationKm + WIND_MIN_VISIBLE_ALTITUDE_RANGE_KM,
+    )
+    val glyphs = remember(chart, canvasSize, elevationKm, effectiveTopAltitudeKm, density) {
+        buildWindGlyphs(chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, geometry)
     }
-    var crosshairPos by remember { mutableStateOf<Offset?>(null) }
+    val cursor = crosshairPos?.let { pos ->
+        resolveWindCursor(pos, chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, geometry)
+    }
+    val tooltipLines = cursor?.let { windTooltipLines(it, displayUnits) }.orEmpty()
     val latestVisibleTopAltitudeKm = rememberUpdatedState(visibleTopAltitudeKm)
 
     // Back dismisses the tap overlay (crosshair tooltip) first, before navigating away.
-    overlayBackHandler(crosshairPos != null) {
+    overlayBackHandler(cursor != null) {
         crosshairPos = null
     }
 
     Canvas(
         modifier = modifier
             .testTag(WIND_CHART_CANVAS)
+            .onSizeChanged { canvasSize = it }
             .semantics {
-                contentDescription = WIND_RENDERER_DESCRIPTION
-                stateDescription = if (crosshairPos != null) "cursor" else "idle"
+                contentDescription = (listOf(WIND_RENDERER_DESCRIPTION) + tooltipLines).joinToString("; ")
+                stateDescription = if (cursor != null) "cursor" else "idle"
             }
             .pointerInput(Unit) {
                 awaitPointerEventScope {
@@ -230,60 +218,30 @@ private fun WindChartCanvas(
                 )
             },
     ) {
-        drawRect(
-            color = surfaceColor,
-            size = size,
-        )
+        drawRect(color = surfaceColor, size = size)
 
-        val axisWidth = with(density) { WIND_AXIS_WIDTH.toPx() }
-        val bottomAxisHeight = with(density) { WIND_BOTTOM_AXIS_HEIGHT.toPx() }
-        val arrowSizePx = with(density) { 48.dp.toPx() }
-
-        val plotLeft = axisWidth
+        val g = WindChartGeometry(size.width, size.height, chart.hours.size, density.density)
+        val plotLeft = g.plotLeft
         val plotTop = 0f
         val plotRight = size.width
-        val plotBottom = size.height - bottomAxisHeight
+        val plotBottom = g.plotBottom
         val plotWidth = plotRight - plotLeft
         val plotHeight = plotBottom - plotTop
-
         val minAltitudeKm = elevationKm
-        val effectiveTopAltitudeKm = max(
-            elevationKm + visibleTopAltitudeKm,
-            minAltitudeKm + WIND_MIN_VISIBLE_ALTITUDE_RANGE_KM,
-        )
 
         if (plotWidth <= 0f || plotHeight <= 0f || chart.hours.isEmpty()) {
             return@Canvas
         }
 
-        // Background
         drawRect(
             color = gridBackgroundColor,
             topLeft = Offset(0f, plotTop),
-            size = Size(axisWidth, plotHeight),
-        )
-        drawRect(
-            color = gridBackgroundColor,
-            topLeft = Offset(plotLeft, plotTop),
-            size = Size(plotWidth, plotHeight),
+            size = Size(size.width, plotHeight + g.surfaceRowHeight),
         )
 
-        val columnWidth = plotWidth / chart.hours.size
-        val profileByHour = buildWindProfiles(chart.cells)
-        if (profileByHour.isEmpty()) return@Canvas
-        val availableAltitudes = profileByHour.values.flatten().map { it.altitudeKm }
-        val lowAvailableAltitudeKm = availableAltitudes.minOrNull() ?: return@Canvas
-        val highAvailableAltitudeKm = availableAltitudes.maxOrNull() ?: return@Canvas
-        val visibleModelLevels = chart.modelLevelAltitudesKm.filter {
-            it in minAltitudeKm..effectiveTopAltitudeKm
-        }
-
-        // Horizontal clustering: skip arrow columns if cells are too narrow.
-        val hourCluster = max(1, ceil(arrowSizePx * 1.1f / columnWidth).toInt())
-
+        val columnWidth = g.columnWidth
         // ── Interpolated wind-speed background ────────────────────
-        // Sample every few display pixels with the same vector interpolation used by arrows and
-        // the cursor. This keeps the color under a cursor consistent with its exact hour/altitude.
+        // The background and cursor use the same vector interpolation at each hour and altitude.
         val backgroundStripHeightPx = max(1f, ceil(2.dp.toPx()))
         chart.hours.forEachIndexed { hourIndex, hour ->
             val profile = profileByHour[hour] ?: return@forEachIndexed
@@ -317,7 +275,7 @@ private fun WindChartCanvas(
             drawLine(
                 color = outlineColor.copy(alpha = alpha),
                 start = Offset(x, plotTop),
-                end = Offset(x, plotBottom),
+                end = Offset(x, plotBottom + g.surfaceRowHeight),
                 strokeWidth = 1.dp.toPx(),
             )
         }
@@ -331,285 +289,91 @@ private fun WindChartCanvas(
             val y = altitudeToY(altKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
             drawLine(
                 color = outlineColor.copy(alpha = 0.35f),
-                start = Offset(0f, y),
+                start = Offset(plotLeft, y),
                 end = Offset(plotRight, y),
                 strokeWidth = 1.dp.toPx(),
             )
         }
 
-        // Outline
+        // Outline of the plot and of the 10 m row below it.
         drawRect(
             color = outlineColor.copy(alpha = 0.4f),
             topLeft = Offset(plotLeft, plotTop),
             size = Size(plotWidth, plotHeight),
             style = Stroke(width = 1.dp.toPx()),
         )
-
-        // ── CCL line (orange, 2.5dp, rounded) ──────────────────────
-        if (chart.cclKm.isNotEmpty()) {
-            val cclPath = Path()
-            var started = false
-            chart.cclKm.forEach { marker ->
-                val hourIndex = chart.hours.indexOf(marker.hour)
-                if (hourIndex < 0) return@forEach
-                val x = plotLeft + hourIndex * columnWidth + columnWidth / 2f
-                val y = altitudeToY(
-                    marker.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-                )
-                if (y !in plotTop..plotBottom) return@forEach
-                if (!started) {
-                    cclPath.moveTo(x, y)
-                    started = true
-                } else {
-                    cclPath.lineTo(x, y)
-                }
-            }
-            if (started) {
-                drawPath(
-                    path = cclPath,
-                    color = Color(0xFFFF8C00),
-                    style = Stroke(
-                        width = 2.5f.dp.toPx(),
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                        join = androidx.compose.ui.graphics.StrokeJoin.Round,
-                    ),
-                )
-            }
-        }
-
-        // ── 0 °C level line (cyan, 2dp, rounded) ───────────────────
-        if (chart.freezingLevelKm.isNotEmpty()) {
-            val flPath = Path()
-            var started = false
-            chart.freezingLevelKm.forEach { marker ->
-                val hourIndex = chart.hours.indexOf(marker.hour)
-                if (hourIndex < 0) return@forEach
-                val x = plotLeft + hourIndex * columnWidth + columnWidth / 2f
-                val y = altitudeToY(
-                    marker.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-                )
-                if (y !in plotTop..plotBottom) return@forEach
-                if (!started) {
-                    flPath.moveTo(x, y)
-                    started = true
-                } else {
-                    flPath.lineTo(x, y)
-                }
-            }
-            if (started) {
-                drawPath(
-                    path = flPath,
-                    color = Color(0xFF00BCD4),
-                    style = Stroke(
-                        width = 2f.dp.toPx(),
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                        join = androidx.compose.ui.graphics.StrokeJoin.Round,
-                    ),
-                )
-            }
-        }
-
-        // Wind glyphs: keep each speed label attached to the tail of its arrow. A narrow
-        // surface-colored halo preserves the arrow against every wind-speed background without
-        // covering the interpolated color field with a large opaque cell.
-        val hourClusters = buildWindHourClusters(chart.hours.size, hourCluster)
-        val visualSlotWidth = columnWidth * hourCluster
-        val arrowShaftLength = min(28.dp.toPx(), visualSlotWidth * 0.52f)
-        val glyphRowSpacingPx = 56.dp.toPx()
-        val glyphEdgeInsetPx = 30.dp.toPx()
-        val lowAltKm = max(minAltitudeKm, lowAvailableAltitudeKm)
-        val highAltKm = min(effectiveTopAltitudeKm, highAvailableAltitudeKm)
-        val lowArrowY = min(
-            altitudeToY(
-                lowAltKm,
-                minAltitudeKm,
-                effectiveTopAltitudeKm,
-                plotTop,
-                plotBottom,
-            ),
-            plotBottom - glyphEdgeInsetPx,
-        )
-        val highArrowY = max(
-            altitudeToY(
-                highAltKm,
-                minAltitudeKm,
-                effectiveTopAltitudeKm,
-                plotTop,
-                plotBottom,
-            ),
-            plotTop + glyphEdgeInsetPx,
-        )
-        val arrowRowY = buildList {
-            var y = lowArrowY
-            while (y >= highArrowY) {
-                add(y)
-                y -= glyphRowSpacingPx
-            }
-            if (isEmpty()) add((lowArrowY + highArrowY) / 2f)
-        }
-
-        hourClusters.forEach { cluster ->
-            val hour = chart.hours[cluster.representativeIndex]
-            val cellCenterX = plotLeft + cluster.centerColumn * columnWidth
-            val profile = profileByHour[hour] ?: return@forEach
-
-            arrowRowY.forEach arrowRow@{ cellCenterY ->
-                val altKm = yToAltitude(
-                    cellCenterY,
-                    minAltitudeKm,
-                    effectiveTopAltitudeKm,
-                    plotTop,
-                    plotBottom,
-                )
-                val sample = interpolateWind(profile, altKm) ?: return@arrowRow
-
-                drawWindGlyph(
-                    centerX = cellCenterX,
-                    centerY = cellCenterY,
-                    directionDeg = sample.directionDeg,
-                    shaftLength = arrowShaftLength,
-                    speedText = formatWindSpeed(
-                        sample.speedKmh,
-                        displayUnits,
-                        withUnit = false,
-                    ),
-                    textMeasurer = textMeasurer,
-                    textStyle = speedLabelStyle,
-                    foregroundColor = onSurfaceColor,
-                    surfaceColor = surfaceColor,
-                )
-            }
-        }
-
-        // Axis labels
-        altitudeTicks.forEach { altKm ->
-            val y = altitudeToY(
-                altKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-            )
-            drawCanvasText(
-                textMeasurer = textMeasurer,
-                text = formatAltitudeAxisValue(altKm, displayUnits),
-                x = 8.dp.toPx(),
-                baselineY = y + with(density) { 12.sp.toPx() } * 0.35f,
-                style = axisLabelStyle,
-            )
-        }
-
-        drawCanvasText(
-            textMeasurer = textMeasurer,
-            text = altitudeAxisUnitLabel(displayUnits),
-            x = 8.dp.toPx(),
-            baselineY = plotTop + with(density) { 11.sp.toPx() } + 4.dp.toPx(),
-            style = unitLabelStyle,
+        drawRect(
+            color = outlineColor.copy(alpha = 0.4f),
+            topLeft = Offset(plotLeft, plotBottom),
+            size = Size(plotWidth, g.surfaceRowHeight),
+            style = Stroke(width = 1.dp.toPx()),
         )
 
-        // Wind speed color legend and time axis at bottom.
-        val legendSteps = listOf(0f, 5f, 10f, 15f, 20f, 30f, 40f, 50f, 60f)
-        val legendY = plotBottom + 4.dp.toPx()
-        val swatchH = 6.dp.toPx()
-        val legendItemWidth = (plotWidth) / legendSteps.size
-        val legendBaseline = legendY + swatchH + with(density) { 9.sp.toPx() } + 1.dp.toPx()
-        legendSteps.forEachIndexed { index, speedKmh ->
-            val lx = plotLeft + index * legendItemWidth
-            val swatchW = legendItemWidth * 0.6f
-            drawRoundRect(
-                color = windSpeedColor(speedKmh).copy(alpha = 0.92f),
-                topLeft = Offset(lx + (legendItemWidth - swatchW) / 2f, legendY),
-                size = Size(swatchW, swatchH),
-                cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
-            )
-            drawCanvasText(
-                textMeasurer = textMeasurer,
-                text = formatWindSpeed(speedKmh, displayUnits, withUnit = false),
-                x = lx + legendItemWidth / 2f,
-                baselineY = legendBaseline,
-                style = legendLabelStyle,
-                anchor = CanvasTextAnchor.CENTER,
-            )
+        drawLevelLine(
+            chart.cclKm, chart.hours, g, minAltitudeKm, effectiveTopAltitudeKm, CCL_COLOR, surfaceColor, 2.5f,
+        )
+        drawLevelLine(
+            chart.freezingLevelKm, chart.hours, g, minAltitudeKm, effectiveTopAltitudeKm,
+            FREEZING_COLOR, surfaceColor, 2f,
+        )
+
+        // Source glyphs sit at their true hourly height, above the CCL and 0 °C lines.
+        glyphs.forEach { glyph ->
+            drawWindGlyph(glyph, displayUnits, textMeasurer, speedLabelStyle, onSurfaceColor, surfaceColor, size.width)
+        }
+
+        // ── Left axis ─────────────────────────────────────────────
+        ticksToLabels(altitudeTicks).forEach { altitude ->
+            val y = altitudeToY(altitude, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
+            if (y >= 24.dp.toPx()) {
+                drawCanvasText(
+                    textMeasurer, formatAltitudeAxisValue(altitude, displayUnits),
+                    8.dp.toPx(), min(y + 4.dp.toPx(), plotBottom - 2.dp.toPx()), axisStyle,
+                )
+            }
         }
         drawCanvasText(
-            textMeasurer = textMeasurer,
-            text = displayUnits.windSpeed.label,
-            x = plotLeft - 20.dp.toPx(),
-            baselineY = legendBaseline,
-            style = legendLabelStyle,
-            anchor = CanvasTextAnchor.CENTER,
+            textMeasurer, "${altitudeAxisUnitLabel(displayUnits)} ASL",
+            8.dp.toPx(), 15.dp.toPx(), axisStyle.copy(fontSize = 9.sp),
+        )
+        drawCanvasText(
+            textMeasurer, "10 m", 8.dp.toPx(), plotBottom + g.surfaceRowHeight / 2f + 4.dp.toPx(), axisStyle,
         )
 
+        drawWindLegend(chart, displayUnits, g, textMeasurer, axisStyle.copy(fontSize = 9.sp))
+
+        // ── Hours ─────────────────────────────────────────────────
         val timeBaseline = size.height - 4.dp.toPx()
         chart.hours.forEachIndexed { index, hour ->
-            if ((hour - chart.hours.first()) % 3 != 0) return@forEachIndexed
-            val x = plotLeft + index * columnWidth + columnWidth / 2f
+            if (index % g.glyphStride != 0) return@forEachIndexed
             drawCanvasText(
                 textMeasurer = textMeasurer,
                 text = formatPaddedInt(hour, minimumDigits = 2),
-                x = x,
+                x = g.columnCenter(index),
                 baselineY = timeBaseline,
                 style = timeLabelStyle,
                 anchor = CanvasTextAnchor.CENTER,
             )
         }
 
-        // CCL label (left side, 30dp from left edge)
-        chart.cclKm.firstOrNull()?.let { firstCcl ->
-            val y = altitudeToY(
-                firstCcl.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-            )
-            if (y in plotTop..plotBottom) {
-                drawCanvasText(
-                    textMeasurer = textMeasurer,
-                    text = "CCL",
-                    x = 30.dp.toPx(),
-                    baselineY = y - 4.dp.toPx(),
-                    style = cclLabelStyle,
-                )
-            }
-        }
-
-        // 0°C level label with snowflake (left side, 30dp from left edge)
-        chart.freezingLevelKm.firstOrNull()?.let { firstFl ->
-            val y = altitudeToY(
-                firstFl.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom,
-            )
-            if (y in plotTop..plotBottom) {
-                drawCanvasText(
-                    textMeasurer = textMeasurer,
-                    text = "❄ 0°C",
-                    x = 30.dp.toPx(),
-                    baselineY = y - 4.dp.toPx(),
-                    style = freezingLabelStyle,
-                )
-            }
-        }
-
-        // Compact right-edge markers point to representative heights where the profile contains
-        // direct model data. Every value between these markers uses interpolation.
-        visibleModelLevels.forEach { altitudeKm ->
-            val y = altitudeToY(
-                altitudeKm,
-                minAltitudeKm,
-                effectiveTopAltitudeKm,
-                plotTop,
-                plotBottom,
-            ).coerceIn(plotTop + 1.dp.toPx(), plotBottom - 1.dp.toPx())
-            drawModelLevelMarker(
-                rightEdgeX = plotRight - 1.dp.toPx(),
-                centerY = y,
-                fillColor = surfaceColor,
-                outlineColor = onSurfaceColor,
-            )
-        }
-
         // ── Crosshair overlay ──────────────────────────────────
-        crosshairPos?.let { pos ->
-            val cx = pos.x.coerceIn(plotLeft, plotRight)
-            val cy = pos.y.coerceIn(plotTop, plotBottom)
+        cursor?.let { selected ->
+            val pos = crosshairPos ?: return@let
+            // Center the reticle on the selected hour's glyphs instead of the raw finger position.
+            val selectedIndex = chart.hours.indexOf(selected.hour)
+            val cx = if (selectedIndex >= 0) g.columnCenter(selectedIndex) else pos.x.coerceIn(plotLeft, plotRight)
+            val cy = if (selected.isSurface10m) {
+                plotBottom + g.surfaceRowHeight / 2f
+            } else {
+                altitudeToY(selected.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
+                    .coerceIn(plotTop, plotBottom)
+            }
 
             val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
             drawLine(
                 color = onSurfaceColor.copy(alpha = 0.5f),
                 start = Offset(cx, plotTop),
-                end = Offset(cx, plotBottom),
+                end = Offset(cx, plotBottom + g.surfaceRowHeight),
                 strokeWidth = 1.dp.toPx(),
                 pathEffect = dash,
             )
@@ -621,72 +385,43 @@ private fun WindChartCanvas(
                 pathEffect = dash,
             )
 
-            val reticleR = with(density) { 18.dp.toPx() }
+            val reticleR = 12.dp.toPx()
             drawCircle(
-                color = onSurfaceColor.copy(alpha = 0.7f),
+                color = onSurfaceColor.copy(alpha = 0.75f),
                 radius = reticleR,
                 center = Offset(cx, cy),
-                style = Stroke(width = 2.dp.toPx()),
+                style = Stroke(width = 1.5.dp.toPx()),
             )
-            val tick = with(density) { 4.dp.toPx() }
-            for (angleDeg in listOf(0f, 90f, 180f, 270f)) {
-                val rad = angleDeg * PI.toFloat() / 180f
-                drawLine(
-                    color = onSurfaceColor.copy(alpha = 0.7f),
-                    start = Offset(
-                        cx + cos(rad) * (reticleR - tick),
-                        cy + sin(rad) * (reticleR - tick),
-                    ),
-                    end = Offset(
-                        cx + cos(rad) * (reticleR + tick),
-                        cy + sin(rad) * (reticleR + tick),
-                    ),
-                    strokeWidth = 2.dp.toPx(),
-                )
-            }
-
-            val altKm = yToAltitude(cy, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
-            val hourIdx = windHourIndexAtX(
-                x = cx,
-                plotLeft = plotLeft,
-                columnWidth = columnWidth,
-                hourCount = chart.hours.size,
-            ) ?: return@let
-            val hour = chart.hours[hourIdx]
-            val sample = profileByHour[hour]?.let { profile ->
-                interpolateWind(profile, altKm)
-            }
-
-            val tooltipLines = mutableListOf<String>()
-            tooltipLines += "${formatPaddedInt(hour, minimumDigits = 2)}h  ${formatAltitudeKm(altKm, displayUnits)}"
-            if (sample != null) {
-                tooltipLines += "${formatWindSpeed(sample.speedKmh, displayUnits)}  ${sample.directionDeg.toInt()}°"
-            }
 
             val tooltipLayouts = tooltipLines.map { textMeasurer.measureCanvasText(it, tooltipStyle) }
-            val lineH = with(density) { 12.sp.toPx() } * 1.3f
+            val lineH = 12.sp.toPx() * 1.3f
             val maxTextW = tooltipLayouts.maxOf { it.size.width.toFloat() }
-            val padH = with(density) { 8.dp.toPx() }
-            val padV = with(density) { 6.dp.toPx() }
+            val padH = 8.dp.toPx()
+            val padV = 6.dp.toPx()
+            val gap = 6.dp.toPx()
             val ttW = maxTextW + padH * 2
             val ttH = lineH * tooltipLines.size + padV * 2
-            val ttX = if (cx + reticleR + ttW + 8.dp.toPx() < plotRight)
-                cx + reticleR + 8.dp.toPx()
-            else
-                cx - reticleR - ttW - 8.dp.toPx()
-            val ttY = (cy - ttH / 2f).coerceIn(plotTop, plotBottom - ttH)
+            // Prefer the right side of the finger; flip left near the edge.
+            val ttX = if (cx + reticleR + gap + ttW <= plotRight - 4.dp.toPx()) {
+                cx + reticleR + gap
+            } else {
+                max(plotLeft + 4.dp.toPx(), cx - reticleR - gap - ttW)
+            }
+            val ttY = (cy - ttH - reticleR).let { above ->
+                if (above >= plotTop + 4.dp.toPx()) above else cy + reticleR
+            }.coerceIn(plotTop, max(plotTop, plotBottom + g.surfaceRowHeight - ttH))
 
             drawRoundRect(
-                color = gridBackgroundColor.copy(alpha = 0.92f),
+                color = surfaceColor.copy(alpha = 0.95f),
                 topLeft = Offset(ttX, ttY),
                 size = Size(ttW, ttH),
-                cornerRadius = CornerRadius(4.dp.toPx()),
+                cornerRadius = CornerRadius(6.dp.toPx()),
             )
             drawRoundRect(
                 color = onSurfaceColor.copy(alpha = 0.3f),
                 topLeft = Offset(ttX, ttY),
                 size = Size(ttW, ttH),
-                cornerRadius = CornerRadius(4.dp.toPx()),
+                cornerRadius = CornerRadius(6.dp.toPx()),
                 style = Stroke(width = 1.dp.toPx()),
             )
             tooltipLines.forEachIndexed { idx, line ->
@@ -702,132 +437,278 @@ private fun WindChartCanvas(
     }
 }
 
-private fun DrawScope.drawModelLevelMarker(
-    rightEdgeX: Float,
-    centerY: Float,
-    fillColor: Color,
-    outlineColor: Color,
+/** Pixel layout shared by drawing and hit testing. */
+private class WindChartGeometry(
+    val width: Float,
+    val height: Float,
+    hourCount: Int,
+    density: Float,
 ) {
-    val width = 8.dp.toPx()
-    val halfHeight = 4.dp.toPx()
-    val marker = Path().apply {
-        moveTo(rightEdgeX - width, centerY)
-        lineTo(rightEdgeX, centerY - halfHeight)
-        lineTo(rightEdgeX, centerY + halfHeight)
-        close()
+    val plotLeft = WIND_AXIS_WIDTH.value * density
+    val surfaceRowHeight = WIND_SURFACE_ROW_HEIGHT.value * density
+    val legendHeight = WIND_LEGEND_HEIGHT.value * density
+    val timeAxisHeight = WIND_TIME_AXIS_HEIGHT.value * density
+    val plotBottom = height - surfaceRowHeight - legendHeight - timeAxisHeight
+    val columnWidth = if (hourCount > 0) max(0f, width - plotLeft) / hourCount else 0f
+    val glyphStride = windGlyphHourStride(columnWidth, WIND_GLYPH_SLOT_WIDTH.value * density)
+    val glyphHalfHeight = WIND_GLYPH_HALF_HEIGHT.value * density
+    val levelSpacing = WIND_LEVEL_SPACING.value * density
+    val snapDistance = WIND_CURSOR_SNAP_DISTANCE.value * density
+
+    fun columnCenter(index: Int): Float = plotLeft + index * columnWidth + columnWidth / 2f
+}
+
+private data class WindGlyph(
+    val sample: WindSample?,
+    val center: Offset,
+    val isSurface10m: Boolean,
+)
+
+private data class WindCursor(
+    val hour: Int,
+    val altitudeKm: Float,
+    val sample: WindSample?,
+    val isSurface10m: Boolean,
+)
+
+private fun buildWindGlyphs(
+    hours: List<Int>,
+    profiles: Map<Int, List<WindSample>>,
+    elevationKm: Float,
+    topAltitudeKm: Float,
+    g: WindChartGeometry,
+): List<WindGlyph> {
+    if (g.plotBottom <= 2f * g.glyphHalfHeight || g.columnWidth <= 0f) return emptyList()
+    return buildList {
+        hours.forEachIndexed { index, hour ->
+            if (index % g.glyphStride != 0) return@forEachIndexed
+            val x = g.columnCenter(index)
+            val profile = profiles[hour].orEmpty()
+            val levels = profile.filter { !it.isSurface10m }
+            val anchorYs = levels.map { altitudeToY(it.altitudeKm, elevationKm, topAltitudeKm, 0f, g.plotBottom) }
+            pickReadableWindLevels(
+                anchorYs,
+                plotTop = 0f,
+                plotBottom = g.plotBottom,
+                glyphHalfHeight = g.glyphHalfHeight,
+                minSpacing = g.levelSpacing,
+            ).forEach { level ->
+                add(WindGlyph(levels[level.index], Offset(x, level.drawY), isSurface10m = false))
+            }
+            add(
+                WindGlyph(
+                    sample = profile.firstOrNull { it.isSurface10m },
+                    center = Offset(x, g.plotBottom + g.surfaceRowHeight / 2f),
+                    isSurface10m = true,
+                ),
+            )
+        }
     }
-    drawPath(path = marker, color = fillColor)
-    drawPath(
-        path = marker,
-        color = outlineColor.copy(alpha = 0.9f),
-        style = Stroke(width = 1.25.dp.toPx()),
+}
+
+private fun resolveWindCursor(
+    pos: Offset,
+    hours: List<Int>,
+    profiles: Map<Int, List<WindSample>>,
+    elevationKm: Float,
+    topAltitudeKm: Float,
+    g: WindChartGeometry,
+): WindCursor? {
+    if (pos.x < g.plotLeft || pos.x > g.width || pos.y < 0f) return null
+    val hourIndex = windHourIndexAtX(pos.x, g.plotLeft, g.columnWidth, hours.size) ?: return null
+    val hour = hours[hourIndex]
+    val profile = profiles[hour].orEmpty()
+    if (pos.y > g.plotBottom) {
+        if (pos.y > g.plotBottom + g.surfaceRowHeight) return null
+        return WindCursor(hour, elevationKm, profile.firstOrNull { it.isSurface10m }, isSurface10m = true)
+    }
+    // Snap to a source level near the finger so the readout reports the exact model value.
+    val snapped = profile
+        .filter { !it.isSurface10m }
+        .map { it to abs(altitudeToY(it.altitudeKm, elevationKm, topAltitudeKm, 0f, g.plotBottom) - pos.y) }
+        .filter { (_, distance) -> distance <= g.snapDistance }
+        .minByOrNull { (_, distance) -> distance }
+        ?.first
+    if (snapped != null) return WindCursor(hour, snapped.altitudeKm, snapped, isSurface10m = false)
+    val altitude = yToAltitude(pos.y, elevationKm, topAltitudeKm, 0f, g.plotBottom)
+    return WindCursor(hour, altitude, interpolateWind(profile, altitude), isSurface10m = false)
+}
+
+private fun windTooltipLines(cursor: WindCursor, units: DisplayUnits): List<String> {
+    val altitude = if (cursor.isSurface10m) "10 m AGL" else sourceAltitudeLabel(cursor.altitudeKm, units) + " ASL"
+    val sample = cursor.sample
+    return listOf(
+        "${formatPaddedInt(cursor.hour, minimumDigits = 2)}h  $altitude",
+        if (sample == null) "No data" else {
+            val prefix = if (sample.isInterpolated) "≈ " else ""
+            "$prefix${formatWindSpeed(sample.speedKmh, units)}  ${sample.directionDeg.roundToInt() % 360}°"
+        },
     )
 }
 
-private fun DrawScope.drawWindGlyph(
-    centerX: Float,
-    centerY: Float,
-    directionDeg: Float,
-    shaftLength: Float,
-    speedText: String,
-    textMeasurer: TextMeasurer,
-    textStyle: TextStyle,
-    foregroundColor: Color,
-    surfaceColor: Color,
-) {
-    // Arrow points in the direction the wind is going TO (opposite of "from")
-    val goingToDeg = (directionDeg + 180f) % 360f
-    val angleRad = (goingToDeg - 90f) * PI.toFloat() / 180f
-    val directionX = cos(angleRad)
-    val directionY = sin(angleRad)
-    val halfLength = shaftLength / 2f
-
-    val tip = Offset(
-        x = centerX + directionX * halfLength,
-        y = centerY + directionY * halfLength,
-    )
-    val tail = Offset(
-        x = centerX - directionX * halfLength,
-        y = centerY - directionY * halfLength,
-    )
-    val arrowHeadLength = min(6.dp.toPx(), shaftLength * 0.28f)
-    val arrowAngle = PI.toFloat() / 6f
-    val headOne = Offset(
-        x = tip.x - cos(angleRad - arrowAngle) * arrowHeadLength,
-        y = tip.y - sin(angleRad - arrowAngle) * arrowHeadLength,
-    )
-    val headTwo = Offset(
-        x = tip.x - cos(angleRad + arrowAngle) * arrowHeadLength,
-        y = tip.y - sin(angleRad + arrowAngle) * arrowHeadLength,
-    )
-    val arrowPath = Path().apply {
-        moveTo(tail.x, tail.y)
-        lineTo(tip.x, tip.y)
-        moveTo(headOne.x, headOne.y)
-        lineTo(tip.x, tip.y)
-        lineTo(headTwo.x, headTwo.y)
+private fun sourceAltitudeLabel(altitudeKm: Float, units: DisplayUnits): String {
+    val altitude = when (units.altitude) {
+        AltitudeUnit.METERS -> altitudeKm * 1000f
+        AltitudeUnit.FEET -> altitudeKm * 3280.84f
     }
+    return "${altitude.roundToInt()} ${units.altitude.shortLabel}"
+}
 
-    val labelLayout = textMeasurer.measureCanvasText(speedText, textStyle)
-    val labelHorizontalPadding = 3.dp.toPx()
-    val labelVerticalPadding = 1.dp.toPx()
-    val labelWidth = labelLayout.size.width + labelHorizontalPadding * 2f
-    val labelHeight = max(
-        12.dp.toPx(),
-        labelLayout.size.height + labelVerticalPadding * 2f,
-    )
-    val labelRadiusAlongArrow =
-        abs(directionX) * labelWidth / 2f + abs(directionY) * labelHeight / 2f
-    val labelGap = 1.5.dp.toPx()
-    val labelCenter = Offset(
-        x = tail.x - directionX * (labelRadiusAlongArrow + labelGap),
-        y = tail.y - directionY * (labelRadiusAlongArrow + labelGap),
-    )
-    val labelTopLeft = Offset(
-        x = labelCenter.x - labelWidth / 2f,
-        y = labelCenter.y - labelHeight / 2f,
-    )
-    val labelCornerRadius = CornerRadius(labelHeight / 2f, labelHeight / 2f)
-
+/**
+ * The arrow is centered on its hour column at the source height; the speed pill sits to its right,
+ * or to its left at the right edge of the chart.
+ */
+private fun DrawScope.drawWindGlyph(
+    glyph: WindGlyph,
+    units: DisplayUnits,
+    textMeasurer: TextMeasurer,
+    style: TextStyle,
+    foreground: Color,
+    surface: Color,
+    chartRight: Float,
+) {
+    val sample = glyph.sample
+    if (sample == null) {
+        // Only the 10 m row has fixed slots; missing values there read as "no data", not calm.
+        drawCanvasText(
+            textMeasurer, "—", glyph.center.x, glyph.center.y + 4.dp.toPx(),
+            style.copy(color = foreground.copy(alpha = 0.6f), fontSize = 12.sp), CanvasTextAnchor.CENTER,
+        )
+        return
+    }
+    val arrowLength = WIND_ARROW_LENGTH.toPx()
+    val text = formatWindSpeed(sample.speedKmh, units, withUnit = false)
+    val layout = textMeasurer.measureCanvasText(text, style)
+    val pillHeight = max(14.dp.toPx(), layout.size.height.toFloat())
+    val pillWidth = max(pillHeight, layout.size.width + 6.dp.toPx())
+    val gap = 3.dp.toPx()
+    val pillOnRight = glyph.center.x + arrowLength / 2f + gap + pillWidth <= chartRight - 2.dp.toPx()
+    val pillLeft = if (pillOnRight) {
+        glyph.center.x + arrowLength / 2f + gap
+    } else {
+        glyph.center.x - arrowLength / 2f - gap - pillWidth
+    }
+    val pillTopLeft = Offset(pillLeft, glyph.center.y - pillHeight / 2f)
+    val radius = CornerRadius(pillHeight / 2f)
+    drawRoundRect(surface.copy(alpha = 0.86f), pillTopLeft, Size(pillWidth, pillHeight), radius)
     drawRoundRect(
-        color = surfaceColor.copy(alpha = 0.84f),
-        topLeft = labelTopLeft,
-        size = Size(labelWidth, labelHeight),
-        cornerRadius = labelCornerRadius,
-    )
-    drawRoundRect(
-        color = foregroundColor.copy(alpha = 0.48f),
-        topLeft = labelTopLeft,
-        size = Size(labelWidth, labelHeight),
-        cornerRadius = labelCornerRadius,
-        style = Stroke(width = 0.75.dp.toPx()),
+        foreground.copy(alpha = 0.4f), pillTopLeft, Size(pillWidth, pillHeight), radius,
+        style = Stroke(0.75.dp.toPx()),
     )
     drawText(
-        textLayoutResult = labelLayout,
+        textLayoutResult = layout,
         topLeft = Offset(
-            x = labelCenter.x - labelLayout.size.width / 2f,
-            y = labelCenter.y - labelLayout.size.height / 2f,
+            pillLeft + (pillWidth - layout.size.width) / 2f,
+            glyph.center.y - layout.size.height / 2f,
         ),
     )
+    drawWindArrow(
+        center = glyph.center,
+        directionDeg = sample.directionDeg,
+        speedKmh = sample.speedKmh,
+        shaftLength = arrowLength,
+        foreground = foreground,
+        surface = surface,
+    )
+}
 
-    drawPath(
-        path = arrowPath,
-        color = surfaceColor.copy(alpha = 0.9f),
-        style = Stroke(
-            width = 3.75.dp.toPx(),
-            cap = StrokeCap.Round,
-            join = androidx.compose.ui.graphics.StrokeJoin.Round,
-        ),
-    )
-    drawPath(
-        path = arrowPath,
-        color = foregroundColor,
-        style = Stroke(
-            width = 1.35.dp.toPx(),
-            cap = StrokeCap.Round,
-            join = androidx.compose.ui.graphics.StrokeJoin.Round,
-        ),
-    )
+private fun DrawScope.drawWindArrow(
+    center: Offset,
+    directionDeg: Float,
+    speedKmh: Float,
+    shaftLength: Float,
+    foreground: Color,
+    surface: Color,
+) {
+    if (speedKmh < 0.05f) {
+        drawCircle(surface, 4.dp.toPx(), center)
+        drawCircle(foreground, 3.dp.toPx(), center, style = Stroke(1.25.dp.toPx()))
+        return
+    }
+    // Meteorological direction is where the wind comes FROM; the arrow points where it goes.
+    val angle = (directionDeg + 90f) * PI.toFloat() / 180f
+    val direction = Offset(cos(angle), sin(angle))
+    val tip = center + direction * (shaftLength / 2f)
+    val tail = center - direction * (shaftLength / 2f)
+    val headLength = 5.dp.toPx()
+    val path = Path().apply {
+        moveTo(tail.x, tail.y)
+        lineTo(tip.x, tip.y)
+        moveTo(tip.x - cos(angle - PI.toFloat() / 6f) * headLength, tip.y - sin(angle - PI.toFloat() / 6f) * headLength)
+        lineTo(tip.x, tip.y)
+        lineTo(tip.x - cos(angle + PI.toFloat() / 6f) * headLength, tip.y - sin(angle + PI.toFloat() / 6f) * headLength)
+    }
+    val halo = Stroke(4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+    drawPath(path, surface.copy(alpha = 0.9f), style = halo)
+    drawPath(path, foreground, style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+}
+
+private fun DrawScope.drawLevelLine(
+    markers: List<WindLevelMarker>,
+    hours: List<Int>,
+    g: WindChartGeometry,
+    minAltitudeKm: Float,
+    maxAltitudeKm: Float,
+    color: Color,
+    halo: Color,
+    widthDp: Float,
+) {
+    val path = Path()
+    var started = false
+    markers.forEach { marker ->
+        val hourIndex = hours.indexOf(marker.hour)
+        if (hourIndex < 0) return@forEach
+        val y = altitudeToY(marker.altitudeKm, minAltitudeKm, maxAltitudeKm, 0f, g.plotBottom)
+        if (y !in 0f..g.plotBottom) return@forEach
+        val x = g.columnCenter(hourIndex)
+        if (started) path.lineTo(x, y) else path.moveTo(x, y)
+        started = true
+    }
+    if (!started) return
+    drawPath(path, halo.copy(alpha = 0.6f), style = Stroke((widthDp + 1.5f).dp.toPx(), cap = StrokeCap.Round))
+    drawPath(path, color, style = Stroke(widthDp.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+}
+
+/** One legend line: speed scale, then CCL and 0 °C line keys on the right. */
+private fun DrawScope.drawWindLegend(
+    chart: WindForecastChartUiModel,
+    units: DisplayUnits,
+    g: WindChartGeometry,
+    textMeasurer: TextMeasurer,
+    style: TextStyle,
+) {
+    val top = g.plotBottom + g.surfaceRowHeight
+    val keys = buildList {
+        if (chart.cclKm.isNotEmpty()) add("CCL" to CCL_COLOR)
+        if (chart.freezingLevelKm.isNotEmpty()) add("0°C" to FREEZING_COLOR)
+    }
+    val keyWidth = 44.dp.toPx()
+    val scaleRight = size.width - keys.size * keyWidth
+    val steps = listOf(0f, 5f, 10f, 15f, 20f, 30f, 40f, 50f, 60f)
+    val itemWidth = (scaleRight - g.plotLeft) / steps.size
+    val swatchTop = top + 5.dp.toPx()
+    val labelBaseline = top + 22.dp.toPx()
+    steps.forEachIndexed { index, speed ->
+        val x = g.plotLeft + index * itemWidth
+        drawRoundRect(
+            windSpeedColor(speed).copy(alpha = 0.92f),
+            Offset(x + itemWidth * 0.15f, swatchTop),
+            Size(itemWidth * 0.7f, 6.dp.toPx()), CornerRadius(2.dp.toPx()),
+        )
+        drawCanvasText(
+            textMeasurer, formatWindSpeed(speed, units, withUnit = false),
+            x + itemWidth / 2f, labelBaseline, style, CanvasTextAnchor.CENTER,
+        )
+    }
+    drawCanvasText(textMeasurer, units.windSpeed.label, 8.dp.toPx(), labelBaseline, style)
+    keys.forEachIndexed { index, (label, color) ->
+        val x = scaleRight + index * keyWidth + 6.dp.toPx()
+        drawLine(
+            color, Offset(x, swatchTop + 3.dp.toPx()), Offset(x + 30.dp.toPx(), swatchTop + 3.dp.toPx()),
+            strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round,
+        )
+        drawCanvasText(textMeasurer, label, x, labelBaseline, style.copy(color = color, fontWeight = FontWeight.Bold))
+    }
 }
 
 /** Background color for interpolated wind samples. */
@@ -872,10 +753,25 @@ private fun buildAltitudeTicks(
     return ticks.distinctBy { (it * 100f).toInt() }
 }
 
+/** Drops the ground tick when the next round tick would crowd it on the axis. */
+private fun ticksToLabels(ticks: List<Float>): List<Float> {
+    if (ticks.size < 3) return ticks
+    val step = ticks[2] - ticks[1]
+    return if (ticks[1] - ticks[0] < step * 0.35f) ticks.drop(1) else ticks
+}
+
 private const val WIND_MIN_VISIBLE_ALTITUDE_RANGE_KM = 0.75f
+private val CCL_COLOR = Color(0xFFFF8C00)
+private val FREEZING_COLOR = Color(0xFF00BCD4)
 private val WIND_AXIS_WIDTH = 60.dp
-private val WIND_BOTTOM_AXIS_HEIGHT = 48.dp
+private val WIND_SURFACE_ROW_HEIGHT = 26.dp
+private val WIND_LEGEND_HEIGHT = 28.dp
 private val WIND_TIME_AXIS_HEIGHT = 16.dp
+private val WIND_ARROW_LENGTH = 16.dp
+private val WIND_GLYPH_SLOT_WIDTH = 44.dp
+private val WIND_GLYPH_HALF_HEIGHT = 8.dp
+private val WIND_LEVEL_SPACING = 20.dp
+private val WIND_CURSOR_SNAP_DISTANCE = 12.dp
 
 @Preview(name = "Wind Default", showBackground = true, widthDp = 420, heightDp = 720)
 @Composable
@@ -897,6 +793,14 @@ private fun WindForecastViewZoomedOutPreview() {
                 topAltitudeKm = 6.5f,
             ),
         )
+    }
+}
+
+@Preview(name = "Wind Sparse Sources", showBackground = true, widthDp = 420, heightDp = 720)
+@Composable
+private fun WindForecastViewSparsePreview() {
+    ForecastPreviewTheme {
+        WindForecastView(uiState = ForecastPreviewData.sparseWindState())
     }
 }
 
