@@ -50,7 +50,13 @@ internal fun buildWindProfiles(
         .filterValues { it.isNotEmpty() }
 }
 
-/** Interpolates vector components only between source levels; never extrapolates. */
+/**
+ * Interpolates vector components between source levels.
+ *
+ * Beyond the profile the nearest upper-air level is held: above the highest one, and below the lowest
+ * one down to the terrain when there is no 10 m value to interpolate from. Held values are marked as
+ * interpolated. A profile with only a 10 m value is not stretched upward.
+ */
 internal fun interpolateWind(
     profile: List<WindSample>,
     targetAltitudeKm: Float,
@@ -63,8 +69,8 @@ internal fun interpolateWind(
     val upperIndex = profile.indexOfFirst { it.altitudeKm > targetAltitudeKm }
     return when {
         directSample != null -> directSample
-        targetAltitudeKm < profile.first().altitudeKm ||
-            targetAltitudeKm > profile.last().altitudeKm || upperIndex <= 0 -> null
+        upperIndex < 0 -> profile.lastOrNull { !it.isSurface10m }?.heldAt(targetAltitudeKm)
+        upperIndex == 0 -> profile.first().heldAt(targetAltitudeKm)
         else -> {
             val lower = profile[upperIndex - 1]
             val upper = profile[upperIndex]
@@ -83,24 +89,40 @@ internal fun interpolateWind(
     }
 }
 
+private fun WindSample.heldAt(altitudeKm: Float): WindSample =
+    copy(altitudeKm = altitudeKm, isSurface10m = false, isInterpolated = true)
+
+/** A source level picked for drawing, with the Y its glyph is drawn at. */
+internal data class ReadableWindLevel(
+    val index: Int,
+    val drawY: Float,
+)
+
 /**
- * Picks source levels whose glyphs fit at their true height.
+ * Picks source levels whose glyphs fit inside the plot.
  *
- * [anchorYs] are ordered from the lowest altitude upward (screen Y decreasing). Lower levels win
- * when two are closer than [minSpacing]; skipped levels stay reachable through the cursor.
+ * [anchorYs] are the true screen Ys of the levels, ordered from the lowest altitude upward (screen Y
+ * decreasing). Levels outside [plotTop]..[plotBottom] are not visible. A visible level too close to an
+ * edge keeps its glyph fully inside the plot by drawing it up to [glyphHalfHeight] away from its true
+ * height. Lower levels win when two drawn glyphs are closer than [minSpacing]; skipped levels stay
+ * reachable through the cursor.
  */
 internal fun pickReadableWindLevels(
     anchorYs: List<Float>,
-    minY: Float,
-    maxY: Float,
+    plotTop: Float,
+    plotBottom: Float,
+    glyphHalfHeight: Float,
     minSpacing: Float,
-): List<Int> {
-    val kept = mutableListOf<Int>()
+): List<ReadableWindLevel> {
+    if (plotBottom - plotTop < 2f * glyphHalfHeight) return emptyList()
+    val kept = mutableListOf<ReadableWindLevel>()
     var lastKeptY = Float.POSITIVE_INFINITY
     anchorYs.forEachIndexed { index, y ->
-        if (y in minY..maxY && lastKeptY - y >= minSpacing) {
-            kept += index
-            lastKeptY = y
+        if (y !in plotTop..plotBottom) return@forEachIndexed
+        val drawY = y.coerceIn(plotTop + glyphHalfHeight, plotBottom - glyphHalfHeight)
+        if (lastKeptY - drawY >= minSpacing) {
+            kept += ReadableWindLevel(index, drawY)
+            lastKeptY = drawY
         }
     }
     return kept

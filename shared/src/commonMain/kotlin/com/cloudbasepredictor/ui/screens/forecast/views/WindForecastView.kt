@@ -359,7 +359,9 @@ private fun WindChartCanvas(
         // ── Crosshair overlay ──────────────────────────────────
         cursor?.let { selected ->
             val pos = crosshairPos ?: return@let
-            val cx = pos.x.coerceIn(plotLeft, plotRight)
+            // Center the reticle on the selected hour's glyphs instead of the raw finger position.
+            val selectedIndex = chart.hours.indexOf(selected.hour)
+            val cx = if (selectedIndex >= 0) g.columnCenter(selectedIndex) else pos.x.coerceIn(plotLeft, plotRight)
             val cy = if (selected.isSurface10m) {
                 plotBottom + g.surfaceRowHeight / 2f
             } else {
@@ -486,11 +488,12 @@ private fun buildWindGlyphs(
             val anchorYs = levels.map { altitudeToY(it.altitudeKm, elevationKm, topAltitudeKm, 0f, g.plotBottom) }
             pickReadableWindLevels(
                 anchorYs,
-                minY = g.glyphHalfHeight,
-                maxY = g.plotBottom - g.glyphHalfHeight,
+                plotTop = 0f,
+                plotBottom = g.plotBottom,
+                glyphHalfHeight = g.glyphHalfHeight,
                 minSpacing = g.levelSpacing,
-            ).forEach { levelIndex ->
-                add(WindGlyph(levels[levelIndex], Offset(x, anchorYs[levelIndex]), isSurface10m = false))
+            ).forEach { level ->
+                add(WindGlyph(levels[level.index], Offset(x, level.drawY), isSurface10m = false))
             }
             add(
                 WindGlyph(

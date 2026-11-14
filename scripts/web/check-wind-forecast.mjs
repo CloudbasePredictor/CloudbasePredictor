@@ -97,7 +97,8 @@ try {
         { hourIndex: 2, y: surfaceRowY, expected: [/08h/u, /10 m AGL/u, /0 km\/h/u, /0°/u] },
         { hourIndex: 3, y: () => 5, xOffset: 5, expected: [/09h/u, /No data/u], absent: [/km\/h/u] },
         { hourIndex: 0, y: (height) => altitudeY(height, 1.5), xOffset: 5, expected: [/06h/u, /≈/u] },
-        { hourIndex: 0, y: () => 5, xOffset: 5, expected: [/06h/u, /No data/u] },
+        // Above the highest source level the top level is held.
+        { hourIndex: 0, y: () => 5, xOffset: 5, expected: [/06h/u, /≈/u, /30 km\/h/u, /270°/u] },
         // A tap near a source glyph snaps to its exact hourly height.
         { hourIndex: 0, y: (height) => altitudeY(height, 2.357) + 6,
           expected: [/06h/u, /2357 m ASL/u, /30 km\/h/u, /270°/u], absent: [/≈/u] },

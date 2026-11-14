@@ -93,23 +93,47 @@ class WindForecastInterpolationTest {
     }
 
     @Test
-    fun interpolateWind_neverExtrapolatesAndPreservesEndpoints() {
-        val profile = listOf(WindSample(1.01f, 0f, 0f, isSurface10m = true), WindSample(3f, 25f, 350f))
-        assertEquals(profile.first(), interpolateWind(profile, 1.01f))
-        assertEquals(profile.last(), interpolateWind(profile, 3f))
-        assertNull(interpolateWind(profile, 1f))
-        assertNull(interpolateWind(profile, 3.001f))
+    fun interpolateWind_preservesEndpointsAndHoldsOutermostUpperAirLevel() {
+        val surface = WindSample(1.01f, 0f, 0f, isSurface10m = true)
+        val top = WindSample(3f, 25f, 350f)
+        val profile = listOf(surface, top)
+        assertEquals(surface, interpolateWind(profile, 1.01f))
+        assertEquals(top, interpolateWind(profile, 3f))
+
+        val above = assertNotNull(interpolateWind(profile, 4.5f))
+        assertEquals(25f, above.speedKmh)
+        assertEquals(350f, above.directionDeg)
+        assertTrue(above.isInterpolated)
+        assertEquals(4.5f, above.altitudeKm)
+
+        // Without a 10 m value, the lowest level is held down to the terrain.
+        val withoutSurface = listOf(WindSample(1.2f, 12f, 90f), top)
+        val below = assertNotNull(interpolateWind(withoutSurface, 1f))
+        assertEquals(12f, below.speedKmh)
+        assertTrue(below.isInterpolated && !below.isSurface10m)
+
+        // A profile with only a 10 m value is not stretched upward.
         assertNull(interpolateWind(profile.take(1), 1.02f))
         assertNull(interpolateWind(emptyList(), 1f))
         assertNull(interpolateWind(profile, Float.NaN))
     }
 
     @Test
-    fun pickReadableWindLevels_keepsLowerLevelAndDropsCrowdedOrClippedOnes() {
-        // Lowest altitude first: 199 is below the plot area, 180/178 collide, 3 is above it.
-        val anchors = listOf(199f, 180f, 178f, 150f, 140f, 100f, 3f)
-        assertEquals(listOf(1, 3, 5), pickReadableWindLevels(anchors, minY = 8f, maxY = 190f, minSpacing = 20f))
-        assertEquals(emptyList(), pickReadableWindLevels(emptyList(), 8f, 190f, 20f))
+    fun pickReadableWindLevels_keepsEdgeLevelsInsideThePlotAndLowerLevelOnCollision() {
+        // Lowest altitude first: 205 is below the plot, 199/197 hug the bottom edge and collide,
+        // 150 and 140 collide, 3 hugs the top edge, -2 is above the plot.
+        val anchors = listOf(205f, 199f, 197f, 150f, 140f, 100f, 3f, -2f)
+        assertEquals(
+            listOf(
+                ReadableWindLevel(1, 192f),
+                ReadableWindLevel(3, 150f),
+                ReadableWindLevel(5, 100f),
+                ReadableWindLevel(6, 8f),
+            ),
+            pickReadableWindLevels(anchors, plotTop = 0f, plotBottom = 200f, glyphHalfHeight = 8f, minSpacing = 20f),
+        )
+        assertEquals(emptyList(), pickReadableWindLevels(emptyList(), 0f, 200f, 8f, 20f))
+        assertEquals(emptyList(), pickReadableWindLevels(listOf(5f), 0f, 10f, 8f, 20f))
     }
 
     @Test

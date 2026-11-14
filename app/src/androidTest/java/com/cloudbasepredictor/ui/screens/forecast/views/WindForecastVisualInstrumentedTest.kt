@@ -94,12 +94,13 @@ class WindForecastVisualInstrumentedTest {
     }
 
     @Test
-    fun sparseWind_cursorMarksInterpolationAndShowsUnsupportedOrMissingHours() {
+    fun sparseWind_cursorMarksInterpolatedOrHeldValuesAndMissingHours() {
         val state = showSparseWind()
         tapSparse(hourIndex = 0, y = { altitudeY(state, 1.5f) })
         assertCursorContains("06h", "≈")
+        // Above the highest source level the top level is held, marked as not a source value.
         tapSparse(hourIndex = 0, y = { 20f * density() })
-        assertCursorContains("06h", "No data")
+        assertCursorContains("06h", "≈", "30 km/h", "270°")
         tapSparse(hourIndex = 3, y = { altitudeY(state, 1.5f) })
         assertCursorContains("09h", "No data")
     }
