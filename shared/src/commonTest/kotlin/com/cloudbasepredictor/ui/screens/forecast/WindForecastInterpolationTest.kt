@@ -1,6 +1,8 @@
 package com.cloudbasepredictor.ui.screens.forecast
 
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -203,47 +205,140 @@ class WindForecastInterpolationTest {
     }
 
     @Test
-    fun windGlyphColumns_startAtFirstHourAndSkipTrailingColumnWithoutRoom() {
-        // 360 dp phone with 17 hours: the 21h column (index 15) has no room for its pill, so it is skipped
-        // while the columns keep the first-hour phase of the hour labels.
-        assertEquals(listOf(0, 3, 6, 9, 12), windGlyphColumns(17, 300f / 17, minSlotWidth = 44f, rightExtent = 31f))
-        assertEquals(listOf(0, 3, 6, 9, 12, 15), windHourLabelColumns(17, 300f / 17, minSlotWidth = 44f))
-        // 420 dp: the last column has room.
-        assertEquals(listOf(0, 3, 6, 9, 12, 15), windGlyphColumns(17, 360f / 17, minSlotWidth = 44f, rightExtent = 31f))
+    fun pickReadableWindLevels_spacesStackedPillsAndFlipsThemBelowNearTheTop() {
+        // Pills 14 tall stacked 18 above their arrows reach 17 past the 8 glyph half height: 37 between glyphs with
+        // their pills on the same side, 54 where an upper glyph flips its pill below toward a lower one's pill above.
+        val stack = WindPillStack(offset = 18f, height = 14f)
+        val anchors = listOf(195f, 165f, 150f, 70f, 12f)
+        assertEquals(
+            listOf(
+                ReadableWindLevel(0, drawY = 192f, pillCenterY = 174f),
+                ReadableWindLevel(2, drawY = 150f, pillCenterY = 132f),
+                ReadableWindLevel(3, drawY = 70f, pillCenterY = 52f),
+                // No room above inside the plot: the pill goes below its arrow.
+                ReadableWindLevel(4, drawY = 12f, pillCenterY = 30f),
+            ),
+            pickReadableWindLevels(anchors, 0f, 200f, glyphHalfHeight = 8f, minSpacing = 20f, stackedPill = stack),
+        )
+        // Beside their arrows the plain spacing keeps the 165 level 27 above the lowest one instead.
+        assertEquals(
+            listOf(0, 1, 3, 4),
+            pickReadableWindLevels(anchors, 0f, 200f, glyphHalfHeight = 8f, minSpacing = 20f).map { it.index },
+        )
+        // 50 apart is enough beside the arrows or with both pills above, but not once the upper pill flips below.
+        assertEquals(
+            listOf(ReadableWindLevel(0, drawY = 70f, pillCenterY = 52f)),
+            pickReadableWindLevels(listOf(70f, 20f), 0f, 200f, 8f, 20f, stack),
+        )
+        // A pill that fits neither above nor below its arrow drops the level.
+        assertEquals(emptyList(), pickReadableWindLevels(listOf(20f), 0f, 40f, 8f, 20f, stack))
+    }
+
+    @Test
+    fun snapWindLevel_hitsStackedPillsAndKeepsHiddenLevelsUnderThemUnsnapped() {
+        val stack = WindPillStack(offset = 18f, height = 14f)
+        // The 128 level is hidden by the glyph at 150, whose pill sits at 132.
+        val anchors = listOf(150f, 128f)
+        val drawn = pickReadableWindLevels(anchors, 0f, 200f, glyphHalfHeight = 8f, minSpacing = 20f, stack)
+        assertEquals(listOf(ReadableWindLevel(0, drawY = 150f, pillCenterY = 132f)), drawn)
+        val plot = 0f..200f
+
+        // A tap on the pill selects its glyph, and the reticle sits on the arrow.
+        assertEquals(drawn.single(), snapWindLevel(anchors, drawn, 126f, plot, snapDistance = 12f))
+        // Beyond the pill's reach the hidden level under it still does not snap.
+        assertNull(snapWindLevel(anchors, drawn, 116f, plot, snapDistance = 12f))
+    }
+
+    @Test
+    fun windGlyphColumns_stackTrailingPillsWithoutRoomOnTheRight() {
+        val kmh = WindGlyphMetrics(16f, 3f, pillWidth = 18f, clearance = 4f, edgeMargin = 2f, minSlotWidth = 44f)
+        // 360 dp phone with 17 hours: the 21h column (index 15) has no room right of its arrows, so it stacks its
+        // pills between the 18h pills and the right edge, keeping the first-hour phase of the hour labels.
+        val phone = windGlyphColumns(17, plotLeft = 60f, columnWidth = 300f / 17, kmh)
+        assertEquals(listOf(0, 3, 6, 9, 12, 15), phone.map { it.index })
+        assertEquals(listOf(0, 3, 6, 9, 12, 15), windHourLabelColumns(17, 300f / 17, kmh.slotWidth))
+        assertTrue(phone.dropLast(1).all { it.pills == WindPillPlacement.BESIDE })
+        val trailing = phone.last()
+        assertEquals(WindPillPlacement.STACKED, trailing.pills)
+        // From the 18h center (280.6) past its 29 pill reach and the 4 clearance, to the 2 margin at the right edge.
+        assertEquals(313.6f, trailing.pillSpan.start, absoluteTolerance = 0.05f)
+        assertEquals(358f, trailing.pillSpan.endInclusive, absoluteTolerance = 0.001f)
+        // The stacked pill stays centered on its column (333.5); the one-line 10 m glyph moves its arrow 4.5 left
+        // so that its pill ends at the margin.
+        val center = 60f + 15.5f * 300f / 17
+        assertEquals(center - 9f, trailing.stackedPillLeft(center, 18f), absoluteTolerance = 0.001f)
+        assertEquals(329f, trailing.lineArrowX(center, 16f, 3f, 18f), absoluteTolerance = 0.001f)
+
+        // 420 dp: the last column has room on the right.
+        assertTrue(windGlyphColumns(17, 0f, 360f / 17, kmh).all { it.pills == WindPillPlacement.BESIDE })
         // Every hour has a slot, but the last column is narrower than its pill needs.
-        assertEquals((0..15).toList(), windGlyphColumns(17, 50f, minSlotWidth = 44f, rightExtent = 31f))
-        // No column has room: the first one is drawn alone and flips its pill into the empty left side.
-        assertEquals(listOf(0), windGlyphColumns(1, 40f, minSlotWidth = 44f, rightExtent = 31f))
-        assertEquals(emptyList(), windGlyphColumns(0, 40f, minSlotWidth = 44f, rightExtent = 31f))
-        assertEquals(emptyList(), windGlyphColumns(17, 0f, minSlotWidth = 44f, rightExtent = 31f))
+        val wide = windGlyphColumns(17, 0f, 50f, kmh)
+        assertEquals((0..16).toList(), wide.map { it.index })
+        assertEquals(WindGlyphColumn(16, WindPillPlacement.STACKED, 808f..848f), wide.last())
+        // A lone column without room on the right stacks its pills inside the plot.
+        assertEquals(WindGlyphColumn(0, WindPillPlacement.STACKED, 2f..38f), windGlyphColumns(1, 0f, 40f, kmh).single())
+        // Wide m/s pills at 24.5 per hour: not even one fits between the 20h pills and the right edge, so the 22h
+        // column draws its arrows alone instead of being skipped.
+        val mps = windGlyphColumns(17, 0f, 24.5f, kmh.copy(pillWidth = 26f))
+        assertEquals((0..16 step 2).toList(), mps.map { it.index })
+        assertEquals(WindPillPlacement.NONE, mps.last().pills)
+        assertEquals(emptyList(), windGlyphColumns(0, 0f, 40f, kmh))
+        assertEquals(emptyList(), windGlyphColumns(17, 0f, 0f, kmh))
         assertEquals(emptyList(), windHourLabelColumns(0, 40f, minSlotWidth = 44f))
     }
 
     @Test
-    fun windGlyphColumns_keepsPillsOffNeighborsAndInsideTheRightEdgeAtAnyWidth() {
-        // Mirrors the wind glyph in dp: a 16 dp arrow centered on its column, a 3 dp gap, the pill, 4 dp
-        // clearance to the next arrow, and a 2 dp margin to the right edge. Pill widths cover narrow and
-        // wide km/h, kt and m/s labels.
-        val arrow = 16f
-        val gap = 3f
-        for (pill in listOf(14f, 17f, 23f, 26f, 32f)) {
-            val slot = maxOf(44f, arrow + gap + pill + 4f)
-            val rightExtent = arrow / 2f + gap + pill + 2f
+    fun windGlyphColumn_keepsStackedPillsAndOneLineGlyphsInsideTheirSpan() {
+        val column = WindGlyphColumn(16, WindPillPlacement.STACKED, 50f..100f)
+        assertEquals(66f, column.stackedPillLeft(arrowX = 75f, width = 18f))
+        assertEquals(82f, column.stackedPillLeft(arrowX = 95f, width = 18f))
+        assertEquals(50f, column.stackedPillLeft(arrowX = 52f, width = 18f))
+        // A line with room keeps its arrow on the column center, otherwise its pill ends at the span end.
+        assertEquals(60f, column.lineArrowX(arrowX = 60f, arrowLength = 16f, gap = 3f, pillWidth = 18f))
+        assertEquals(71f, column.lineArrowX(arrowX = 95f, arrowLength = 16f, gap = 3f, pillWidth = 18f))
+        // A shortened arrow never starts before the span.
+        assertEquals(54f, column.lineArrowX(arrowX = 52f, arrowLength = 8f, gap = 3f, pillWidth = 18f))
+    }
+
+    @Test
+    fun windGlyphColumns_keepsGlyphFootprintsApartAndPillsInsideTheRightEdgeAtAnyWidth() {
+        // Mirrors the wind glyph in dp: a 16 dp arrow centered on its column, a 3 dp gap, the pill, 4 dp clearance
+        // to the next glyph, and a 2 dp margin to the right edge. Pill widths cover narrow and wide km/h, kt and m/s
+        // labels and large font scales.
+        for (pill in listOf(14f, 17f, 23f, 26f, 32f, 48f)) {
+            val metrics = WindGlyphMetrics(16f, 3f, pill, clearance = 4f, edgeMargin = 2f, minSlotWidth = 44f)
             for (hourCount in 1..24) {
                 for (plotWidth in 120..1600 step 5) {
-                    val columnWidth = plotWidth.toFloat() / hourCount
-                    val columns = windGlyphColumns(hourCount, columnWidth, slot, rightExtent)
-                    val label = "pill $pill, $hourCount hours, $plotWidth dp: $columns"
-                    assertTrue(columns.isNotEmpty(), label)
-                    columns.zipWithNext().forEach { (left, right) ->
-                        assertTrue((right - left) * columnWidth >= slot - 0.01f, "overlap, $label")
-                    }
-                    // Only a lone glyph may lack room on its right; it flips its pill to the empty left.
-                    if (columns.size > 1) {
-                        val roomOfLast = (hourCount - columns.last() - 0.5f) * columnWidth
-                        assertTrue(roomOfLast >= rightExtent, "no room at the right edge, $label")
-                    }
+                    assertGlyphColumnsFit(hourCount, plotWidth.toFloat(), metrics)
                 }
+            }
+        }
+    }
+
+    private fun assertGlyphColumnsFit(hourCount: Int, plotWidth: Float, metrics: WindGlyphMetrics) {
+        val columnWidth = plotWidth / hourCount
+        val columns = windGlyphColumns(hourCount, plotLeft = 0f, columnWidth, metrics)
+        val label = "pill ${metrics.pillWidth}, $hourCount hours, $plotWidth dp: $columns"
+        // The trailing column is never skipped: glyphs and hour labels share their columns.
+        assertEquals(windHourLabelColumns(hourCount, columnWidth, metrics.slotWidth), columns.map { it.index }, label)
+        columns.map { glyphFootprint(it, columnWidth, metrics) }.zipWithNext().forEach { (left, right) ->
+            assertTrue(right.start >= left.endInclusive + metrics.clearance - 0.01f, "overlap, $label")
+        }
+        columns.mapNotNull { pillFootprint(it, columnWidth, metrics) }.forEach { pill ->
+            assertTrue(pill.start >= metrics.edgeMargin - 0.01f, "past the plot left, $label")
+            assertTrue(pill.endInclusive <= plotWidth - metrics.edgeMargin + 0.01f, "past the right edge, $label")
+        }
+    }
+
+    @Test
+    fun windGlyphColumns_keepTrailingPillsForTwoDigitSpeedsOnPhonesAndWider() {
+        // Two-digit km/h or kt pills over the 6–22h day: from 250 dp plots (310 dp screens) up, the trailing column
+        // always has room for its pills, beside or stacked.
+        for (pill in listOf(14f, 18f)) {
+            val metrics = WindGlyphMetrics(16f, 3f, pill, clearance = 4f, edgeMargin = 2f, minSlotWidth = 44f)
+            for (plotWidth in 250..1600 step 5) {
+                val trailing = windGlyphColumns(17, 0f, plotWidth / 17f, metrics).last()
+                assertTrue(trailing.pills != WindPillPlacement.NONE, "pill $pill, $plotWidth dp: $trailing")
             }
         }
     }
@@ -255,6 +350,33 @@ class WindForecastInterpolationTest {
         ))
         assertTrue(6 !in profiles && 7 !in profiles)
         assertEquals(0f, profiles.getValue(8).single().speedKmh)
+    }
+
+    /** Horizontal extent of a column's glyphs: its arrow and its widest pill, wherever the column puts it. */
+    private fun glyphFootprint(
+        column: WindGlyphColumn,
+        columnWidth: Float,
+        metrics: WindGlyphMetrics,
+    ): ClosedFloatingPointRange<Float> {
+        val center = (column.index + 0.5f) * columnWidth
+        val arrowLeft = center - metrics.arrowLength / 2f
+        val arrowRight = center + metrics.arrowLength / 2f
+        val pill = pillFootprint(column, columnWidth, metrics) ?: return arrowLeft..arrowRight
+        return min(arrowLeft, pill.start)..max(arrowRight, pill.endInclusive)
+    }
+
+    private fun pillFootprint(
+        column: WindGlyphColumn,
+        columnWidth: Float,
+        metrics: WindGlyphMetrics,
+    ): ClosedFloatingPointRange<Float>? {
+        val center = (column.index + 0.5f) * columnWidth
+        val left = when (column.pills) {
+            WindPillPlacement.BESIDE -> center + metrics.besideReach - metrics.pillWidth
+            WindPillPlacement.STACKED -> column.stackedPillLeft(center, metrics.pillWidth)
+            WindPillPlacement.NONE -> return null
+        }
+        return left..(left + metrics.pillWidth)
     }
 
     private fun cell(

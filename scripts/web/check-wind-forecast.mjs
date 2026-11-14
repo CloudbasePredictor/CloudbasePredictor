@@ -95,36 +95,36 @@ try {
       const initialPath = resolve(outputDirectory, `${profile.name}.png`);
       await page.screenshot({ path: initialPath, fullPage: true });
       const cursorStates = [];
+      // Each readout is the whole cursor label, "<hour and height>; <value>", matched exactly. Only heights and
+      // values that depend on the tap position or on interpolation are patterns, and those match whole tokens.
       const selections = [
-        { hourIndex: 0, y: surfaceRowY, expected: [/06h/u, /10 m AGL/u, /8 km\/h/u, /350°/u] },
-        { hourIndex: 1, y: surfaceRowY, expected: [/07h/u, /No data/u], absent: [/km\/h/u] },
-        { hourIndex: 2, y: surfaceRowY, expected: [/08h/u, /10 m AGL/u, /0 km\/h/u, /0°/u] },
-        { hourIndex: 3, y: () => 5, xOffset: 5, expected: [/09h/u, /No data/u], absent: [/km\/h/u] },
-        { hourIndex: 0, y: (height) => altitudeY(height, 1.5), xOffset: 5, expected: [/06h/u, /≈/u] },
+        { hourIndex: 0, y: surfaceRowY, expected: "06h  10 m AGL; 8 km/h  350°" },
+        { hourIndex: 1, y: surfaceRowY, expected: "07h  10 m AGL; No data" },
+        { hourIndex: 2, y: surfaceRowY, expected: "08h  10 m AGL; 0 km/h  0°" },
+        { hourIndex: 3, y: () => 5, xOffset: 5, expected: /^09h {2}\d+ m ASL; No data$/u },
+        { hourIndex: 0, y: (height) => altitudeY(height, 1.5), xOffset: 5,
+          expected: /^06h {2}\d+ m ASL; ≈ \d+ km\/h {2}\d+°$/u },
         // Above the highest source level the top level is held.
-        { hourIndex: 0, y: () => 5, xOffset: 5, expected: [/06h/u, /≈/u, /30 km\/h/u, /270°/u] },
+        { hourIndex: 0, y: () => 5, xOffset: 5, expected: /^06h {2}\d+ m ASL; ≈ 30 km\/h {2}270°$/u },
         // A tap near a source glyph snaps to its exact hourly height.
-        { hourIndex: 0, y: (height) => altitudeY(height, 2.357) + 6,
-          expected: [/06h/u, /2357 m ASL/u, /30 km\/h/u, /270°/u], absent: [/≈/u] },
-        { hourIndex: 16, y: surfaceRowY,
-          expected: [/22h/u, /10 m AGL/u, /No data/u], absent: [/km\/h/u] },
+        { hourIndex: 0, y: (height) => altitudeY(height, 2.357) + 6, expected: "06h  2357 m ASL; 30 km/h  270°" },
+        { hourIndex: 16, y: surfaceRowY, expected: "22h  10 m AGL; No data" },
       ];
 
       for (const [index, selection] of selections.entries()) {
         await clickChart(page, renderer, profile, selection);
         for (let attempt = 0; attempt < 30; attempt++) {
           const current = await readCursorState(renderer);
-          if (selection.expected.every((pattern) => pattern.test(current.value))) break;
+          if (readoutMatches(selection.expected, current.value)) break;
           await page.waitForTimeout(100);
         }
         const state = await readCursorState(renderer);
         cursorStates.push(state);
-        for (const pattern of selection.expected) {
-          check(failures, `${profile.name}: selection ${index + 1} includes ${pattern}`, pattern.test(state.value));
-        }
-        for (const pattern of selection.absent ?? []) {
-          check(failures, `${profile.name}: selection ${index + 1} omits ${pattern}`, !pattern.test(state.value));
-        }
+        check(
+          failures,
+          `${profile.name}: selection ${index + 1} reads ${selection.expected}, got ${JSON.stringify(state.value)}`,
+          readoutMatches(selection.expected, state.value),
+        );
         const shotPath = resolve(outputDirectory, `${profile.name}-selection-${index + 1}.png`);
         await page.screenshot({ path: shotPath, fullPage: true });
       }
@@ -331,6 +331,11 @@ async function readCursorState(renderer) {
     const value = (attributes["aria-label"] ?? "").replace(/^Wind forecast chart renderer;?\s*/u, "");
     return { value, attributes };
   });
+}
+
+// A string must equal the readout; a pattern must be anchored to match all of it.
+function readoutMatches(expected, value) {
+  return typeof expected === "string" ? value === expected : expected.test(value);
 }
 
 function check(failuresList, description, passed) {

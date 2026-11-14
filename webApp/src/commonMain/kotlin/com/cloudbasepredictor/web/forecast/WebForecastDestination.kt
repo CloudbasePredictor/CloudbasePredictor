@@ -239,7 +239,7 @@ private fun WebForecastReadyContent(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // As on Android, short wind screens scroll the page so the chart keeps a usable fixed height.
         val scrollWindContent = routeState.mode == ForecastMode.WIND && maxHeight < 480.dp
-        val verticalScroll = rememberScrollState()
+        val windPageScroll = rememberScrollState()
         Column(
             // Cap and center the content on wide desktop screens so the header actions no longer
             // drift to the far edge and the chart stops stretching edge-to-edge. Mirrors the
@@ -249,7 +249,7 @@ private fun WebForecastReadyContent(
                 .align(Alignment.TopCenter)
                 .widthIn(max = ForecastContentMaxWidth)
                 .fillMaxSize()
-                .then(if (scrollWindContent) Modifier.verticalScroll(verticalScroll) else Modifier)
+                .then(if (scrollWindContent) Modifier.verticalScroll(windPageScroll) else Modifier)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

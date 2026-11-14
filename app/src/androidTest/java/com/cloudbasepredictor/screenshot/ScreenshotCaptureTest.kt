@@ -226,8 +226,9 @@ class ScreenshotCaptureTest {
         windCanvas.assert(SemanticsMatcher("selected 10 m wind") {
             val description = it.config.getOrNull(SemanticsProperties.ContentDescription)
                 .orEmpty().joinToString("; ")
+            // The whole readout after the renderer name, so "18 km/h" or "≈ 8 km/h" cannot pass for it.
             it.config.getOrNull(SemanticsProperties.StateDescription) == "cursor" &&
-                listOf("06h", "10 m AGL", "8 km/h", "350°").all(description::contains)
+                description.endsWith("; 06h  10 m AGL; 8 km/h  350°")
         })
         captureCurrentContent("forecast_wind_sparse_selected")
         composeRule.runOnIdle { visibleTopAltitudeKm = 0.75f }
