@@ -19,6 +19,14 @@ const profiles = [
   { name: "phone", width: 390, height: 844 },
   { name: "landscape", width: 844, height: 390 },
 ];
+// Mirrors the wind chart layout: the whole day fits the width; below the plot are a 26 dp 10 m row,
+// a 28 dp legend and a 16 dp hour axis. Declared before the top-level checks run so they are initialized.
+const WIND_AXIS_WIDTH = 60;
+const WIND_BOTTOM_CHROME = 26 + 28 + 16;
+const FIXTURE_ELEVATION_KM = 0.58;
+// The plot spans from the fixture elevation up to DEFAULT_TOP_ALTITUDE_KM (ASL) in ForecastChartViewport.kt.
+const DEFAULT_TOP_ALTITUDE_KM = 4.5;
+const FIXTURE_HOURS = 17;
 const failures = [];
 const results = [];
 
@@ -186,21 +194,13 @@ function sparseWindFixture(source) {
   }
 }
 
-// Mirrors the wind chart layout: the whole day fits the width; below the plot are a 26 dp 10 m row,
-// a 28 dp legend and a 16 dp hour axis.
-const WIND_AXIS_WIDTH = 60;
-const WIND_BOTTOM_CHROME = 26 + 28 + 16;
-const FIXTURE_ELEVATION_KM = 0.58;
-const DEFAULT_VISIBLE_RANGE_KM = 4.5;
-const FIXTURE_HOURS = 17;
-
 function surfaceRowY(height) {
   return height - 28 - 16 - 13;
 }
 
 function altitudeY(height, altitudeKm) {
   const plotBottom = height - WIND_BOTTOM_CHROME;
-  return plotBottom * (1 - (altitudeKm - FIXTURE_ELEVATION_KM) / DEFAULT_VISIBLE_RANGE_KM);
+  return plotBottom * (1 - (altitudeKm - FIXTURE_ELEVATION_KM) / (DEFAULT_TOP_ALTITUDE_KM - FIXTURE_ELEVATION_KM));
 }
 
 async function clickHour(page, renderer, hourIndex, yForHeight, xOffset) {
