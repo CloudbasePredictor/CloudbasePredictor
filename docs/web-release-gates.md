@@ -184,6 +184,69 @@ deploy, a broken cron, a Pages outage — so it also catches failure modes nobod
 predicted. It allows a grace window (default 90 minutes) so an in-flight deploy is
 not reported as a stale site.
 
+The same check reads `data/launch-sites/manifest.json` from the live site and
+fails when the dataset is older than `MAX_SNAPSHOT_AGE_DAYS` (default 45). See
+the next section for why a deploy can publish an old dataset.
+
+## When ParaglidingEarth is unavailable
+
+The deploy builds the launch-site snapshot from the live ParaglidingEarth
+dataset. That service is run by volunteers and has answered HTTP 503 for weeks
+at a time; while it did, every deploy failed, including deploys of unrelated
+fixes.
+
+A deploy therefore no longer depends on it. If the live fetch fails, or returns
+fewer sites than `min-sites`, `web-verify.yml` runs
+`restore-deployed-snapshot.mjs`, which downloads the snapshot the site already
+publishes, checks every tile against the manifest (size and SHA-256), and hands
+it to the build. The site is its own last-known-good copy: each deploy carries
+the dataset forward until a fresh one can be fetched. The step leaves a warning
+on the run, and the restored manifest keeps its original `generatedAt`, so the
+freshness check above reports a dataset that has not been refreshed for too
+long.
+
+```bash
+node scripts/launch-sites/restore-deployed-snapshot.mjs \
+  --base-url https://cloudbasepredictor.github.io/CloudbasePredictor/data/launch-sites \
+  --output webApp/src/wasmJsMain/resources/data/launch-sites
+```
+
+`verify-snapshot.mjs --min-sites` still has the last word on whichever snapshot
+was produced, so a near-empty map cannot be published either way.
+
+## Failures open an issue
+
+A failed gate skips the publish job instead of failing it, and a failed
+scheduled run is visible only on the Actions tab. The deploy, the weekly
+refresh, the freshness check and the release workflow therefore report through
+`.github/actions/ci-alert`: the first failing run opens one issue labelled
+`ci-alert`, later failures refresh its text without adding comments, and the
+next successful run closes it.
+
+## Scheduled workflows and repository inactivity
+
+GitHub disables every workflow that has a `schedule` trigger after 60 days
+without repository activity, and a disabled workflow does not run for pushes
+either. Both the deploy and the freshness check were switched off this way,
+which would have left the next merge undeployed and unreported.
+
+- `web-deploy.yml` has no `schedule` trigger, so GitHub never disables it. The
+  weekly dataset refresh is `web-snapshot-refresh.yml`, which only starts the
+  deploy through `workflow_dispatch`.
+- On every push to the default branch the deploy enables
+  `web-snapshot-refresh.yml` and `web-freshness.yml` again. Repository activity
+  is exactly what ends the inactivity, so this is when they should resume.
+- Do not add a keep-alive that fakes activity: it defeats a GitHub limit and is
+  not needed. In a quiet repository only the weekly refresh pauses.
+
+To switch a workflow back on by hand:
+
+```bash
+gh workflow enable web-snapshot-refresh.yml
+gh workflow enable web-freshness.yml
+gh workflow run web-deploy.yml --ref master   # deploy now
+```
+
 ## One definition of the gates
 
 `web-ci.yml`, `web-deploy.yml`, and `release.yml` all call
@@ -198,10 +261,10 @@ The callers differ only in inputs:
 | Workflow | Snapshot | `min-sites` | Publishes |
 | --- | --- | --- | --- |
 | `web-ci.yml` | fixture | 1 | nothing |
-| `web-deploy.yml` | live (ParaglidingEarth) | 8000 | GitHub Pages |
+| `web-deploy.yml` | live (ParaglidingEarth), else the published snapshot | 8000 | GitHub Pages |
 | `release.yml` | fixture | 1 | nothing (APK/AAB only) |
 
-`min-sites` guards the unattended weekly cron. `verify-snapshot.mjs` defaults to a
+`min-sites` guards the unattended weekly refresh. `verify-snapshot.mjs` defaults to a
 floor of 1, so a truncated ParaglidingEarth response would otherwise publish a
 near-empty map with every gate green; the live dataset carries ~11.5k sites.
 
