@@ -16,7 +16,7 @@ import { pathToFileURL } from "node:url";
 const LIVE_URL =
   "https://www.paragliding.earth/api/geojson/getBoundingBoxSites.php?north=90&south=-90&west=-180&east=180&style=detailled";
 const USER_AGENT =
-  "CloudbasePredictor/launch-sites-snapshot (+https://github.com/borodin-dmitry/CloudbasePredictor)";
+  "CloudbasePredictor/launch-sites-snapshot (+https://github.com/CloudbasePredictor/CloudbasePredictor)";
 const MAX_RESPONSE_BYTES = 100 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 90_000;
 const MAX_FETCH_ATTEMPTS = 3;

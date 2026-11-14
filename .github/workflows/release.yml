@@ -9,18 +9,36 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   BINARYEN_CORES: 1
 
+# Only the job that publishes the GitHub Release may write to the repository.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  # Fails in the first minute when the tag, the version name, the version code, the store changelog
+  # and the F-Droid metadata do not describe the same release.
+  verify-version:
+    name: Verify release version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check tag, version, changelog and F-Droid metadata
+        run: node scripts/release/verify-version.mjs --tag "$GITHUB_REF_NAME" --remote-tags
+
   verify-android:
     name: Verify Android release gates
-    permissions:
-      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -52,6 +70,11 @@ jobs:
   # The web half is the shared definition, not a copy of it. The copy that used to live here had
   # silently lost its launch-site snapshot step, which would have failed the next tag on a missing
   # dataset — nobody could see it, because this workflow only runs on tags.
+  #
+  # It reports on the tagged commit but does not hold back the Android artifacts. A tag publishes
+  # the APKs and the app bundle, not the web site (that deploys from the default branch), and one
+  # failing browser gate once left a tagged Android release unpublished. A failure here still turns
+  # the run red and opens the alert issue below.
   verify-web:
     name: Verify web release gates
     permissions:
@@ -66,8 +89,8 @@ jobs:
   build-release:
     name: Build signed release
     needs:
+      - verify-version
       - verify-android
-      - verify-web
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -84,45 +107,82 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
+      # The build signs only when its inputs are present; without this check a missing secret would
+      # produce unsigned artifacts and publish them.
       - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing signing secret::The repository secret ${name} is empty."
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          test -s "$RUNNER_TEMP/release.keystore"
 
       - name: Build signed release APK
         env:
-          KEYSTORE_PATH: /tmp/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease
+        run: KEYSTORE_PATH="$RUNNER_TEMP/release.keystore" ./gradlew :app:assembleRelease
 
       - name: Build signed release AAB
         env:
-          KEYSTORE_PATH: /tmp/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :app:bundleRelease
+        run: KEYSTORE_PATH="$RUNNER_TEMP/release.keystore" ./gradlew :app:bundleRelease
 
       - name: Clean up keystore
         if: always()
-        run: rm -f /tmp/release.keystore
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+
+      # Every artifact must be signed by one certificate. Set the repository variable
+      # RELEASE_CERT_SHA256 to the SHA-256 digest of the release certificate to also pin which one.
+      - name: Verify release signatures
+        env:
+          RELEASE_CERT_SHA256: ${{ vars.RELEASE_CERT_SHA256 }}
+        run: >
+          bash scripts/release/verify-signature.sh --expected-sha256 "$RELEASE_CERT_SHA256"
+          app/build/outputs/apk/release/*.apk
+          app/build/outputs/bundle/release/*.aab
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      # Needed to read stack traces from the minified build. The same R8 run produces the APKs and
+      # the bundle, so one mapping file covers both.
+      - name: Upload R8 mapping artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
 
   github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: build-release
+    timeout-minutes: 10
+    permissions:
+      contents: write
 
     steps:
       - name: Download APK
@@ -137,19 +197,31 @@ jobs:
           name: release-aab
           path: artifacts/aab
 
+      - name: Download R8 mapping
+        uses: actions/download-artifact@v4
+        with:
+          name: release-mapping
+          path: artifacts/mapping
+
+      - name: Name the mapping file after the release
+        run: mv artifacts/mapping/mapping.txt "artifacts/mapping/CloudbasePredictor_${GITHUB_REF_NAME}_mapping.txt"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/apk/*.apk
             artifacts/aab/*.aab
+            artifacts/mapping/*_mapping.txt
 
   publish-google-play:
     name: Publish to Google Play
     runs-on: ubuntu-latest
     needs: build-release
     if: vars.GOOGLE_PLAY_ENABLED == 'true'
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -169,3 +241,40 @@ jobs:
           releaseFiles: artifacts/aab/*.aab
           track: internal
           status: completed
+
+  # A failed release used to be visible only on the Actions tab: the v1.9.0 run failed and no
+  # release was published for months. One issue per failed tag is opened here, and a successful
+  # re-run of the same tag closes it.
+  report:
+    name: Report release status
+    needs:
+      - verify-version
+      - verify-android
+      - verify-web
+      - build-release
+      - github-release
+      - publish-google-play
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Open or close the alert issue
+        uses: ./.github/actions/ci-alert
+        with:
+          title: Release ${{ github.ref_name }} failed
+          status: ${{ contains(needs.*.result, 'failure') && 'failure' || (needs.github-release.result == 'success' && 'success' || 'skip') }}
+          details: >-
+            Job results: version `${{ needs.verify-version.result }}`,
+            Android gates `${{ needs.verify-android.result }}`,
+            web gates `${{ needs.verify-web.result }}`,
+            build `${{ needs.build-release.result }}`,
+            GitHub Release `${{ needs.github-release.result }}`,
+            Google Play `${{ needs.publish-google-play.result }}`.
+            Re-run the failed jobs of that run after fixing the cause; the tag does not need to move.

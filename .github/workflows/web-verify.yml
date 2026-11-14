@@ -24,6 +24,13 @@ on:
           verify-snapshot defaults to a floor of 1, which would happily publish a truncated response.
         type: number
         default: 1
+      deployed-snapshot-url:
+        description: >
+          Base URL of the launch-site snapshot the live site serves. Used only with snapshot "live":
+          when ParaglidingEarth is unreachable or returns a degraded dataset, the published snapshot
+          is reused instead of failing the deploy. Leave empty to fail in that case.
+        type: string
+        default: ""
       dist-artifact:
         description: Artifact name for the verified production web distribution.
         type: string
@@ -91,9 +98,9 @@ jobs:
 
       # The snapshot is gitignored, so it must be generated before the distribution or the browser
       # release gate fails on the missing dataset. CI uses the committed fixture so the gates stay
-      # deterministic and offline; only the deploy fetches the live ParaglidingEarth dataset, and if
-      # that fetch degrades, --min-sites fails the job here — before any artifact is published — so
-      # the previously deployed site stays live.
+      # deterministic and offline; only the deploy fetches the live ParaglidingEarth dataset. Whatever
+      # the source, --min-sites has the last word below — before any artifact is published — so a
+      # near-empty map can never be deployed.
       - name: Build fixture launch-site snapshot
         if: inputs.snapshot == 'fixture'
         run: >
@@ -101,10 +108,32 @@ jobs:
           --input scripts/launch-sites/fixtures/sample.geojson
           --output webApp/src/wasmJsMain/resources/data/launch-sites
 
+      # The live dataset is checked against the floor right here, so a truncated answer counts as a
+      # failed fetch and takes the same fallback as an unreachable service.
       - name: Build ParaglidingEarth launch-site snapshot
+        id: live_snapshot
         if: inputs.snapshot == 'live'
+        continue-on-error: ${{ inputs.deployed-snapshot-url != '' }}
+        env:
+          MIN_SITES: ${{ inputs.min-sites }}
+        run: |
+          node scripts/launch-sites/build-snapshot.mjs \
+            --output webApp/src/wasmJsMain/resources/data/launch-sites
+          node scripts/launch-sites/verify-snapshot.mjs \
+            webApp/src/wasmJsMain/resources/data/launch-sites \
+            --min-sites "$MIN_SITES"
+
+      # ParaglidingEarth is run by volunteers and has been down for weeks at a time. A deploy must not
+      # wait for it: the site already publishes the last good dataset, so that copy is carried
+      # forward. The step leaves a warning on the run, and check-deployed-freshness.mjs fails once the
+      # dataset has not been refreshed for too long.
+      - name: Reuse the deployed launch-site snapshot
+        if: inputs.snapshot == 'live' && steps.live_snapshot.outcome == 'failure'
+        env:
+          DEPLOYED_SNAPSHOT_URL: ${{ inputs.deployed-snapshot-url }}
         run: >
-          node scripts/launch-sites/build-snapshot.mjs
+          node scripts/launch-sites/restore-deployed-snapshot.mjs
+          --base-url "$DEPLOYED_SNAPSHOT_URL"
           --output webApp/src/wasmJsMain/resources/data/launch-sites
 
       - name: Verify launch-site snapshot

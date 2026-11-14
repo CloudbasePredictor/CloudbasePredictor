@@ -13,8 +13,14 @@
 // against the commit the default branch is on. Anything that stops a deploy shows up here.
 //
 // Requires the deployed build to expose build-info.json (emitted by :webApp generateWebBuildInfo).
+//
+// It also watches the age of the launch-site dataset the site serves. A deploy reuses the published
+// dataset when ParaglidingEarth is unavailable (restore-deployed-snapshot.mjs), which keeps deploys
+// working but would otherwise let the dataset age forever without anyone noticing.
 
 import { execFileSync } from "node:child_process";
+
+import { snapshotAgeDays } from "../launch-sites/restore-deployed-snapshot.mjs";
 
 const siteUrl = (process.env.SITE_URL ?? "https://cloudbasepredictor.github.io/CloudbasePredictor")
   .replace(/\/+$/u, "");
@@ -22,6 +28,9 @@ const buildInfoUrl = `${siteUrl}/build-info.json`;
 // A deploy takes a few minutes. Don't cry stale while one is plausibly still in flight.
 const graceMinutes = Number(process.env.GRACE_MINUTES ?? 90);
 const fetchTimeoutMillis = Number(process.env.FETCH_TIMEOUT_MILLIS ?? 20000);
+const snapshotManifestUrl = `${siteUrl}/data/launch-sites/manifest.json`;
+// The dataset is refreshed weekly. Six missed refreshes in a row is an outage worth a look.
+const maxSnapshotAgeDays = Number(process.env.MAX_SNAPSHOT_AGE_DAYS ?? 45);
 
 const expectedCommit = git("rev-parse", "HEAD");
 const expectedShort = expectedCommit.slice(0, 8);
@@ -31,6 +40,7 @@ const headAgeMinutes = (Date.now() - headCommittedAt) / 60000;
 console.log(`Site:            ${siteUrl}`);
 console.log(`Default branch:  ${expectedShort} (committed ${headAgeMinutes.toFixed(0)} min ago)`);
 
+const snapshotProblem = await findSnapshotProblem();
 const buildInfo = await fetchBuildInfo();
 
 if (buildInfo === null) {
@@ -50,7 +60,7 @@ console.log(`Deployed:        ${deployedShort} (version ${buildInfo.version ?? "
 
 if (deployedCommit === expectedCommit) {
   console.log(`\nPASS  The live site is serving the default branch (${expectedShort}).`);
-  process.exit(0);
+  finishWithSnapshotResult();
 }
 
 // The site is behind. Say by how much, and in which direction.
@@ -74,7 +84,7 @@ if (headAgeMinutes < graceMinutes) {
     `      HEAD is only ${headAgeMinutes.toFixed(0)} min old and the grace window is ${graceMinutes} min — ` +
       "a deploy is plausibly still in flight.",
   );
-  process.exit(0);
+  finishWithSnapshotResult();
 }
 
 fail(
@@ -85,7 +95,52 @@ fail(
   "",
   "Check the most recent 'Deploy Web to GitHub Pages' run. A failed release gate SKIPS the deploy",
   "job rather than turning the deploy red, which is exactly the silence this check exists to break.",
+  ...(snapshotProblem ? ["", ...snapshotProblem] : []),
 );
+
+/** Ends the run once the commit comparison has passed: the dataset age decides the result. */
+function finishWithSnapshotResult() {
+  if (snapshotProblem) fail(...snapshotProblem);
+  process.exit(0);
+}
+
+/**
+ * Returns the lines of a failure message when the launch-site dataset on the live site is missing,
+ * unreadable or older than the limit; otherwise logs its age and returns null.
+ */
+async function findSnapshotProblem() {
+  let response;
+  try {
+    response = await fetch(snapshotManifestUrl, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(fetchTimeoutMillis),
+    });
+  } catch (error) {
+    return [`Could not reach ${snapshotManifestUrl}`, String(error)];
+  }
+  if (!response.ok) {
+    return [
+      `The live site does not serve a launch-site dataset (HTTP ${response.status}).`,
+      "Expected: " + snapshotManifestUrl,
+    ];
+  }
+  const manifest = await response.json().catch(() => null);
+  const ageDays = snapshotAgeDays(manifest);
+  if (ageDays === null) {
+    return [`${snapshotManifestUrl} has no readable generatedAt date.`];
+  }
+  console.log(`Launch sites:    ${manifest.siteCount} sites, dataset generated ${ageDays} day(s) ago`);
+  if (ageDays <= maxSnapshotAgeDays) return null;
+  return [
+    `The launch-site dataset on the live site is ${ageDays} days old (limit ${maxSnapshotAgeDays}).`,
+    `It was generated ${manifest.generatedAt}; the weekly refresh has not produced a newer one since.`,
+    "Deploys keep working because they reuse the published dataset, so nothing else turns red.",
+    "",
+    "Check the latest 'Refresh launch-site snapshot' and 'Deploy Web to GitHub Pages' runs:",
+    "ParaglidingEarth may be unavailable, or the scheduled refresh workflow may be disabled.",
+  ];
+}
 
 async function fetchBuildInfo() {
   const response = await fetch(buildInfoUrl, {

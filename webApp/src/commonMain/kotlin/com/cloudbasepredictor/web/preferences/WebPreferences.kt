@@ -81,8 +81,10 @@ class WebPreferences(
                 ?.let(ForecastModel::fromApiName)
                 ?: ForecastModel.ICON_SEAMLESS,
             showLaunchSites = storage.getBoolean(SHOW_LAUNCH_SITES_KEY) ?: false,
+            // A stored choice that is no longer offered (see WebLanguage.canvasFontAvailable) is shown
+            // as SYSTEM. The stored value is left alone, so the choice returns once it is offered again.
             language = storage.getString(LANGUAGE_KEY)
-                ?.let { value -> WebLanguage.entries.firstOrNull { it.name == value } }
+                ?.let { value -> WebLanguage.menuOptions.firstOrNull { it.name == value } }
                 ?: WebLanguage.SYSTEM,
         )
     }

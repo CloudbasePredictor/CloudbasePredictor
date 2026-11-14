@@ -46,4 +46,13 @@ class WebPreferencesTest {
     fun languageDefaultsToSystem() {
         assertEquals(WebLanguage.SYSTEM, WebPreferences(InMemoryKeyValueStorage()).state.value.language)
     }
+
+    @Test
+    fun storedLanguageThatIsNoLongerOfferedIsShownAsSystemAndKeptInStorage() {
+        val storage = InMemoryKeyValueStorage()
+        WebPreferences(storage).selectLanguage(WebLanguage.THAI)
+
+        assertEquals(WebLanguage.SYSTEM, WebPreferences(storage).state.value.language)
+        assertEquals(WebLanguage.THAI.name, storage.getString("app_language"))
+    }
 }

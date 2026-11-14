@@ -20,15 +20,20 @@ Version is defined in two places:
 
 ```properties
 # gradle.properties
-cloudbaseVersionName=0.0.1
+cloudbaseVersionName=1.9.1
 ```
 
 ```kotlin
 // app/build.gradle.kts
-versionCode = 1  // Monotonically increasing integer (required by Google Play)
+versionCode = 18  // Monotonically increasing integer (required by Google Play)
 ```
 
 **Both** must be updated for every release. `versionCode` must always increase.
+
+`node scripts/release/verify-version.mjs` checks that the version name, the
+version code, the store changelog and the F-Droid metadata describe the same
+release. CI runs it on every push and pull request, and the release workflow
+runs it again against the pushed tag before anything is built.
 
 Release APKs are split per ABI. The `versionCode` in `app/build.gradle.kts`
 is the base release code. The universal APK uses `versionCode * 10`, and
@@ -75,6 +80,12 @@ For Google Play publishing (optional):
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Google Play API service account JSON |
 | `GOOGLE_PLAY_ENABLED` (variable) | Set to `true` to enable publishing |
 
+Recommended (optional) repository variable:
+
+| Variable | Description |
+|----------|-------------|
+| `RELEASE_CERT_SHA256` | SHA-256 digest of the release signing certificate. When set, the release workflow refuses to publish artifacts signed by any other certificate. Read it with `keytool -list -v -keystore release.keystore -alias cloudbase` (the `SHA256:` line; colons are accepted). |
+
 ### Google Play Service Account
 
 1. Go to [Google Play Console](https://play.google.com/console) → Setup → API access
@@ -99,7 +110,13 @@ Increment the base version code in `app/build.gradle.kts`:
 versionCode = <nextBaseCode>        // increment
 ```
 
-### 2. Update F-Droid metadata
+### 2. Add the store changelog
+
+Create `fastlane/metadata/android/en-US/changelogs/<versionCode * 10>.txt`
+(for example `180.txt` for `versionCode = 18`) with the user-visible changes,
+at most 500 characters. F-Droid and Google Play both read this file.
+
+### 3. Update F-Droid metadata
 
 Edit `metadata/com.cloudbasepredictor.yml`:
 
@@ -118,7 +135,19 @@ If a fdroiddata merge-request checkout is being maintained separately, mirror
 the same build entries, current version fields, and anti-feature text in that
 checkout's `metadata/com.cloudbasepredictor.yml`.
 
-### 3. Run tests locally
+### 4. Check the release
+
+Every push and pull request already runs a release rehearsal in CI (the
+`Release Rehearsal` job of `Android Tests`): it builds the minified APK and app
+bundle, signs them with a throwaway key and verifies the signatures, so an R8
+or packaging problem shows up before a tag exists. The version files are
+checked by `Repository Checks`. Locally, the quickest confirmation is:
+
+```bash
+node scripts/release/verify-version.mjs --remote-tags
+```
+
+The full set of gates, if you want to run them yourself:
 
 ```bash
 # Android release gates
@@ -149,11 +178,9 @@ npm run check:web:webkit-input
 ./gradlew :app:assembleRelease  # verify release build works
 ```
 
-Do not create the release tag until every gate passes. In particular, the
-production browser gates enforce the same bundle, runtime, accessibility, and
-persistence contracts that block the tag-driven release workflow.
+Do not create the release tag until CI is green on the release commit.
 
-### 4. Commit and tag
+### 5. Commit and tag
 
 ```bash
 git add -A
@@ -162,17 +189,33 @@ git tag v<newVersion>
 git push origin master --tags
 ```
 
-### 5. Automated pipeline
+### 6. Automated pipeline
 
 Pushing the tag triggers the **Release** workflow (`.github/workflows/release.yml`):
 
-1. Runs Android unit/engine tests, instrumentation compilation, and static analysis
-2. Runs shared/web tests, static analysis, snapshot validation, and production browser gates
-3. Builds signed ABI APKs and AAB
-4. Creates a GitHub Release with the APKs and AAB attached
+1. Checks that the tag matches `cloudbaseVersionName` and that the version code,
+   changelog and F-Droid metadata agree with it
+2. Runs Android unit/engine tests, instrumentation compilation, and static analysis
+3. Builds signed ABI APKs and AAB, and verifies that all of them are signed by
+   one certificate (the expected one, when `RELEASE_CERT_SHA256` is set)
+4. Creates a GitHub Release with the APKs, the AAB and the R8 mapping file attached
 5. Optionally publishes the AAB to Google Play internal track
 
-### 6. Promote on Google Play
+The workflow also runs the shared web release gates on the tagged commit. They
+report on that commit but do not hold back the Android artifacts: a tag
+publishes the APKs and the app bundle, while the web site deploys from the
+default branch.
+
+#### If the release run fails
+
+A failing run opens an issue titled `Release v<version> failed` with a link to
+the run. Fix the cause and use **Re-run failed jobs** on that run; the tag does
+not need to be moved or recreated. The issue closes when the GitHub Release has
+been published. The R8 mapping file attached to each release
+(`CloudbasePredictor_v<version>_mapping.txt`) is what turns a stack trace from
+that build back into readable names.
+
+### 7. Promote on Google Play
 
 After verifying the internal build:
 
