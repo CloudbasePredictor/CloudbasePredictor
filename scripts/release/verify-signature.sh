@@ -52,29 +52,54 @@ find_apksigner() {
   printf '%s\n' "$newest"
 }
 
+# The tool output is always captured first and then read from a here-string. Piping it into a reader
+# that stops early (grep -q, head) makes the writer die of SIGPIPE on long output, and with pipefail
+# that turned a correctly signed bundle into "not signed" on CI.
+
+# Prints the distinct values that follow "<label>" in the captured tool output, one per line.
+values_after() {
+  awk -v label="$1" '
+    { position = index($0, label) }
+    position > 0 { value = substr($0, position + length(label)); if (!(value in seen)) { seen[value] = 1; print value } }
+  ' <<<"$2"
+}
+
 # Prints the SHA-256 digest of the certificate that signed an APK. Fails when the APK does not verify
-# or has more than one signer.
+# or is signed by more than one certificate.
 apk_digest() {
-  local apksigner output signers
+  local apksigner output digests
   apksigner="$(find_apksigner)"
   output="$("$apksigner" verify --print-certs "$1")" || { echo "error: $1 does not verify as a signed APK" >&2; return 1; }
-  signers="$(printf '%s\n' "$output" | grep -c 'certificate SHA-256 digest:' || true)"
-  if [ "$signers" -ne 1 ]; then
-    echo "error: $1 has $signers signers, expected exactly 1" >&2
+  # Normally one "Signer #1 certificate SHA-256 digest: <hex>" line. Newer signature schemes add more
+  # signer lines with other prefixes for the same certificate, so the prefix is not matched.
+  digests="$(values_after 'certificate SHA-256 digest: ' "$output")"
+  if [ "$(grep -c . <<<"$digests")" -ne 1 ]; then
+    echo "error: expected one signing certificate in $1, apksigner reported:" >&2
+    printf '%s\n' "$output" >&2
     return 1
   fi
-  printf '%s\n' "$output" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p'
+  printf '%s\n' "$digests"
 }
 
 # Prints the SHA-256 digest of the certificate that signed an app bundle (JAR signature).
 bundle_digest() {
-  local output
+  local output certificates digests
   output="$(jarsigner -verify "$1" 2>&1)" || { echo "error: jarsigner could not verify $1" >&2; return 1; }
-  if ! printf '%s\n' "$output" | grep -q 'jar verified'; then
-    echo "error: $1 is not signed" >&2
+  case "$output" in
+    *"jar verified"*) ;;
+    *)
+      echo "error: $1 is not signed" >&2
+      return 1
+      ;;
+  esac
+  certificates="$(keytool -printcert -jarfile "$1")" || { echo "error: keytool could not read the certificate of $1" >&2; return 1; }
+  digests="$(values_after 'SHA256: ' "$certificates")"
+  if [ "$(grep -c . <<<"$digests")" -ne 1 ]; then
+    echo "error: expected one signing certificate in $1, keytool reported:" >&2
+    printf '%s\n' "$certificates" >&2
     return 1
   fi
-  keytool -printcert -jarfile "$1" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1
+  printf '%s\n' "$digests"
 }
 
 expected="$(normalize_digest "$expected")"
