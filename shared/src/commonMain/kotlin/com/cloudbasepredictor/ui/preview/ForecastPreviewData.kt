@@ -16,6 +16,7 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderCloudForecastChart
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderStuveChart
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderThermicForecastChart
+import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderWindForecastChart
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastCellUiModel
 import androidx.compose.ui.tooling.preview.Preview
@@ -71,7 +72,7 @@ object ForecastPreviewData {
         selectedDayIndex = 2,
         thermicChart = buildPlaceholderThermicForecastChart(dayIndex = 2),
         stuveChart = buildPlaceholderStuveChart(hour = 12, dayIndex = 2),
-        windChart = sparseWindChart,
+        windChart = buildPlaceholderWindForecastChart(dayIndex = 2),
         cloudChart = buildPlaceholderCloudForecastChart(dayIndex = 2),
         dayChips = dayChips,
         forecastText = "Monday in Interlaken. Partly cloudy with usable afternoon lift.",
@@ -91,6 +92,11 @@ object ForecastPreviewData {
         chartViewport = ForecastChartViewport(visibleTopAltitudeKm = topAltitudeKm),
         forecastText = "$mode layered forecast preview for Interlaken.",
     )
+
+    /** Wind state with sparse sources, close low levels, calm wind and missing hours. */
+    fun sparseWindState(
+        topAltitudeKm: Float = ForecastChartViewport().visibleTopAltitudeKm,
+    ): ForecastReadyUiState = stateForMode(ForecastMode.WIND, topAltitudeKm).copy(windChart = sparseWindChart)
 }
 
 @Composable

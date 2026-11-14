@@ -105,12 +105,20 @@ class WindForecastInterpolationTest {
     }
 
     @Test
-    fun layoutWindLabelCenters_separatesCloseLevelsWithoutMovingAnchors() {
-        val anchors = listOf(1f, 2f, 150f, 198f, 199f)
-        val centers = layoutWindLabelCenters(anchors, 14f, 186f, 28f)
-        assertTrue(centers.zipWithNext().all { (a, b) -> b - a >= 28f })
-        assertTrue(centers.all { it in 14f..186f })
-        assertEquals(listOf(1f, 2f, 150f, 198f, 199f), anchors)
+    fun pickReadableWindLevels_keepsLowerLevelAndDropsCrowdedOrClippedOnes() {
+        // Lowest altitude first: 199 is below the plot area, 180/178 collide, 3 is above it.
+        val anchors = listOf(199f, 180f, 178f, 150f, 140f, 100f, 3f)
+        assertEquals(listOf(1, 3, 5), pickReadableWindLevels(anchors, minY = 8f, maxY = 190f, minSpacing = 20f))
+        assertEquals(emptyList(), pickReadableWindLevels(emptyList(), 8f, 190f, 20f))
+    }
+
+    @Test
+    fun windGlyphHourStride_keepsGlyphSlotsReadable() {
+        assertEquals(1, windGlyphHourStride(columnWidth = 50f, minSlotWidth = 44f))
+        assertEquals(1, windGlyphHourStride(columnWidth = 44f, minSlotWidth = 44f))
+        assertEquals(2, windGlyphHourStride(columnWidth = 23f, minSlotWidth = 44f))
+        assertEquals(3, windGlyphHourStride(columnWidth = 17f, minSlotWidth = 44f))
+        assertEquals(1, windGlyphHourStride(columnWidth = 0f, minSlotWidth = 44f))
     }
 
     @Test

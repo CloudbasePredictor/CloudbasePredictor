@@ -5,6 +5,7 @@ package com.cloudbasepredictor.ui.screens.forecast
 import kotlin.math.abs
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
@@ -82,23 +83,33 @@ internal fun interpolateWind(
     }
 }
 
-/** Packs labels in screen order without changing their source anchors. */
-internal fun layoutWindLabelCenters(
+/**
+ * Picks source levels whose glyphs fit at their true height.
+ *
+ * [anchorYs] are ordered from the lowest altitude upward (screen Y decreasing). Lower levels win
+ * when two are closer than [minSpacing]; skipped levels stay reachable through the cursor.
+ */
+internal fun pickReadableWindLevels(
     anchorYs: List<Float>,
-    minCenterY: Float,
-    maxCenterY: Float,
-    spacing: Float,
-): List<Float> {
-    if (anchorYs.isEmpty()) return emptyList()
-    val centers = anchorYs.map { it.coerceIn(minCenterY, maxCenterY) }.toMutableList()
-    for (index in 1..centers.lastIndex) {
-        centers[index] = maxOf(centers[index], centers[index - 1] + spacing)
+    minY: Float,
+    maxY: Float,
+    minSpacing: Float,
+): List<Int> {
+    val kept = mutableListOf<Int>()
+    var lastKeptY = Float.POSITIVE_INFINITY
+    anchorYs.forEachIndexed { index, y ->
+        if (y in minY..maxY && lastKeptY - y >= minSpacing) {
+            kept += index
+            lastKeptY = y
+        }
     }
-    centers[centers.lastIndex] = minOf(centers.last(), maxCenterY)
-    for (index in centers.lastIndex - 1 downTo 0) {
-        centers[index] = minOf(centers[index], centers[index + 1] - spacing)
-    }
-    return centers
+    return kept
+}
+
+/** Draws a glyph every N hours so neighboring glyphs keep at least [minSlotWidth] apart. */
+internal fun windGlyphHourStride(columnWidth: Float, minSlotWidth: Float): Int {
+    if (columnWidth <= 0f) return 1
+    return maxOf(1, ceil(minSlotWidth / columnWidth - WIND_STRIDE_EPSILON).toInt())
 }
 
 /**
@@ -125,3 +136,4 @@ private fun windComponents(
 }
 
 private const val WIND_SOURCE_ALTITUDE_TOLERANCE_KM = 0.000001f
+private const val WIND_STRIDE_EPSILON = 0.0001f

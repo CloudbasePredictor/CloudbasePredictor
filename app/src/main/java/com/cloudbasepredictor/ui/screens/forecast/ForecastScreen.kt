@@ -390,8 +390,7 @@ private fun ForecastReadyContent(
                         overlayBackHandler = { enabled, onBack ->
                             BackHandler(enabled = enabled, onBack = onBack)
                         },
-                        // Keep source labels clear of the help and model controls.
-                        modifier = Modifier.fillMaxSize().padding(top = 88.dp),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 ForecastMode.CLOUD -> {

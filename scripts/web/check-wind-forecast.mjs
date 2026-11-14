@@ -84,17 +84,16 @@ try {
       await page.screenshot({ path: initialPath, fullPage: true });
       const cursorStates = [];
       const selections = [
-        { hourIndex: 0, y: (height) => height - 92, expected: [/06h/u, /10 m AGL/u, /8 km\/h/u, /350°/u] },
-        { hourIndex: 1, y: (height) => height - 92, expected: [/07h/u, /No data/u], absent: [/km\/h/u] },
-        { hourIndex: 2, y: (height) => height - 92, expected: [/08h/u, /10 m AGL/u, /0 km\/h/u, /0°/u] },
+        { hourIndex: 0, y: surfaceRowY, expected: [/06h/u, /10 m AGL/u, /8 km\/h/u, /350°/u] },
+        { hourIndex: 1, y: surfaceRowY, expected: [/07h/u, /No data/u], absent: [/km\/h/u] },
+        { hourIndex: 2, y: surfaceRowY, expected: [/08h/u, /10 m AGL/u, /0 km\/h/u, /0°/u] },
         { hourIndex: 3, y: () => 5, xOffset: 5, expected: [/09h/u, /No data/u], absent: [/km\/h/u] },
-        { hourIndex: 0, y: (height) => (height - 112) * 0.7, xOffset: 5, expected: [/06h/u, /≈/u] },
+        { hourIndex: 0, y: (height) => altitudeY(height, 1.5), xOffset: 5, expected: [/06h/u, /≈/u] },
         { hourIndex: 0, y: () => 5, xOffset: 5, expected: [/06h/u, /No data/u] },
-        { hourIndex: 0,
-          y: (height) => height - (profile.name === "landscape" ? 126 : 154),
-          xOffset: profile.name === "landscape" ? 125 : 49,
-          expected: [/06h/u, /620 m ASL/u, /16 km\/h/u, /90°/u], absent: [/≈/u] },
-        { hourIndex: 16, y: (height) => height - 92,
+        // A tap near a source glyph snaps to its exact hourly height.
+        { hourIndex: 0, y: (height) => altitudeY(height, 2.357) + 6,
+          expected: [/06h/u, /2357 m ASL/u, /30 km\/h/u, /270°/u], absent: [/≈/u] },
+        { hourIndex: 16, y: surfaceRowY,
           expected: [/22h/u, /10 m AGL/u, /No data/u], absent: [/km\/h/u] },
       ];
 
@@ -187,28 +186,30 @@ function sparseWindFixture(source) {
   }
 }
 
+// Mirrors the wind chart layout: the whole day fits the width; below the plot are a 26 dp 10 m row,
+// a 28 dp legend and a 16 dp hour axis.
+const WIND_AXIS_WIDTH = 60;
+const WIND_BOTTOM_CHROME = 26 + 28 + 16;
+const FIXTURE_ELEVATION_KM = 0.58;
+const DEFAULT_VISIBLE_RANGE_KM = 4.5;
+const FIXTURE_HOURS = 17;
+
+function surfaceRowY(height) {
+  return height - 28 - 16 - 13;
+}
+
+function altitudeY(height, altitudeKm) {
+  const plotBottom = height - WIND_BOTTOM_CHROME;
+  return plotBottom * (1 - (altitudeKm - FIXTURE_ELEVATION_KM) / DEFAULT_VISIBLE_RANGE_KM);
+}
+
 async function clickHour(page, renderer, hourIndex, yForHeight, xOffset) {
   const box = await renderer.boundingBox();
   if (!box) throw new Error("Wind renderer has no visible bounds");
-  const canvasHeight = page.viewportSize().height < 480 ? 160 : box.height;
-  const labelCapacity = Math.max(1, Math.floor((canvasHeight - 112) / 28) - 1);
-  const columnWidth = Math.max(76 * Math.ceil(3 / labelCapacity), (box.width - 60) / 17);
-  // Accessibility bounds are clipped to the viewport; scrolling belongs to Compose.
-  const probeX = page.viewportSize().width / 2;
-  await page.mouse.move(probeX, box.y + Math.min(60, box.height / 2));
-  await page.mouse.wheel(-10_000, 0);
-  await page.waitForTimeout(150);
-  const bounds = await renderer.boundingBox();
-  const y = bounds.y + bounds.height - canvasHeight + yForHeight(canvasHeight);
-  if (hourIndex === 16) {
-    await page.mouse.wheel(10_000, 0);
-    await page.waitForTimeout(300);
-    await page.mouse.click(bounds.x + bounds.width - columnWidth / 2, y);
-  } else {
-    const targetX = bounds.x + 60 + hourIndex * columnWidth + (xOffset ?? columnWidth / 2);
-    if (targetX >= page.viewportSize().width) throw new Error("The selected fixture column is offscreen");
-    await page.mouse.click(targetX, y);
-  }
+  const columnWidth = (box.width - WIND_AXIS_WIDTH) / FIXTURE_HOURS;
+  const targetX = box.x + WIND_AXIS_WIDTH + hourIndex * columnWidth + (xOffset ?? columnWidth / 2);
+  if (targetX >= page.viewportSize().width) throw new Error("The selected fixture column is offscreen");
+  await page.mouse.click(targetX, box.y + yForHeight(box.height));
   await page.waitForTimeout(100);
 }
 

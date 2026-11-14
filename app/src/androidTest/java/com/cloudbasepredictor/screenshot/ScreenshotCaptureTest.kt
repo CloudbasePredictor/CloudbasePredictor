@@ -196,7 +196,7 @@ class ScreenshotCaptureTest {
 
     @Test
     fun captureSparseWindForecast() {
-        val baseState = ForecastPreviewData.stateForMode(ForecastMode.WIND)
+        val baseState = ForecastPreviewData.sparseWindState()
         var visibleTopAltitudeKm by mutableFloatStateOf(DEFAULT_TOP_ALTITUDE_KM)
         composeRule.setContent {
             CloudbasePredictorTheme(darkTheme = false) {
@@ -219,7 +219,8 @@ class ScreenshotCaptureTest {
             .targetContext.resources.displayMetrics.density
         val windCanvas = composeRule.onNodeWithTag(WIND_CHART_CANVAS)
         windCanvas.performTouchInput {
-            click(Offset(76f * density, height - 92f * density))
+            // 10 m row of the first hour: below it are a 28 dp legend and a 16 dp hour axis.
+            click(Offset(76f * density, height - 57f * density))
         }
         composeRule.waitForIdle()
         windCanvas.assert(SemanticsMatcher("selected 10 m wind") {

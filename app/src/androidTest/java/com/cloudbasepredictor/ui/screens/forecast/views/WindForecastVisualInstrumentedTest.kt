@@ -13,7 +13,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.testutil.SimulatedTestData
 import com.cloudbasepredictor.ui.preview.ForecastPreviewData
+import com.cloudbasepredictor.ui.screens.forecast.ForecastReadyUiState
 import com.cloudbasepredictor.ui.screens.forecast.ForecastScreen
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_CHART_CANVAS
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
@@ -42,12 +43,14 @@ class WindForecastVisualInstrumentedTest {
 
     @Test
     fun windView_rendersThermicLevelMarkersOverWindSpeedBackground() {
-        val state = SimulatedTestData.forecastUiState(composeRule.activity, mode = ForecastMode.WIND)
-        val firstCclHour = state.windChart.cclKm.first().hour
-        val visibleHours = state.windChart.hours.filter { it in firstCclHour..firstCclHour + 3 }
         composeRule.setContent {
             CloudbasePredictorTheme {
-                WindForecastView(uiState = state.copy(windChart = state.windChart.copy(hours = visibleHours)))
+                WindForecastView(
+                    uiState = SimulatedTestData.forecastUiState(
+                        context = composeRule.activity,
+                        mode = ForecastMode.WIND,
+                    ),
+                )
             }
         }
         composeRule.waitForIdle()
@@ -71,68 +74,50 @@ class WindForecastVisualInstrumentedTest {
     }
 
     @Test
-    fun sparseWind_surfaceAndDisplacedLabelsSelectSourceValues() {
-        showSparseWind()
-        val density = composeRule.activity.resources.displayMetrics.density
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(60f * density + (width - 60f * density) / 8f, height - 92f * density))
-        }
+    fun sparseWind_surfaceRowAndSourceLevelsSelectSourceValues() {
+        val state = showSparseWind()
+        tapSparse(hourIndex = 0, y = { surfaceRowY() })
         assertCursorContains("06h", "10 m AGL", "8 km/h", "350°")
         assertCursorExcludes("≈")
 
-        // The two low-level labels are separated; the upper one still selects its true 620 m source.
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(60f * density + (width - 60f * density) * 0.175f, height - 154f * density))
-        }
-        assertCursorContains("06h", "620 m ASL", "16 km/h", "90°")
+        // Tapping close to a source glyph snaps to its exact hourly height.
+        tapSparse(hourIndex = 0, y = { altitudeY(state, 2.357f) + 6f * density() })
+        assertCursorContains("06h", "2357 m ASL", "30 km/h", "270°")
         assertCursorExcludes("≈")
 
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(60f * density + (width - 60f * density) * 0.375f, height - 92f * density))
-        }
+        tapSparse(hourIndex = 1, y = { surfaceRowY() })
         assertCursorContains("07h", "10 m AGL", "No data")
 
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(60f * density + (width - 60f * density) * 0.625f, height - 92f * density))
-        }
+        tapSparse(hourIndex = 2, y = { surfaceRowY() })
         assertCursorContains("08h", "10 m AGL", "0 km/h")
         assertCursorExcludes("No data")
     }
 
     @Test
     fun sparseWind_cursorMarksInterpolationAndShowsUnsupportedOrMissingHours() {
-        showSparseWind()
-        val density = composeRule.activity.resources.displayMetrics.density
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(65f * density, (height - 112f * density) * 0.7f))
-        }
+        val state = showSparseWind()
+        tapSparse(hourIndex = 0, y = { altitudeY(state, 1.5f) })
         assertCursorContains("06h", "≈")
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(65f * density, 20f * density))
-        }
+        tapSparse(hourIndex = 0, y = { 20f * density() })
         assertCursorContains("06h", "No data")
-        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
-            click(Offset(60f * density + (width - 60f * density) * 0.875f, (height - 112f * density) * 0.7f))
-        }
+        tapSparse(hourIndex = 3, y = { altitudeY(state, 1.5f) })
         assertCursorContains("09h", "No data")
     }
 
     @Test
-    fun windView_horizontalScrollKeepsLastHourSurfaceReadable() {
+    fun windView_fitsWholeDayAndLastHourSurfaceIsSelectable() {
+        val state = SimulatedTestData.forecastUiState(composeRule.activity, mode = ForecastMode.WIND)
         composeRule.setContent {
             CloudbasePredictorTheme {
-                WindForecastView(SimulatedTestData.forecastUiState(composeRule.activity, mode = ForecastMode.WIND))
+                WindForecastView(state)
             }
         }
-        repeat(5) {
-            composeRule.onNodeWithTag(WIND_VIEW).performTouchInput { swipeLeft() }
-            composeRule.waitForIdle()
+        composeRule.waitForIdle()
+        val lastHour = state.windChart.hours.last().toString().padStart(2, '0')
+        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
+            click(Offset(width - 2f * density(), surfaceRowY()))
         }
-        val density = composeRule.activity.resources.displayMetrics.density
-        composeRule.onNodeWithTag(WIND_VIEW).performTouchInput {
-            click(Offset(width - 38f * density, height - 92f * density))
-        }
-        assertCursorContains("22h", "10 m AGL", "km/h")
+        assertCursorContains("${lastHour}h", "10 m AGL", "km/h")
     }
 
     @Test
@@ -141,7 +126,7 @@ class WindForecastVisualInstrumentedTest {
             CloudbasePredictorTheme {
                 Box(Modifier.height(390.dp)) {
                     ForecastScreen(
-                        uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
+                        uiState = ForecastPreviewData.sparseWindState(),
                         onDateSelected = {},
                         onOpenMap = {},
                         initiallyExpandedMap = true,
@@ -151,25 +136,46 @@ class WindForecastVisualInstrumentedTest {
         }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(WIND_VIEW).performScrollTo()
-        val density = composeRule.activity.resources.displayMetrics.density
+        val density = density()
         val bounds = composeRule.onNodeWithTag(WIND_VIEW).fetchSemanticsNode().boundsInRoot
         assertTrue(
             "A short window should retain a usable wind chart; height was ${bounds.height / density} dp",
             bounds.height >= 160f * density,
         )
         composeRule.onNodeWithTag(WIND_VIEW).performTouchInput {
-            click(Offset(174f * density, height - 92f * density))
+            click(Offset(AXIS_DP * density + (width - AXIS_DP * density) / 8f, surfaceRowY()))
         }
         assertCursorContains("06h", "10 m AGL", "8 km/h", "350°")
     }
 
-    private fun showSparseWind() {
+    private fun showSparseWind(): ForecastReadyUiState {
+        val state = ForecastPreviewData.sparseWindState()
         composeRule.setContent {
             CloudbasePredictorTheme {
-                WindForecastView(ForecastPreviewData.stateForMode(ForecastMode.WIND))
+                WindForecastView(state)
             }
         }
         composeRule.waitForIdle()
+        return state
+    }
+
+    private fun density(): Float = composeRule.activity.resources.displayMetrics.density
+
+    /** Taps the center of an hourly column of the sparse four-hour chart. */
+    private fun tapSparse(hourIndex: Int, y: TouchInjectionScope.() -> Float) {
+        composeRule.onNodeWithTag(WIND_CHART_CANVAS).performTouchInput {
+            val plotLeft = AXIS_DP * density()
+            click(Offset(plotLeft + (width - plotLeft) * (hourIndex + 0.5f) / 4f, y()))
+        }
+    }
+
+    // Mirrors the wind chart layout: 26 dp 10 m row, 28 dp legend and 16 dp hour axis below the plot.
+    private fun TouchInjectionScope.surfaceRowY(): Float = height - (28f + 16f + 13f) * density()
+
+    private fun TouchInjectionScope.altitudeY(state: ForecastReadyUiState, altitudeKm: Float): Float {
+        val plotBottom = height - BOTTOM_CHROME_DP * density()
+        val range = state.chartViewport.visibleTopAltitudeKm
+        return plotBottom * (1f - (altitudeKm - state.elevationKm) / range)
     }
 
     private fun assertCursorContains(vararg text: String) {
@@ -183,6 +189,11 @@ class WindForecastVisualInstrumentedTest {
         composeRule.onNodeWithTag(WIND_CHART_CANVAS).assert(SemanticsMatcher("cursor excludes $text") {
             !it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString("; ").contains(text)
         })
+    }
+
+    private companion object {
+        const val AXIS_DP = 60f
+        const val BOTTOM_CHROME_DP = 26f + 28f + 16f
     }
 
 }
