@@ -4,11 +4,14 @@ import android.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -23,6 +26,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.cloudbasepredictor.model.ForecastMode
 import com.cloudbasepredictor.testutil.SimulatedTestData
@@ -34,6 +38,7 @@ import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_RENDERER
 import com.cloudbasepredictor.ui.screens.forecast.ForecastTestTags.WIND_VIEW
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -176,11 +181,60 @@ class WindForecastVisualInstrumentedTest {
 
     @Test
     fun sparseWind_tapOnLegendClearsCursor() {
-        showSparseWind()
-        tapSparse(hourIndex = 0, y = { surfaceRowY() })
+        // At 2x font scale the legend covers the height of the 1x 10 m row. Switching to 1x moves the rows under the
+        // tapped point without resizing the canvas (which drops any cursor), so a position kept from the legend tap
+        // would show a cursor in the 10 m row there.
+        var fontScale by mutableFloatStateOf(2f)
+        val displayDensity = density()
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                CompositionLocalProvider(LocalDensity provides Density(displayDensity, fontScale)) {
+                    WindForecastView(ForecastPreviewData.sparseWindState())
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        // The 2x 10 m row, which is at least 26 dp high, ends above the 56 dp legend and the 32 dp hour axis.
+        tapSparse(hourIndex = 0, y = { height - (56f + 32f + 13f) * displayDensity })
         assertCursor("06h  10 m AGL", "8 km/h  350°")
 
-        tapSparse(hourIndex = 0, y = { legendY() })
+        tapSparse(hourIndex = 0, y = { surfaceRowY() })
+        assertNoCursor()
+
+        composeRule.runOnIdle { fontScale = 1f }
+        composeRule.waitForIdle()
+        assertNoCursor()
+    }
+
+    @Test
+    fun sparseWind_resizeClearsCursorForGood() {
+        // As when the Android map panel opens and closes again under the chart.
+        var hostHeight by mutableStateOf(480.dp)
+        var backEnabled = false
+        composeRule.setContent {
+            CloudbasePredictorTheme {
+                Box(Modifier.height(hostHeight)) {
+                    WindForecastView(
+                        ForecastPreviewData.sparseWindState(),
+                        overlayBackHandler = { enabled, _ -> backEnabled = enabled },
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        tapSparse(hourIndex = 0, y = { surfaceRowY() })
+        assertCursor("06h  10 m AGL", "8 km/h  350°")
+        composeRule.runOnIdle { assertTrue("Back should dismiss the shown cursor", backEnabled) }
+
+        // On a shorter chart the old position lies below the 10 m row: the cursor is dropped, not just hidden.
+        composeRule.runOnIdle { hostHeight = 320.dp }
+        composeRule.waitForIdle()
+        assertNoCursor()
+        composeRule.runOnIdle { assertFalse("Back should navigate once the cursor is gone", backEnabled) }
+
+        // Back at the first size, it does not come back.
+        composeRule.runOnIdle { hostHeight = 480.dp }
+        composeRule.waitForIdle()
         assertNoCursor()
     }
 

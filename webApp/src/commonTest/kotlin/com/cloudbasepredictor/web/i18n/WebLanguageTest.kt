@@ -84,6 +84,15 @@ class WebLanguageTest {
     }
 
     @Test
+    fun onlyChinesePutsTheWindHeightWordsBeforeTheHeight() {
+        // As the Android bool/wind_chart_words_before_height resources do; Chinese altitude strings use prefixes.
+        WebLanguage.entries.forEach { language ->
+            val strings = webStringsFor(language)
+            assertEquals(strings === chineseWebStrings, strings.windChartLabels.wordsBeforeHeight, language.name)
+        }
+    }
+
+    @Test
     fun weatherLabelsFollowSharedConditionOrder() {
         val labels = WeatherCondition.entries.map { condition ->
             englishWebForecastStrings.weatherLabel(condition.ordinal)

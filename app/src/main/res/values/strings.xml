@@ -95,7 +95,7 @@
     <string name="forecast_map_update_too_frequent">Forecast not updated: wait %1$.1f seconds before moving the map again.</string>
     <string name="forecast_map_update_too_close">Forecast not updated: move at least %1$d m from the current forecast point.</string>
 
-    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
     <string name="wind_chart_no_data">No data</string>
     <string name="wind_chart_above_sea_level">ASL</string>
     <string name="wind_chart_above_ground">AGL</string>

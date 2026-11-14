@@ -369,36 +369,39 @@ class WindForecastInterpolationTest {
 
     @Test
     fun windLegendLabelCenters_keepsLabelsThatFitAndThinsTheRestEvenly() {
-        // The legend of a 360 dp phone: nine items from the 60 dp axis to the CCL and 0 °C keys at 272 dp, 9 sp
-        // monospace labels (5.4 dp per character at 1x) kept 1 dp clear of each other, of the unit label at 8 dp and
-        // of the first key's label at 278 dp.
-        val itemWidth = (272f - 60f) / 9
-        val itemCenters = List(9) { 60f + (it + 0.5f) * itemWidth }
-        fun legend(characters: List<Int>, unitCharacters: Int, fontScale: Float): Map<Int, Float> =
+        // The legend of a phone: nine items from the 60 dp axis to the CCL and 0 °C keys, 88 dp from the right edge,
+        // and 9 sp monospace labels (5.4 dp per character at 1x) kept 3 dp (WIND_LEGEND_LABEL_GAP) clear of each
+        // other, of the unit label at 8 dp and of the first key's label 6 dp into its slot.
+        fun itemWidth(widthDp: Float) = (widthDp - 88f - 60f) / 9
+        fun itemCenters(widthDp: Float) = List(9) { 60f + (it + 0.5f) * itemWidth(widthDp) }
+        fun everyLabel(widthDp: Float) = itemCenters(widthDp).withIndex().associate { it.index to it.value }
+        fun legend(characters: List<Int>, unitCharacters: Int, fontScale: Float, widthDp: Float = 360f) =
             windLegendLabelCenters(
                 labelWidths = characters.map { it * 5.4f * fontScale },
                 left = 60f,
-                itemWidth = itemWidth,
-                bounds = (8f + unitCharacters * 5.4f * fontScale + 1f)..(272f + 6f - 1f),
-                gap = 1f,
+                itemWidth = itemWidth(widthDp),
+                bounds = (8f + unitCharacters * 5.4f * fontScale + 3f)..(widthDp - 88f + 6f - 3f),
+                gap = 3f,
             )
         val kmh = listOf(1, 1, 2, 2, 2, 2, 2, 2, 2)
         // "0.0" to "8.3", then "11.1", "13.9" and "16.7".
         val mps = listOf(3, 3, 3, 3, 3, 3, 4, 4, 4)
-        val everyLabel = itemCenters.withIndex().associate { it.index to it.value }
 
-        // Every label keeps its place under its swatch: km/h up to 2x, m/s at 1x with 2 dp between the widest ones.
-        assertLegendCenters(everyLabel, legend(kmh, unitCharacters = 4, fontScale = 1f))
-        assertLegendCenters(everyLabel, legend(kmh, unitCharacters = 4, fontScale = 2f))
-        assertLegendCenters(everyLabel, legend(mps, unitCharacters = 3, fontScale = 1f))
-        // From about 1.05x, m/s labels would touch: every second one is drawn, still under its swatch.
+        // Every km/h label keeps its place under its swatch, at least 12 dp from the next, at 1x on a 360 dp and a
+        // 411 dp phone; so it does up to 1.5x, and so do m/s labels at 1x on the wider phone.
+        assertLegendCenters(everyLabel(360f), legend(kmh, unitCharacters = 4, fontScale = 1f))
+        assertLegendCenters(everyLabel(411f), legend(kmh, unitCharacters = 4, fontScale = 1f, widthDp = 411f))
+        assertLegendCenters(everyLabel(360f), legend(kmh, unitCharacters = 4, fontScale = 1.5f))
+        assertLegendCenters(everyLabel(411f), legend(mps, unitCharacters = 3, fontScale = 1f, widthDp = 411f))
+        // On the 360 dp phone the four-character m/s labels would be 2 dp apart: every second label is drawn, still
+        // under its swatch, from 1x on. So it is with km/h labels at 2x.
+        val everySecond = (0..8 step 2).associateWith { itemCenters(360f)[it] }
+        assertLegendCenters(everySecond, legend(mps, unitCharacters = 3, fontScale = 1f))
+        assertLegendCenters(everySecond, legend(mps, unitCharacters = 3, fontScale = 1.1f))
+        assertLegendCenters(everySecond, legend(kmh, unitCharacters = 4, fontScale = 2f))
+        // At 2x the last m/s label, kept clear of the CCL key, would crowd the one before it, so every third is drawn.
         assertLegendCenters(
-            (0..8 step 2).associateWith { itemCenters[it] },
-            legend(mps, unitCharacters = 3, fontScale = 1.1f),
-        )
-        // At 2x the last label, kept clear of the CCL key, would crowd the one before it, so every third is drawn.
-        assertLegendCenters(
-            (0..8 step 3).associateWith { itemCenters[it] },
+            (0..8 step 3).associateWith { itemCenters(360f)[it] },
             legend(mps, unitCharacters = 3, fontScale = 2f),
         )
 

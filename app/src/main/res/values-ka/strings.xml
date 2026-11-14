@@ -95,7 +95,7 @@
     <string name="forecast_map_update_too_frequent">პროგნოზი არ განახლდა: დაელოდეთ %1$.1f წამს, სანამ რუკას ხელახლა გადააადგილებთ.</string>
     <string name="forecast_map_update_too_close">პროგნოზი არ განახლდა: გადაინაცვლეთ მიმდინარე პროგნოზის წერტილიდან მინიმუმ %1$d მ.</string>
 
-    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
     <string name="wind_chart_no_data">მონაცემები არ არის</string>
     <string name="wind_chart_above_sea_level">ASL</string>
     <string name="wind_chart_above_ground">AGL</string>

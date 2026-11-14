@@ -19,6 +19,7 @@ import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderThermicForecas
 import com.cloudbasepredictor.ui.screens.forecast.buildPlaceholderWindForecastChart
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastChartUiModel
 import com.cloudbasepredictor.ui.screens.forecast.WindForecastCellUiModel
+import com.cloudbasepredictor.ui.screens.forecast.views.WindChartLabels
 import androidx.compose.ui.tooling.preview.Preview
 
 /** Realistic, deterministic forecast fixtures shared by all forecast UI previews. */
@@ -127,6 +128,21 @@ object ForecastPreviewData {
         selectedForecastMode = mode,
         chartViewport = ForecastChartViewport(visibleTopAltitudeKm = topAltitudeKm),
         forecastText = "$mode layered forecast preview for Interlaken.",
+    )
+
+    /** Spanish wind chart words, as the Android and web Spanish strings pass them; the sea-level word is long. */
+    val spanishWindChartLabels = WindChartLabels(
+        noData = "Sin datos",
+        aboveSeaLevel = "s.n.m.",
+        aboveGround = "del suelo",
+    )
+
+    /** Chinese wind chart words, as the Android and web Chinese strings pass them; they go before the height. */
+    val chineseWindChartLabels = WindChartLabels(
+        noData = "无数据",
+        aboveSeaLevel = "海拔",
+        aboveGround = "离地",
+        wordsBeforeHeight = true,
     )
 
     /** Wind state with sparse sources, close low levels, calm wind and missing hours. */

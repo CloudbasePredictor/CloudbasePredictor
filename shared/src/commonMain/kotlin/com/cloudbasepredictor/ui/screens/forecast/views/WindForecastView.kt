@@ -55,11 +55,14 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import com.cloudbasepredictor.data.units.AltitudeUnit
 import com.cloudbasepredictor.data.units.DisplayUnits
 import com.cloudbasepredictor.data.units.UnitPreset
@@ -189,14 +192,16 @@ private fun WindChartCanvas(
     }
     // The altitude axis title and the legend.
     val smallAxisStyle = remember(axisStyle) { axisStyle.copy(fontSize = 9.sp) }
-    // One cursor state for the life of the view: the gesture handler below is installed once and keeps writing to
-    // it. A cursor put down on another chart (another day) is not shown, and is dropped once the chart changes.
-    var crosshair by remember { mutableStateOf<WindCrosshair?>(null) }
-    LaunchedEffect(chart) {
-        if (crosshair?.chart != chart) crosshair = null
-    }
-    val crosshairPos = crosshair?.takeIf { it.chart == chart }?.position
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+    // One cursor state for the life of the view: the gesture handler below is installed once and keeps writing to
+    // it. A cursor belongs to the chart (day) and the canvas size it was put down on. Another day, or a resize (the
+    // Android map panel opening or closing, a rotated or resized window), would put another hour and height under
+    // its position, or hide it only until the old size comes back, so it is dropped instead.
+    var crosshair by remember { mutableStateOf<WindCrosshair?>(null) }
+    LaunchedEffect(chart, canvasSize) {
+        if (crosshair?.belongsTo(chart, canvasSize) == false) crosshair = null
+    }
+    val crosshairPos = crosshair?.takeIf { it.belongsTo(chart, canvasSize) }?.position
     val profileByHour = remember(chart.cells) { buildWindProfiles(chart.cells) }
     val effectiveTopAltitudeKm = max(
         elevationKm + visibleTopAltitudeKm, elevationKm + WIND_MIN_VISIBLE_ALTITUDE_RANGE_KM,
@@ -209,25 +214,6 @@ private fun WindChartCanvas(
     // levels far above it (jet-stream speeds) do not widen the spacing.
     val maxPillWidth = remember(speedLabels, elevationKm, effectiveTopAltitudeKm) {
         speedLabels.maxPillWidth(elevationKm, effectiveTopAltitudeKm)
-    }
-    val geometry = WindChartGeometry(
-        width = canvasSize.width.toFloat(),
-        height = canvasSize.height.toFloat(),
-        hourCount = chart.hours.size,
-        density = density.density,
-        fontScale = density.fontScale,
-        maxPillWidth = maxPillWidth,
-        pillHeight = speedLabels.pillHeight,
-    )
-    val glyphs = remember(chart, canvasSize, elevationKm, effectiveTopAltitudeKm, speedLabels, maxPillWidth) {
-        buildWindGlyphs(chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, speedLabels, geometry)
-    }
-    // Interpolating every strip is the costliest part of a frame; crosshair moves reuse it. The plot height
-    // follows the pill height through the 10 m row.
-    val backgroundCache = remember(
-        chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, density, speedLabels.pillHeight,
-    ) {
-        WindBackgroundCache()
     }
     // Axis, legend and hour labels are laid out when their texts or styles change; frames only draw them. The text
     // measurer is remembered for the density and font scale, so a change of either measures them again.
@@ -251,26 +237,67 @@ private fun WindChartCanvas(
         if (chart.cclKm.isNotEmpty()) add("CCL" to CCL_COLOR)
         if (chart.freezingLevelKm.isNotEmpty()) add("0°C" to FREEZING_COLOR)
     }
-    val chartTexts = remember(displayUnits, labels, axisStyle, smallAxisStyle, textMeasurer, legendKeys) {
-        textMeasurer.measureWindChartTexts(displayUnits, labels, axisStyle, smallAxisStyle, legendKeys)
+    // The axis title stays inside the axis column, clear of the plot.
+    val axisTitleMaxWidth = with(density) {
+        (WIND_AXIS_WIDTH - WIND_AXIS_TEXT_INSET - WIND_AXIS_TITLE_END_GAP).roundToPx()
+    }
+    val chartTexts = remember(
+        displayUnits, labels, axisStyle, smallAxisStyle, textMeasurer, legendKeys, axisTitleMaxWidth,
+    ) {
+        textMeasurer.measureWindChartTexts(
+            displayUnits, labels, axisStyle, smallAxisStyle, legendKeys, axisTitleMaxWidth,
+        )
     }
     val hourLabels = remember(chart.hours, timeLabelStyle, textMeasurer) {
         chart.hours.map { textMeasurer.measureCanvasText(formatPaddedInt(it, minimumDigits = 2), timeLabelStyle) }
     }
+    // Geometry, glyphs, legend and background are laid out for the canvas size they are drawn at, once per size.
+    // Frames ask with the size they draw at, so the first frame and the first one after a resize are complete; the
+    // cursor and hit tests read the same layout at the size the composition and the pointer input know. Crosshair
+    // moves reuse all of it, the background included, the costliest part of a frame. The plot height follows the
+    // pill height through the 10 m row.
+    val layoutCache = remember(
+        chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, speedLabels, maxPillWidth, chartTexts, density,
+    ) {
+        WindChartLayoutCache { size ->
+            val g = WindChartGeometry(
+                width = size.width,
+                height = size.height,
+                hourCount = chart.hours.size,
+                density = density.density,
+                fontScale = density.fontScale,
+                maxPillWidth = maxPillWidth,
+                pillHeight = speedLabels.pillHeight,
+            )
+            WindChartLayout(
+                geometry = g,
+                glyphs = buildWindGlyphs(
+                    chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, speedLabels, g,
+                ),
+                legend = WindLegendLayout(chartTexts, size.width, density),
+            ) {
+                buildWindBackground(chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, g)
+            }
+        }
+    }
+    val chartLayout = layoutCache[canvasSize.toSize()]
     val cursor = crosshairPos?.let { pos ->
-        resolveWindCursor(pos, chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, geometry, glyphs)
+        resolveWindCursor(pos, chart.hours, profileByHour, elevationKm, effectiveTopAltitudeKm, chartLayout)
     }
     val tooltipLines = cursor?.let { windTooltipLines(it, displayUnits, labels) }.orEmpty()
-    // Measured once per readout, not on every frame.
-    val tooltipLayouts = remember(tooltipLines, tooltipStyle, textMeasurer) {
-        tooltipLines.map { textMeasurer.measureCanvasText(it, tooltipStyle) }
+    // Measured once per readout and canvas width, not on every frame. A line too wide for the canvas wraps.
+    val tooltipLayouts = remember(tooltipLines, tooltipStyle, textMeasurer, canvasSize.width, density) {
+        val maxTextWidth = with(density) {
+            canvasSize.width - 2f * (WIND_TOOLTIP_MARGIN + WIND_TOOLTIP_PADDING_H).toPx()
+        }.toInt()
+        tooltipLines.map { textMeasurer.measureTooltipLine(it, tooltipStyle, maxTextWidth) }
     }
     // The pointer handlers below are installed once (keyed on Unit) and read every value that can change through
     // these states, so they always act on the current day, altitude range, layout and callback.
     val latestChart = rememberUpdatedState(chart)
     val latestVisibleTopAltitudeKm = rememberUpdatedState(visibleTopAltitudeKm)
     val latestOnVisibleTopAltitudeChange = rememberUpdatedState(onVisibleTopAltitudeChange)
-    val latestGeometry = rememberUpdatedState(geometry)
+    val latestLayoutCache = rememberUpdatedState(layoutCache)
 
     // Back dismisses the tap overlay (crosshair tooltip) first, before navigating away.
     overlayBackHandler(cursor != null) {
@@ -286,11 +313,13 @@ private fun WindChartCanvas(
                 stateDescription = if (cursor != null) "cursor" else "idle"
             }
             .pointerInput(Unit) {
+                // Hit tests use the layout of the canvas size this scope reports, the size frames draw at.
+                val geometry = { latestLayoutCache.value[size.toSize()].geometry }
                 detectWindCursorGestures(
-                    ownsGestureAt = { latestGeometry.value.cursorAreaContains(it) },
-                    clampToOwnedArea = { latestGeometry.value.clampToCursorArea(it) },
+                    ownsGestureAt = { geometry().cursorAreaContains(it) },
+                    clampToOwnedArea = { geometry().clampToCursorArea(it) },
                     onCursorMove = { position ->
-                        crosshair = position?.let { WindCrosshair(it, latestChart.value) }
+                        crosshair = position?.let { WindCrosshair(it, latestChart.value, size) }
                     },
                 )
             }
@@ -303,10 +332,9 @@ private fun WindChartCanvas(
     ) {
         drawRect(color = surfaceColor, size = size)
 
-        val g = WindChartGeometry(
-            size.width, size.height, chart.hours.size, density.density, density.fontScale, maxPillWidth,
-            speedLabels.pillHeight,
-        )
+        // The layout for the size this frame draws at; the composition's own once a resize has reached it.
+        val drawn = layoutCache[size]
+        val g = drawn.geometry
         val plotLeft = g.plotLeft
         val plotTop = 0f
         val plotRight = size.width
@@ -328,9 +356,7 @@ private fun WindChartCanvas(
         val columnWidth = g.columnWidth
         // ── Interpolated wind-speed background ────────────────────
         // The background and cursor use the same vector interpolation at each hour and altitude.
-        backgroundCache.strips(size) {
-            buildWindBackground(chart.hours, profileByHour, minAltitudeKm, effectiveTopAltitudeKm, g)
-        }.forEach { strip ->
+        drawn.backgroundStrips.forEach { strip ->
             drawRect(color = strip.color, topLeft = strip.topLeft, size = strip.size)
         }
 
@@ -379,21 +405,28 @@ private fun WindChartCanvas(
         )
 
         // Source glyphs sit at their true hourly height, above the CCL and 0 °C lines.
-        glyphs.all.forEach { glyph ->
+        drawn.glyphs.all.forEach { glyph ->
             drawWindGlyph(glyph, speedLabels.noData, onSurfaceColor, surfaceColor)
         }
 
         // ── Left axis ─────────────────────────────────────────────
+        // A title that wraps onto a second line, or needs more room above its baseline at large font scales, moves
+        // the highest altitude label that can show down by as much.
+        val axisTitle = chartTexts.axisTitle
+        val axisTitleBaseline = max(WIND_AXIS_TITLE_BASELINE.toPx(), axisTitle.firstBaseline)
+        val axisTitleGrowth = (axisTitleBaseline - WIND_AXIS_TITLE_BASELINE.toPx()) + axisTitle.extraLinesHeight()
+        val axisLabelsTop = WIND_AXIS_LABELS_TOP.toPx() + axisTitleGrowth
+        val axisTextLeft = WIND_AXIS_TEXT_INSET.toPx()
         altitudeLabels.forEach { label ->
             val y = altitudeToY(label.altitudeKm, minAltitudeKm, effectiveTopAltitudeKm, plotTop, plotBottom)
-            if (y >= 24.dp.toPx()) {
-                drawMeasuredText(label.layout, 8.dp.toPx(), min(y + 4.dp.toPx(), plotBottom - 2.dp.toPx()))
+            if (y >= axisLabelsTop) {
+                drawMeasuredText(label.layout, axisTextLeft, min(y + 4.dp.toPx(), plotBottom - 2.dp.toPx()))
             }
         }
-        drawMeasuredText(chartTexts.axisTitle, 8.dp.toPx(), 15.dp.toPx())
-        drawMeasuredText(chartTexts.surfaceRowTitle, 8.dp.toPx(), plotBottom + g.surfaceRowHeight / 2f + 4.dp.toPx())
+        drawMeasuredText(axisTitle, axisTextLeft, axisTitleBaseline)
+        drawMeasuredText(chartTexts.surfaceRowTitle, axisTextLeft, plotBottom + g.surfaceRowHeight / 2f + 4.dp.toPx())
 
-        drawWindLegend(chartTexts, g)
+        drawWindLegend(chartTexts, g, drawn.legend)
 
         // ── Hours ─────────────────────────────────────────────────
         val timeBaseline = size.height - 4.dp.toPx()
@@ -404,71 +437,108 @@ private fun WindChartCanvas(
         }
 
         // ── Crosshair overlay ──────────────────────────────────
-        cursor?.let { selected ->
-            // The reticle sits on the selected hour's column, on the snapped glyph when there is one, and on the
-            // drawn 10 m glyph in the 10 m row, instead of the raw finger position.
-            val cx = selected.x
-            val cy = selected.y
-
-            val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
-            drawLine(
-                color = onSurfaceColor.copy(alpha = 0.5f),
-                start = Offset(cx, plotTop),
-                end = Offset(cx, plotBottom + g.surfaceRowHeight),
-                strokeWidth = 1.dp.toPx(),
-                pathEffect = dash,
-            )
-            drawLine(
-                color = onSurfaceColor.copy(alpha = 0.5f),
-                start = Offset(plotLeft, cy),
-                end = Offset(plotRight, cy),
-                strokeWidth = 1.dp.toPx(),
-                pathEffect = dash,
-            )
-
-            val reticleR = 12.dp.toPx()
-            drawCircle(
-                color = onSurfaceColor.copy(alpha = 0.75f),
-                radius = reticleR,
-                center = Offset(cx, cy),
-                style = Stroke(width = 1.5.dp.toPx()),
-            )
-
-            val lineH = 12.sp.toPx() * 1.3f
-            val maxTextW = tooltipLayouts.maxOfOrNull { it.size.width.toFloat() } ?: 0f
-            val padH = 8.dp.toPx()
-            val padV = 6.dp.toPx()
-            val gap = 6.dp.toPx()
-            val ttW = maxTextW + padH * 2
-            val ttH = lineH * tooltipLayouts.size + padV * 2
-            // Prefer the right side of the finger; flip left near the edge.
-            val ttX = if (cx + reticleR + gap + ttW <= plotRight - 4.dp.toPx()) {
-                cx + reticleR + gap
-            } else {
-                max(plotLeft + 4.dp.toPx(), cx - reticleR - gap - ttW)
-            }
-            val ttY = (cy - ttH - reticleR).let { above ->
-                if (above >= plotTop + 4.dp.toPx()) above else cy + reticleR
-            }.coerceIn(plotTop, max(plotTop, plotBottom + g.surfaceRowHeight - ttH))
-
-            drawRoundRect(
-                color = surfaceColor.copy(alpha = 0.95f),
-                topLeft = Offset(ttX, ttY),
-                size = Size(ttW, ttH),
-                cornerRadius = CornerRadius(6.dp.toPx()),
-            )
-            drawRoundRect(
-                color = onSurfaceColor.copy(alpha = 0.3f),
-                topLeft = Offset(ttX, ttY),
-                size = Size(ttW, ttH),
-                cornerRadius = CornerRadius(6.dp.toPx()),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-            tooltipLayouts.forEachIndexed { idx, layout ->
-                drawMeasuredText(layout, ttX + padH, ttY + padV + (idx + 1) * lineH - lineH * 0.15f)
-            }
+        // The cursor was resolved on the composition's layout. A frame drawn at another size, the first one after a
+        // resize (which drops the cursor), leaves it out.
+        if (cursor != null && drawn === chartLayout) {
+            drawWindCursor(cursor, tooltipLayouts, g, onSurfaceColor, surfaceColor)
         }
     }
+}
+
+/**
+ * The crosshair of [cursor] and its readout [tooltip]. The vertical line runs down the hour's column, where the plot
+ * draws its arrows, so it holds still while the cursor moves between the plot and the 10 m row of one hour; only the
+ * reticle follows a 10 m glyph that a column stacking its pills moves off the column. The readout sits beside the
+ * reticle ([windTooltipLeft]), above it or, near the top, below it.
+ */
+private fun DrawScope.drawWindCursor(
+    cursor: WindCursor,
+    tooltip: List<TextLayoutResult>,
+    g: WindChartGeometry,
+    foreground: Color,
+    surface: Color,
+) {
+    val cursorAreaBottom = g.plotBottom + g.surfaceRowHeight
+    val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
+    drawLine(
+        color = foreground.copy(alpha = 0.5f),
+        start = Offset(cursor.x, 0f),
+        end = Offset(cursor.x, cursorAreaBottom),
+        strokeWidth = 1.dp.toPx(),
+        pathEffect = dash,
+    )
+    drawLine(
+        color = foreground.copy(alpha = 0.5f),
+        start = Offset(g.plotLeft, cursor.y),
+        end = Offset(size.width, cursor.y),
+        strokeWidth = 1.dp.toPx(),
+        pathEffect = dash,
+    )
+
+    val reticleX = cursor.reticleX
+    val reticleR = 12.dp.toPx()
+    drawCircle(
+        color = foreground.copy(alpha = 0.75f),
+        radius = reticleR,
+        center = Offset(reticleX, cursor.y),
+        style = Stroke(width = 1.5.dp.toPx()),
+    )
+
+    val lineH = 12.sp.toPx() * 1.3f
+    val maxTextW = tooltip.maxOfOrNull { it.size.width.toFloat() } ?: 0f
+    val padH = WIND_TOOLTIP_PADDING_H.toPx()
+    val padV = 6.dp.toPx()
+    val gap = 6.dp.toPx()
+    val ttW = maxTextW + padH * 2
+    // A line wrapped at the canvas width adds the height of its further lines.
+    val ttH = lineH * tooltip.size + tooltip.fold(0f) { sum, layout -> sum + layout.extraLinesHeight() } + padV * 2
+    val ttX = windTooltipLeft(
+        beside = (reticleX - reticleR - gap)..(reticleX + reticleR + gap),
+        width = ttW,
+        plot = g.plotLeft..size.width,
+        margin = WIND_TOOLTIP_MARGIN.toPx(),
+    )
+    val ttY = (cursor.y - ttH - reticleR).let { above ->
+        if (above >= 4.dp.toPx()) above else cursor.y + reticleR
+    }.coerceIn(0f, max(0f, cursorAreaBottom - ttH))
+
+    drawRoundRect(
+        color = surface.copy(alpha = 0.95f),
+        topLeft = Offset(ttX, ttY),
+        size = Size(ttW, ttH),
+        cornerRadius = CornerRadius(6.dp.toPx()),
+    )
+    drawRoundRect(
+        color = foreground.copy(alpha = 0.3f),
+        topLeft = Offset(ttX, ttY),
+        size = Size(ttW, ttH),
+        cornerRadius = CornerRadius(6.dp.toPx()),
+        style = Stroke(width = 1.dp.toPx()),
+    )
+    var wrappedAbove = 0f
+    tooltip.forEachIndexed { idx, layout ->
+        drawMeasuredText(layout, ttX + padH, ttY + padV + (idx + 1) * lineH - lineH * 0.15f + wrappedAbove)
+        wrappedAbove += layout.extraLinesHeight()
+    }
+}
+
+/**
+ * Left edge of a readout [width] wide beside the reticle, which spans [beside] with its gap: right of it where that
+ * fits the [plot], otherwise left of it but not over the altitude axis. Either way the readout then keeps [margin]
+ * inside the canvas, which ends where the plot ends, and moves over the axis column where only that leaves room.
+ */
+internal fun windTooltipLeft(
+    beside: ClosedFloatingPointRange<Float>,
+    width: Float,
+    plot: ClosedFloatingPointRange<Float>,
+    margin: Float,
+): Float {
+    val preferred = if (beside.endInclusive + width <= plot.endInclusive - margin) {
+        beside.endInclusive
+    } else {
+        max(plot.start + margin, beside.start - width)
+    }
+    return preferred.coerceAtMost(plot.endInclusive - margin - width).coerceAtLeast(margin)
 }
 
 /**
@@ -563,11 +633,18 @@ private class WindChartGeometry(
         cursorArea?.let { Offset(it.clampX(pos.x), it.clampY(pos.y)) } ?: pos
 }
 
-/** Where the cursor was put down, and on which chart: a cursor from another chart (another day) is not shown. */
-private class WindCrosshair(
+/**
+ * Where the cursor was put down, on which chart (day) and at which canvas size. It is shown on that chart at that
+ * size only. Being a value, a drag clamped onto the same position stores an equal crosshair, which does not recompose.
+ */
+private data class WindCrosshair(
     val position: Offset,
     val chart: WindForecastChartUiModel,
-)
+    val canvasSize: IntSize,
+) {
+    fun belongsTo(chart: WindForecastChartUiModel, canvasSize: IntSize): Boolean =
+        this.canvasSize == canvasSize && this.chart == chart
+}
 
 /** A measured speed label and the pill drawn around it. */
 private class WindPillLabel(
@@ -627,7 +704,7 @@ private class WindAxisLabel(
 
 /** Axis titles and legend labels, laid out once for their texts, units and styles, so that frames only draw them. */
 private class WindChartTexts(
-    /** "km ASL" or "kft ASL" at the top of the altitude axis. */
+    /** "km ASL" or "kft ASL" at the top of the altitude axis, on two lines where one does not fit the axis column. */
     val axisTitle: TextLayoutResult,
     /** "10 m" beside the 10 m row. */
     val surfaceRowTitle: TextLayoutResult,
@@ -645,8 +722,9 @@ private fun TextMeasurer.measureWindChartTexts(
     axisStyle: TextStyle,
     smallStyle: TextStyle,
     legendKeys: List<Pair<String, Color>>,
+    axisTitleMaxWidth: Int,
 ): WindChartTexts = WindChartTexts(
-    axisTitle = measureCanvasText("${altitudeAxisUnitLabel(units)} ${labels.aboveSeaLevel}", smallStyle),
+    axisTitle = measureAxisTitle(units, labels, smallStyle, axisTitleMaxWidth),
     surfaceRowTitle = measureCanvasText("10 m", axisStyle),
     legendScale = WIND_LEGEND_SPEEDS_KMH.map { speedKmh ->
         measureCanvasText(formatWindSpeed(speedKmh, units, withUnit = false), smallStyle)
@@ -657,20 +735,38 @@ private fun TextMeasurer.measureWindChartTexts(
     },
 )
 
-/** Draws a measured line with its baseline at [baselineY], placed like [drawCanvasText] places it. */
-private fun DrawScope.drawMeasuredText(
-    layout: TextLayoutResult,
-    x: Float,
-    baselineY: Float,
-    anchor: CanvasTextAnchor = CanvasTextAnchor.START,
-) {
-    val left = when (anchor) {
-        CanvasTextAnchor.START -> x
-        CanvasTextAnchor.CENTER -> x - layout.size.width / 2f
-        CanvasTextAnchor.END -> x - layout.size.width
-    }
-    drawText(textLayoutResult = layout, topLeft = Offset(left, baselineY - layout.firstBaseline))
+/** The altitude axis title, "km ASL", with the height word where [labels] put it and [separator] before or after it. */
+internal fun windAltitudeAxisTitle(units: DisplayUnits, labels: WindChartLabels, separator: String = " "): String =
+    labels.withHeightWord(altitudeAxisUnitLabel(units), labels.aboveSeaLevel, separator)
+
+/**
+ * The altitude axis title on one line where it fits [maxWidth]; otherwise the unit and the height word on two lines,
+ * the way a long translated height word reads best in the narrow axis column. A line still too wide wraps, and the
+ * second line ends in an ellipsis.
+ */
+private fun TextMeasurer.measureAxisTitle(
+    units: DisplayUnits,
+    labels: WindChartLabels,
+    style: TextStyle,
+    maxWidth: Int,
+): TextLayoutResult {
+    val oneLine = measureCanvasText(windAltitudeAxisTitle(units, labels), style)
+    if (oneLine.size.width <= maxWidth) return oneLine
+    return measure(
+        text = windAltitudeAxisTitle(units, labels, separator = "\n"),
+        style = style,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 2,
+        constraints = Constraints(maxWidth = maxWidth.coerceAtLeast(0)),
+    )
 }
+
+/** A readout line, wrapped where it is wider than [maxWidth]; one that fits is laid out as by [measureCanvasText]. */
+private fun TextMeasurer.measureTooltipLine(text: String, style: TextStyle, maxWidth: Int): TextLayoutResult =
+    measure(text = text, style = style, constraints = Constraints(maxWidth = maxWidth.coerceAtLeast(0)))
+
+/** Height of a measured text's lines below its first one: 0 for a single line. */
+private fun TextLayoutResult.extraLinesHeight(): Float = getLineBottom(lineCount - 1) - getLineBottom(0)
 
 /**
  * A glyph ready to draw: the arrow and speed pill of [sample], or the "no data" mark of the 10 m row when [sample]
@@ -702,8 +798,9 @@ private class WindGlyphs(
 )
 
 /**
- * A cursor readout; [x] and [y] are where the reticle sits: on the hour's column, on the snapped glyph when there
- * is one, and on the drawn 10 m glyph in the 10 m row.
+ * A cursor readout. [x] is the hour's column, where the plot draws its arrows and the crosshair's vertical line
+ * runs; the reticle sits at [reticleX], [y]: on the column, at the snapped glyph's height when there is one, and on
+ * the drawn 10 m glyph in the 10 m row, which a column that stacks its pills can move off the column.
  */
 internal data class WindCursor(
     val hour: Int,
@@ -712,6 +809,7 @@ internal data class WindCursor(
     val isSurface10m: Boolean,
     val x: Float,
     val y: Float,
+    val reticleX: Float = x,
 )
 
 /**
@@ -839,9 +937,9 @@ private fun resolveWindCursor(
     profiles: Map<Int, List<WindSample>>,
     elevationKm: Float,
     topAltitudeKm: Float,
-    g: WindChartGeometry,
-    glyphs: WindGlyphs,
+    chartLayout: WindChartLayout,
 ): WindCursor? {
+    val g = chartLayout.geometry
     if (!g.cursorAreaContains(pos)) return null
     val hourIndex = windHourIndexAtX(pos.x, g.plotLeft, g.columnWidth, hours.size) ?: return null
     val hour = hours[hourIndex]
@@ -850,8 +948,9 @@ private fun resolveWindCursor(
     if (pos.y > g.plotBottom) {
         val surface = profile.firstOrNull { it.isSurface10m }
         // On the drawn 10 m glyph: a column that stacks its pills can move its 10 m arrow off the column center.
-        val reticle = glyphs.surfaceByHourIndex[hourIndex]?.reticleCenter ?: Offset(x, g.surfaceRowCenterY)
-        return WindCursor(hour, elevationKm, surface, isSurface10m = true, x = reticle.x, y = reticle.y)
+        val reticle = chartLayout.glyphs.surfaceByHourIndex[hourIndex]?.reticleCenter
+            ?: Offset(x, g.surfaceRowCenterY)
+        return WindCursor(hour, elevationKm, surface, isSurface10m = true, x = x, y = reticle.y, reticleX = reticle.x)
     }
     // Snap to the glyph under the finger, at its arrow or its pill, so the readout reports that exact model value.
     // Columns between glyph columns snap to the glyphs they would draw beside their arrows; a column that stacks its
@@ -909,20 +1008,34 @@ private class WindBackgroundStrip(
 )
 
 /**
- * Keeps the background strips for one canvas size, so redrawing for a crosshair move does not interpolate
- * every strip again. Create a new cache when the chart, profiles, altitude range, density or pill height (which
- * sets the plot height through the 10 m row) change.
+ * The chart laid out for one canvas size: geometry, glyphs and legend, and the interpolated background, which is
+ * built when a frame first draws it.
  */
-private class WindBackgroundCache {
-    private var cachedSize = Size.Unspecified
-    private var cachedStrips: List<WindBackgroundStrip> = emptyList()
+private class WindChartLayout(
+    val geometry: WindChartGeometry,
+    val glyphs: WindGlyphs,
+    val legend: WindLegendLayout,
+    buildBackground: () -> List<WindBackgroundStrip>,
+) {
+    val backgroundStrips: List<WindBackgroundStrip> by lazy(LazyThreadSafetyMode.NONE, buildBackground)
+}
 
-    fun strips(size: Size, build: () -> List<WindBackgroundStrip>): List<WindBackgroundStrip> {
-        if (size != cachedSize) {
-            cachedStrips = build()
+/**
+ * Keeps the layout [build] makes for the last canvas size asked for, so that frames, cursor moves and hit tests at
+ * one size share it. Create a new cache when anything else [build] reads changes: the chart, profiles, altitude
+ * range, speed labels, chart texts or density.
+ */
+private class WindChartLayoutCache(private val build: (Size) -> WindChartLayout) {
+    private var cachedSize = Size.Unspecified
+    private var cached: WindChartLayout? = null
+
+    operator fun get(size: Size): WindChartLayout {
+        val hit = cached
+        if (hit != null && size == cachedSize) return hit
+        return build(size).also {
+            cached = it
             cachedSize = size
         }
-        return cachedStrips
     }
 }
 
@@ -961,12 +1074,15 @@ private fun buildWindBackground(
     }
 }
 
-/** The cursor readout: the hour and height line, then the value line; the chart's description reads them out. */
+/**
+ * The cursor readout: the hour and height line, then the value line; the chart's description reads them out. The
+ * height word goes where [labels] put it: "10 m AGL" in English.
+ */
 internal fun windTooltipLines(cursor: WindCursor, units: DisplayUnits, labels: WindChartLabels): List<String> {
     val altitude = if (cursor.isSurface10m) {
-        "10 m ${labels.aboveGround}"
+        labels.withHeightWord("10 m", labels.aboveGround)
     } else {
-        "${sourceAltitudeLabel(cursor.altitudeKm, units)} ${labels.aboveSeaLevel}"
+        labels.withHeightWord(sourceAltitudeLabel(cursor.altitudeKm, units), labels.aboveSeaLevel)
     }
     val sample = cursor.sample
     return listOf(
@@ -1104,45 +1220,56 @@ private fun DrawScope.drawLevelLine(
 }
 
 /**
- * One legend line: speed scale, then CCL and 0 °C line keys on the right. Every swatch is drawn; speed labels too
- * wide for their swatches at large font scales or with m/s values are thinned out and kept clear of the unit label
- * and the line keys ([windLegendLabelCenters]).
+ * The legend's horizontal layout across a canvas [width] wide: the speed scale from the plot's left edge to the CCL
+ * and 0 °C keys, and where its speed labels go. Labels too wide for their swatches at large font scales or with m/s
+ * values are thinned out and kept clear of the unit label and the line keys ([windLegendLabelCenters]).
  */
+private class WindLegendLayout(texts: WindChartTexts, width: Float, density: Density) {
+    val scaleLeft = with(density) { WIND_AXIS_WIDTH.toPx() }
+    val keyWidth = with(density) { WIND_LEGEND_KEY_WIDTH.toPx() }
+    val keyInset = with(density) { WIND_LEGEND_KEY_INSET.toPx() }
+    val scaleRight = width - texts.legendKeys.size * keyWidth
+    val itemWidth = (scaleRight - scaleLeft) / WIND_LEGEND_SPEEDS_KMH.size
+    val unitLeft = with(density) { WIND_AXIS_TEXT_INSET.toPx() }
+
+    /** X centers of the speed labels that are drawn, by legend item index. */
+    val labelCenters: Map<Int, Float> = with(density) {
+        val labelGap = WIND_LEGEND_LABEL_GAP.toPx()
+        val labelsRight = if (texts.legendKeys.isEmpty()) width else scaleRight + keyInset - labelGap
+        windLegendLabelCenters(
+            labelWidths = texts.legendScale.map { it.size.width.toFloat() },
+            left = scaleLeft,
+            itemWidth = itemWidth,
+            bounds = (unitLeft + texts.legendUnit.size.width + labelGap)..labelsRight,
+            gap = labelGap,
+        )
+    }
+}
+
+/** One legend line laid out by [legend]: speed scale, then CCL and 0 °C line keys on the right. */
 private fun DrawScope.drawWindLegend(
     texts: WindChartTexts,
     g: WindChartGeometry,
+    legend: WindLegendLayout,
 ) {
     val top = g.plotBottom + g.surfaceRowHeight
-    val keyWidth = WIND_LEGEND_KEY_WIDTH.toPx()
-    val keyInset = WIND_LEGEND_KEY_INSET.toPx()
-    val scaleRight = size.width - texts.legendKeys.size * keyWidth
-    val itemWidth = (scaleRight - g.plotLeft) / WIND_LEGEND_SPEEDS_KMH.size
+    val itemWidth = legend.itemWidth
     val swatchTop = top + 5.dp.toPx()
     val labelBaseline = top + g.legendHeight - WIND_LEGEND_BASELINE_INSET.toPx()
-    val unitLeft = 8.dp.toPx()
-    val labelGap = WIND_LEGEND_LABEL_GAP.toPx()
-    val labelsRight = if (texts.legendKeys.isEmpty()) size.width else scaleRight + keyInset - labelGap
-    val labelCenters = windLegendLabelCenters(
-        labelWidths = texts.legendScale.map { it.size.width.toFloat() },
-        left = g.plotLeft,
-        itemWidth = itemWidth,
-        bounds = (unitLeft + texts.legendUnit.size.width + labelGap)..labelsRight,
-        gap = labelGap,
-    )
     WIND_LEGEND_SPEEDS_KMH.forEachIndexed { index, speed ->
-        val x = g.plotLeft + index * itemWidth
+        val x = legend.scaleLeft + index * itemWidth
         drawRoundRect(
             windSpeedColor(speed).copy(alpha = 0.92f),
             Offset(x + itemWidth * 0.15f, swatchTop),
             Size(itemWidth * 0.7f, 6.dp.toPx()), CornerRadius(2.dp.toPx()),
         )
-        labelCenters[index]?.let { centerX ->
+        legend.labelCenters[index]?.let { centerX ->
             drawMeasuredText(texts.legendScale[index], centerX, labelBaseline, CanvasTextAnchor.CENTER)
         }
     }
-    drawMeasuredText(texts.legendUnit, unitLeft, labelBaseline)
+    drawMeasuredText(texts.legendUnit, legend.unitLeft, labelBaseline)
     texts.legendKeys.forEachIndexed { index, (layout, color) ->
-        val x = scaleRight + index * keyWidth + keyInset
+        val x = legend.scaleRight + index * legend.keyWidth + legend.keyInset
         drawLine(
             color, Offset(x, swatchTop + 3.dp.toPx()), Offset(x + 30.dp.toPx(), swatchTop + 3.dp.toPx()),
             strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round,
@@ -1210,14 +1337,28 @@ private val WIND_TIME_AXIS_HEIGHT = 16.dp
 private val WIND_SURFACE_ROW_PADDING = 8.dp
 private val WIND_LEGEND_BASELINE_INSET = 6.dp
 
+// Left of the altitude axis texts and the legend's unit label. The axis title keeps WIND_AXIS_TITLE_END_GAP clear of
+// the plot; its first baseline sits WIND_AXIS_TITLE_BASELINE down, and altitude labels show from
+// WIND_AXIS_LABELS_TOP down, further where the title takes more room.
+private val WIND_AXIS_TEXT_INSET = 8.dp
+private val WIND_AXIS_TITLE_END_GAP = 2.dp
+private val WIND_AXIS_TITLE_BASELINE = 15.dp
+private val WIND_AXIS_LABELS_TOP = 24.dp
+
+// The cursor readout keeps WIND_TOOLTIP_MARGIN inside the canvas edges, its text WIND_TOOLTIP_PADDING_H inside its box.
+private val WIND_TOOLTIP_MARGIN = 4.dp
+private val WIND_TOOLTIP_PADDING_H = 8.dp
+
 // Legend speed scale steps (km/h), and the CCL and 0 °C keys right of it: each key's line and label start
 // WIND_LEGEND_KEY_INSET into its slot.
 private val WIND_LEGEND_SPEEDS_KMH = listOf(0f, 5f, 10f, 15f, 20f, 30f, 40f, 50f, 60f)
 private val WIND_LEGEND_KEY_WIDTH = 44.dp
 private val WIND_LEGEND_KEY_INSET = 6.dp
 
-// Least room between two legend labels, and between a label and the unit label or a line key.
-private val WIND_LEGEND_LABEL_GAP = 1.dp
+// Least room between two legend labels, and between a label and the unit label or a line key: about half a
+// character of the 9 sp monospace labels, so that m/s labels on a narrow phone are thinned out rather than drawn
+// 2 dp apart, while km/h labels keep at least 12 dp between them at 1x on a 360 dp phone.
+private val WIND_LEGEND_LABEL_GAP = 3.dp
 
 /** Height of a row of axis text: [base] at the default font scale, growing proportionally above it. */
 private fun windTextRowHeight(base: Dp, density: Float, fontScale: Float): Float =
@@ -1295,7 +1436,8 @@ private fun WindForecastViewPhonePreview() {
 }
 
 // A narrow phone with m/s labels, the widest pills: the stacked 21h column keeps its pills inside the chart, and
-// its 10 m glyph stays on one line with a shortened arrow.
+// its 10 m glyph stays on one line with a shortened arrow. The legend draws every second speed label, as the
+// four-character ones would sit closer than WIND_LEGEND_LABEL_GAP.
 @Preview(name = "Wind Phone m/s", showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 private fun WindForecastViewPhoneMpsPreview() {
@@ -1308,7 +1450,8 @@ private fun WindForecastViewPhoneMpsPreview() {
 }
 
 // Doubled font scale: taller pills spread the levels and keep edge pills inside the plot. The stacked 21h column
-// has no room for a readable 10 m arrow, so its 10 m row shows the pill alone.
+// has no room for a readable 10 m arrow, so its 10 m row shows the pill alone. The axis title takes two lines, and
+// the legend draws every second speed label.
 @Preview(name = "Wind Phone Large Font", showBackground = true, widthDp = 360, heightDp = 640, fontScale = 2f)
 @Composable
 private fun WindForecastViewPhoneLargeFontPreview() {
@@ -1351,6 +1494,31 @@ private fun WindForecastViewDarkPreview() {
     ForecastPreviewTheme(darkTheme = true) {
         WindForecastView(
             uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
+        )
+    }
+}
+
+// Spanish words at 1.3x font scale on a narrow phone: the axis title, too wide for the axis column on one line,
+// puts its height word under the unit instead of running into the plot.
+@Preview(name = "Wind Phone Spanish Large Font", showBackground = true, widthDp = 360, heightDp = 640, fontScale = 1.3f)
+@Composable
+private fun WindForecastViewPhoneSpanishLargeFontPreview() {
+    ForecastPreviewTheme {
+        WindForecastView(
+            uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
+            labels = ForecastPreviewData.spanishWindChartLabels,
+        )
+    }
+}
+
+// Chinese words, which go before the height: the axis title starts with the sea-level word.
+@Preview(name = "Wind Phone Chinese", showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+private fun WindForecastViewPhoneChinesePreview() {
+    ForecastPreviewTheme {
+        WindForecastView(
+            uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
+            labels = ForecastPreviewData.chineseWindChartLabels,
         )
     }
 }

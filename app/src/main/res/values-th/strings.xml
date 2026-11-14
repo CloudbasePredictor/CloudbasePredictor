@@ -95,7 +95,7 @@
     <string name="forecast_map_update_too_frequent">ไม่ได้อัปเดตการพยากรณ์: รอ %1$.1f วินาทีก่อนเลื่อนแผนที่อีกครั้ง</string>
     <string name="forecast_map_update_too_close">ไม่ได้อัปเดตการพยากรณ์: เลื่อนออกจากจุดพยากรณ์ปัจจุบันอย่างน้อย %1$d ม.</string>
 
-    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
     <string name="wind_chart_no_data">ไม่มีข้อมูล</string>
     <string name="wind_chart_above_sea_level">รทก.</string>
     <string name="wind_chart_above_ground">เหนือพื้นดิน</string>

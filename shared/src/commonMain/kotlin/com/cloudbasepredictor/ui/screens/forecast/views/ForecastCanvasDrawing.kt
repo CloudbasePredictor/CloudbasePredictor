@@ -35,8 +35,17 @@ internal fun DrawScope.drawCanvasText(
     baselineY: Float,
     style: TextStyle,
     anchor: CanvasTextAnchor = CanvasTextAnchor.START,
-): TextLayoutResult {
-    val layout = textMeasurer.measureCanvasText(text, style)
+): TextLayoutResult = textMeasurer.measureCanvasText(text, style).also { layout ->
+    drawMeasuredText(layout, x, baselineY, anchor)
+}
+
+/** Draws an already measured text with its first baseline at [baselineY], placed like [drawCanvasText] places it. */
+internal fun DrawScope.drawMeasuredText(
+    layout: TextLayoutResult,
+    x: Float,
+    baselineY: Float,
+    anchor: CanvasTextAnchor = CanvasTextAnchor.START,
+) {
     val left = when (anchor) {
         CanvasTextAnchor.START -> x
         CanvasTextAnchor.CENTER -> x - layout.size.width / 2f
@@ -46,7 +55,6 @@ internal fun DrawScope.drawCanvasText(
         textLayoutResult = layout,
         topLeft = Offset(left, baselineY - layout.firstBaseline),
     )
-    return layout
 }
 
 internal fun formatFixedDecimal(

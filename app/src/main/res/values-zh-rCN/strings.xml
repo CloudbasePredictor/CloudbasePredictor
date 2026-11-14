@@ -95,7 +95,7 @@
     <string name="forecast_map_update_too_frequent">预报未更新：请等待 %1$.1f 秒后再移动地图。</string>
     <string name="forecast_map_update_too_close">预报未更新：请从当前预报点移动至少 %1$d 米。</string>
 
-    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep suffixes short -->
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
     <string name="wind_chart_no_data">无数据</string>
     <string name="wind_chart_above_sea_level">海拔</string>
     <string name="wind_chart_above_ground">离地</string>

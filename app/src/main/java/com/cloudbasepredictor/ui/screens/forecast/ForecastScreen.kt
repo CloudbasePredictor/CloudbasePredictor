@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -388,11 +389,17 @@ private fun ForecastReadyContent(
                     val noData = stringResource(R.string.wind_chart_no_data)
                     val aboveSeaLevel = stringResource(R.string.wind_chart_above_sea_level)
                     val aboveGround = stringResource(R.string.wind_chart_above_ground)
+                    val wordsBeforeHeight = booleanResource(R.bool.wind_chart_words_before_height)
                     WindForecastView(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
-                        labels = remember(noData, aboveSeaLevel, aboveGround) {
-                            WindChartLabels(noData = noData, aboveSeaLevel = aboveSeaLevel, aboveGround = aboveGround)
+                        labels = remember(noData, aboveSeaLevel, aboveGround, wordsBeforeHeight) {
+                            WindChartLabels(
+                                noData = noData,
+                                aboveSeaLevel = aboveSeaLevel,
+                                aboveGround = aboveGround,
+                                wordsBeforeHeight = wordsBeforeHeight,
+                            )
                         },
                         overlayBackHandler = { enabled, onBack ->
                             BackHandler(enabled = enabled, onBack = onBack)
