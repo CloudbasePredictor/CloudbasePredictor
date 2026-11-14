@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Vorhersage nicht aktualisiert: Warte %1$.1f Sekunden, bevor du die Karte erneut bewegst.</string>
     <string name="forecast_map_update_too_close">Vorhersage nicht aktualisiert: Bewege dich mindestens %1$d m vom aktuellen Vorhersagepunkt weg.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">Keine Daten</string>
+    <string name="wind_chart_above_sea_level">ü. NN</string>
+    <string name="wind_chart_above_ground">ü. Gr.</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Heute</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Hilfe zur Windvorhersage</string>
     <string name="help_wind_summary">Die Farben der Windgeschwindigkeit reichen von blau über grün bis rot; rot markiert das Skalenmaximum (km/h):</string>
-    <string name="help_wind_model_levels_info">Markierungen am rechten Rand zeigen Höhen mit direkten Winddaten des Modells. Werte dazwischen werden für die gewählte Stunde interpoliert.</string>
+    <string name="help_wind_source_levels_info">Pfeile mit Geschwindigkeitswert markieren die Höhen, für die das Modell zu dieser Stunde Winddaten liefert.</string>
+    <string name="help_wind_surface_row_info">Die 10-m-Zeile unten im Diagramm zeigt den Wind 10 m über Grund; — bedeutet keine Daten.</string>
+    <string name="help_wind_cursor_info">Tippe oder ziehe im Diagramm, um die genauen Werte in diesen Höhen abzulesen; ≈ markiert Werte, die dazwischen interpoliert oder darüber bzw. darunter fortgeführt werden.</string>
     <string name="help_wind_moisture_title">Feuchtigkeitshinweise:</string>
     <string name="help_wind_ccl_line">Orange CCL-Linie – geschätzte Cumulus-Basis bei ausreichender Erwärmung.</string>
 

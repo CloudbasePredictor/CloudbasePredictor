@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Whether the wind chart's sea-level and above-ground words go before the height ("ASL 2357 m") instead of after it ("2357 m ASL"). -->
+    <bool name="wind_chart_words_before_height">false</bool>
+</resources>

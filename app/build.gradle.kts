@@ -10,6 +10,7 @@ plugins {
 }
 
 val requestedTasks = gradle.startParameter.taskNames
+val explicitTestClassFilter = providers.gradleProperty("android.testInstrumentationRunnerArguments.class").isPresent
 val releaseArchiveName = "CloudbasePredictor"
 val buildAbiSplitApks = requestedTasks.none { it.contains("bundle", ignoreCase = true) }
 val buildUniversalApk = buildAbiSplitApks && !providers.gradleProperty("ABI_FILTERS").isPresent
@@ -61,6 +62,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         when {
+            // An explicit -Pandroid.testInstrumentationRunnerArguments.class=... selects the tests on its own. AGP
+            // adds it to these runner arguments: a default notClass would still exclude a requested screenshot or
+            // E2E class (so nothing runs), and a default class would be a second "class" entry, which AGP rejects.
+            explicitTestClassFilter -> Unit
+
             requestedTasks.any { it.endsWith("connectedE2eTest") } ->
                 testInstrumentationRunnerArguments["class"] =
                     "com.cloudbasepredictor.e2e.ForecastModelE2eTest"

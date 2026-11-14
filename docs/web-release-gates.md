@@ -161,6 +161,22 @@ pixel metrics, browser errors, and request failures are written under
 The command requires `xvfb-run`, ImageMagick's `import` and `convert`, a working
 Playwright Chromium installation, and software OpenGL such as Mesa llvmpipe.
 
+For an explicit developer-side check of the wind chart, serve the production
+distribution locally and pass its URL:
+
+```bash
+python3 -m http.server 8080 --bind 127.0.0.1 --directory webApp/build/dist/wasmJs/productionExecutable
+npm run check:web:wind -- http://127.0.0.1:8080/
+```
+
+This non-CI check needs `npm ci` and `npx playwright install chromium`. It
+serves a sparse synthetic wind forecast derived from the simulated Brauneck
+snapshot and taps the 10 m row, source levels, interpolated, held, and missing
+values in headless Chromium at 1280x900, 390x844, and 844x390. Each tap must
+produce the matching cursor readout. At 844x390 the forecast page scrolls, so
+the check scrolls each tap target into view first. Screenshots and
+`report.json` are written under `webApp/build/reports/wind-check/`.
+
 ## Did the build actually ship?
 
 Every gate above answers *is this build good?*. None answer *did that build reach

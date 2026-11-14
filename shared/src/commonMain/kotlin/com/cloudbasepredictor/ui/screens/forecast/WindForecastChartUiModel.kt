@@ -17,12 +17,6 @@ import kotlin.math.sin
 data class WindForecastChartUiModel(
     /** Local hours of day (e.g. 6..22). */
     val hours: List<Int>,
-    /** Sorted altitude center points, km ASL. */
-    val altitudeBandsKm: List<Float>,
-    /** Altitude bands with center/bottom/top boundaries for display. */
-    val altitudeBands: List<WindAltitudeBand> = emptyList(),
-    /** Representative ASL heights where direct, non-synthetic model wind data is available. */
-    val modelLevelAltitudesKm: List<Float> = altitudeBandsKm,
     /** Grid cells with wind speed and direction per hour × altitude. */
     val cells: List<WindForecastCellUiModel>,
     /** Freezing level per hour (0 °C isotherm), km ASL. */
@@ -31,13 +25,6 @@ data class WindForecastChartUiModel(
     val cclKm: List<WindLevelMarker> = emptyList(),
     /** Hourly CCL results for all available methods and hours. */
     val cclResults: List<CclHourlyResult> = emptyList(),
-)
-
-/** Band boundaries around a data level for wind chart display. */
-data class WindAltitudeBand(
-    val centerKm: Float,
-    val bottomKm: Float,
-    val topKm: Float,
 )
 
 data class WindLevelMarker(
@@ -54,8 +41,16 @@ data class WindForecastCellUiModel(
     val speedKmh: Float,
     /** Wind direction, degrees (meteorological: 0/360=N, 90=E, 180=S, 270=W — FROM). */
     val directionDeg: Float,
+    /** True only for the explicit forecast wind at 10 m above terrain. */
+    val isSurface10m: Boolean = false,
 )
 
+/**
+ * Synthetic upper-air wind for previews and for [buildWindChartFromData] on a day without hourly points.
+ *
+ * It has no 10 m values on purpose, so its 10 m row reads "no data" instead of showing an invented surface wind;
+ * previews that show the 10 m row add their own values (see `ForecastPreviewData.windChart`).
+ */
 fun buildPlaceholderWindForecastChart(
     dayIndex: Int = 0,
     minAltitudeKm: Float = 0.4f,
@@ -102,21 +97,8 @@ fun buildPlaceholderWindForecastChart(
         }
     }
 
-    val bands = altitudes.mapIndexed { index, center ->
-        val bottom = if (index > 0) (altitudes[index - 1] + center) / 2f else center - altitudeStepKm / 2f
-        val top = if (index < altitudes.lastIndex) {
-            (center + altitudes[index + 1]) / 2f
-        } else {
-            center + altitudeStepKm / 2f
-        }
-        WindAltitudeBand(centerKm = center, bottomKm = bottom, topKm = top)
-    }
-
     return WindForecastChartUiModel(
         hours = hours,
-        altitudeBandsKm = altitudes,
-        altitudeBands = bands,
-        modelLevelAltitudesKm = altitudes,
         cells = cells,
     )
 }

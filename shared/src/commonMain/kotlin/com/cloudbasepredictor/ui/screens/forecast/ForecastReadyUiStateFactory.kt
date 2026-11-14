@@ -71,11 +71,7 @@ fun buildForecastReadyUiStateOrNull(input: ForecastRenderInput): ForecastReadyUi
             dayIndex = selection.hourlyDayIndex,
             hour = selection.stuveHour,
         ),
-        windChart = buildWindChartFromData(
-            hourlyData = input.hourlyData,
-            dayIndex = selection.hourlyDayIndex,
-            maxAltitudeKm = input.chartViewport.visibleTopAltitudeKm,
-        ),
+        windChart = buildWindChartFromData(input.hourlyData, dayIndex = selection.hourlyDayIndex),
         cloudChart = buildCloudChartFromData(input.hourlyData, dayIndex = selection.hourlyDayIndex),
         dayChips = resolvedDayChips,
         forecastText = input.forecastText ?: buildForecastSummary(

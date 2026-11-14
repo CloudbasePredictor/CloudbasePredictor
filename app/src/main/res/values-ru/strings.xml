@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Прогноз не обновлён: подождите %1$.1f с, прежде чем снова двигать карту.</string>
     <string name="forecast_map_update_too_close">Прогноз не обновлён: переместитесь не менее чем на %1$d м от текущей точки прогноза.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">Нет данных</string>
+    <string name="wind_chart_above_sea_level">н.у.м.</string>
+    <string name="wind_chart_above_ground">над землёй</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Сегодня</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Справка по прогнозу ветра</string>
     <string name="help_wind_summary">Цвета скорости ветра идут от синего через зелёный к красному; красный отмечает максимум шкалы (км/ч):</string>
-    <string name="help_wind_model_levels_info">Маркеры справа показывают высоты с прямыми данными ветра из модели. Значения между ними интерполируются для выбранного часа.</string>
+    <string name="help_wind_source_levels_info">Стрелки со значением скорости отмечают высоты, на которых у модели есть данные о ветре для этого часа.</string>
+    <string name="help_wind_surface_row_info">Строка «10 m» внизу графика показывает ветер в 10 м над землёй; — означает, что данных нет.</string>
+    <string name="help_wind_cursor_info">Нажмите или проведите по графику, чтобы узнать точные значения на этих высотах; ≈ отмечает значения, интерполированные между ними или продлённые выше или ниже них.</string>
     <string name="help_wind_moisture_title">Признаки влажности:</string>
     <string name="help_wind_ccl_line">Оранжевая линия CCL — оценочная база кучевых облаков при достаточном прогреве.</string>
 

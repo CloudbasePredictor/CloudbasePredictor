@@ -1,6 +1,7 @@
 package com.cloudbasepredictor.web.i18n
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.cloudbasepredictor.ui.screens.forecast.views.WindChartLabels
 
 /**
  * UI strings for the web app, selected by the current [WebLanguage] and provided through
@@ -104,6 +105,7 @@ class WebStrings(
     // Forecast destination
     val forecastDataAttribution: String,
     val noThermalsMessage: String,
+    val windChartLabels: WindChartLabels,
     val chooseLocationPrompt: String,
     val loadingForecastFor: String,
     val selectedLocationFallback: String,
@@ -240,6 +242,8 @@ val englishWebStrings = WebStrings(
     newLocation = "New location",
     forecastDataAttribution = "Forecast data by Open-Meteo.com",
     noThermalsMessage = "No usable thermals are forecast for this period.",
+    // The chart's own English words, which the browser wind check asserts.
+    windChartLabels = WindChartLabels(),
     chooseLocationPrompt = "Choose a location to load a soaring forecast.",
     loadingForecastFor = "Loading forecast for %s…",
     selectedLocationFallback = "selected location",
@@ -360,6 +364,7 @@ val germanWebStrings = WebStrings(
     newLocation = "Neuer Ort",
     forecastDataAttribution = "Vorhersagedaten von Open-Meteo.com",
     noThermalsMessage = "Für diesen Zeitraum wird keine nutzbare Thermik vorhergesagt.",
+    windChartLabels = WindChartLabels(noData = "Keine Daten", aboveSeaLevel = "ü. NN", aboveGround = "ü. Gr."),
     chooseLocationPrompt = "Wähle einen Ort, um eine Soaring-Vorhersage zu laden.",
     loadingForecastFor = "Vorhersage für %s wird geladen…",
     selectedLocationFallback = "ausgewählter Ort",
@@ -480,6 +485,7 @@ val spanishWebStrings = WebStrings(
     newLocation = "Nueva ubicación",
     forecastDataAttribution = "Datos del pronóstico de Open-Meteo.com",
     noThermalsMessage = "No se prevén térmicas aprovechables para este período.",
+    windChartLabels = WindChartLabels(noData = "Sin datos", aboveSeaLevel = "s.n.m.", aboveGround = "del suelo"),
     chooseLocationPrompt = "Elige una ubicación para cargar un pronóstico de vuelo.",
     loadingForecastFor = "Cargando el pronóstico de %s…",
     selectedLocationFallback = "la ubicación seleccionada",
@@ -601,6 +607,7 @@ val frenchWebStrings = WebStrings(
     newLocation = "Nouveau lieu",
     forecastDataAttribution = "Données de prévision par Open-Meteo.com",
     noThermalsMessage = "Aucune ascendance exploitable n'est prévue pour cette période.",
+    windChartLabels = WindChartLabels(noData = "Aucune donnée", aboveSeaLevel = "alt.", aboveGround = "sol"),
     chooseLocationPrompt = "Choisissez un lieu pour charger des prévisions de vol.",
     loadingForecastFor = "Chargement des prévisions pour %s…",
     selectedLocationFallback = "le lieu sélectionné",
@@ -721,6 +728,7 @@ val portugueseWebStrings = WebStrings(
     newLocation = "Novo local",
     forecastDataAttribution = "Dados de previsão por Open-Meteo.com",
     noThermalsMessage = "Não se prevê térmica aproveitável para este período.",
+    windChartLabels = WindChartLabels(noData = "Sem dados", aboveSeaLevel = "alt.", aboveGround = "do solo"),
     chooseLocationPrompt = "Escolha um local para carregar uma previsão de voo.",
     loadingForecastFor = "A carregar a previsão para %s…",
     selectedLocationFallback = "o local selecionado",
@@ -841,6 +849,7 @@ val russianWebStrings = WebStrings(
     newLocation = "Новое место",
     forecastDataAttribution = "Данные прогноза от Open-Meteo.com",
     noThermalsMessage = "На этот период пригодные термики не прогнозируются.",
+    windChartLabels = WindChartLabels(noData = "Нет данных", aboveSeaLevel = "н.у.м.", aboveGround = "над землёй"),
     chooseLocationPrompt = "Выберите место, чтобы загрузить прогноз для полётов.",
     loadingForecastFor = "Загрузка прогноза для %s…",
     selectedLocationFallback = "выбранное место",
@@ -962,6 +971,7 @@ val georgianWebStrings = WebStrings(
     newLocation = "ახალი ადგილი",
     forecastDataAttribution = "პროგნოზის მონაცემები Open-Meteo.com-ისგან",
     noThermalsMessage = "ამ პერიოდისთვის გამოსადეგი თერმიკი არ იწინასწარმეტყველება.",
+    windChartLabels = WindChartLabels(noData = "მონაცემები არ არის", aboveSeaLevel = "ASL", aboveGround = "AGL"),
     chooseLocationPrompt = "აირჩიე ადგილი, რომ ჩაიტვირთოს ფრენის პროგნოზი.",
     loadingForecastFor = "იტვირთება პროგნოზი %s-ისთვის…",
     selectedLocationFallback = "არჩეული ადგილი",
@@ -1082,6 +1092,7 @@ val thaiWebStrings = WebStrings(
     newLocation = "สถานที่ใหม่",
     forecastDataAttribution = "ข้อมูลพยากรณ์โดย Open-Meteo.com",
     noThermalsMessage = "ไม่มีการพยากรณ์กระแสอากาศร้อนที่ใช้งานได้สำหรับช่วงเวลานี้",
+    windChartLabels = WindChartLabels(noData = "ไม่มีข้อมูล", aboveSeaLevel = "รทก.", aboveGround = "เหนือพื้นดิน"),
     chooseLocationPrompt = "เลือกสถานที่เพื่อโหลดการพยากรณ์สำหรับการบิน",
     loadingForecastFor = "กำลังโหลดการพยากรณ์สำหรับ %s…",
     selectedLocationFallback = "สถานที่ที่เลือก",
@@ -1201,6 +1212,13 @@ val chineseWebStrings = WebStrings(
     newLocation = "新地点",
     forecastDataAttribution = "预报数据由 Open-Meteo.com 提供",
     noThermalsMessage = "预计此时段没有可用的热气流。",
+    // Chinese puts the height words first, as in its other altitude strings.
+    windChartLabels = WindChartLabels(
+        noData = "无数据",
+        aboveSeaLevel = "海拔",
+        aboveGround = "离地",
+        wordsBeforeHeight = true,
+    ),
     chooseLocationPrompt = "选择一个地点以加载翱翔预报。",
     loadingForecastFor = "正在加载 %s 的预报…",
     selectedLocationFallback = "所选地点",

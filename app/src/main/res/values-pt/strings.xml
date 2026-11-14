@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Previsão não atualizada: aguarde %1$.1f segundos antes de mover novamente o mapa.</string>
     <string name="forecast_map_update_too_close">Previsão não atualizada: afaste-se pelo menos %1$d m do ponto de previsão atual.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">Sem dados</string>
+    <string name="wind_chart_above_sea_level">alt.</string>
+    <string name="wind_chart_above_ground">do solo</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Hoje</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Ajuda da previsão de vento</string>
     <string name="help_wind_summary">As cores da velocidade do vento vão do azul ao verde e ao vermelho; o vermelho marca o máximo da escala (km/h):</string>
-    <string name="help_wind_model_levels_info">Os marcadores à direita indicam altitudes com dados de vento diretos do modelo. Os valores intermédios são interpolados para a hora selecionada.</string>
+    <string name="help_wind_source_levels_info">As setas com um valor de velocidade marcam as altitudes em que o modelo tem dados de vento para essa hora.</string>
+    <string name="help_wind_surface_row_info">A linha de 10 m na parte inferior do gráfico mostra o vento a 10 m acima do solo; — indica que não há dados.</string>
+    <string name="help_wind_cursor_info">Toque ou arraste no gráfico para ler os valores exatos nessas altitudes; ≈ assinala valores interpolados entre elas ou prolongados acima ou abaixo.</string>
     <string name="help_wind_moisture_title">Indicações de humidade:</string>
     <string name="help_wind_ccl_line">Linha CCL laranja – base estimada dos cúmulos quando o aquecimento é suficiente.</string>
 

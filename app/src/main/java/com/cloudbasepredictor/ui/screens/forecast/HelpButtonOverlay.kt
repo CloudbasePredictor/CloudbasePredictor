@@ -2,17 +2,20 @@ package com.cloudbasepredictor.ui.screens.forecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -127,7 +131,7 @@ internal fun HelpButtonOverlay(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             WindSpeedLegend(displayUnits = uiState.displayUnits)
-                            WindModelLevelLegendRow()
+                            WindSourceLevelsHelp(displayUnits = uiState.displayUnits)
                             Spacer(modifier = Modifier.height(4.dp))
                             WindMoistureLegend()
                         }
@@ -464,44 +468,80 @@ private fun ThermicStrengthLegend(displayUnits: DisplayUnits) {
 
 // ── Wind speed legend (0 → 60 km/h) ────────────────────────────────
 
+/** How to read the glyphs at source heights, the 10 m row and the cursor readout. */
 @Composable
 @Suppress("FunctionNaming")
-private fun WindModelLevelLegendRow() {
-    val markerFillColor = MaterialTheme.colorScheme.surface
-    val markerOutlineColor = MaterialTheme.colorScheme.onSurface
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Canvas(
-            modifier = Modifier
-                .width(36.dp)
-                .height(16.dp),
+private fun WindSourceLevelsHelp(displayUnits: DisplayUnits) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            val rightEdgeX = size.width - 2.dp.toPx()
-            val centerY = size.height / 2f
-            val markerWidth = 8.dp.toPx()
-            val markerHalfHeight = 4.dp.toPx()
-            val marker = Path().apply {
-                moveTo(rightEdgeX - markerWidth, centerY)
-                lineTo(rightEdgeX, centerY - markerHalfHeight)
-                lineTo(rightEdgeX, centerY + markerHalfHeight)
-                close()
-            }
-            drawPath(path = marker, color = markerFillColor)
-            drawPath(
-                path = marker,
-                color = markerOutlineColor.copy(alpha = 0.9f),
-                style = Stroke(width = 1.25.dp.toPx()),
+            WindGlyphSample(displayUnits = displayUnits)
+            Text(
+                text = stringResource(R.string.help_wind_source_levels_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
-            text = stringResource(R.string.help_wind_model_levels_info),
+            text = stringResource(R.string.help_wind_surface_row_info),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.help_wind_cursor_info),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
+
+/** A wind arrow with its speed pill, drawn like the glyphs the wind chart puts at source heights. */
+@Composable
+@Suppress("FunctionNaming")
+private fun WindGlyphSample(displayUnits: DisplayUnits) {
+    val foreground = MaterialTheme.colorScheme.onSurface
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Canvas(modifier = Modifier.size(16.dp)) {
+            // A south-westerly: the arrow points where the wind blows, to the north-east.
+            val inset = 2.dp.toPx()
+            val headLength = 5.dp.toPx()
+            val tip = Offset(size.width - inset, inset)
+            val arrow = Path().apply {
+                moveTo(inset, size.height - inset)
+                lineTo(tip.x, tip.y)
+                moveTo(tip.x - headLength, tip.y)
+                lineTo(tip.x, tip.y)
+                lineTo(tip.x, tip.y + headLength)
+            }
+            drawPath(
+                path = arrow,
+                color = foreground,
+                style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .defaultMinSize(minWidth = 14.dp, minHeight = 14.dp)
+                .border(width = 0.75.dp, color = foreground.copy(alpha = 0.4f), shape = CircleShape)
+                .padding(horizontal = 3.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = formatWindSpeed(WIND_GLYPH_SAMPLE_SPEED_KMH, displayUnits, withUnit = false),
+                color = foreground,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+private const val WIND_GLYPH_SAMPLE_SPEED_KMH = 20f
 
 @Composable
 private fun WindMoistureLegend() {
@@ -590,6 +630,17 @@ private fun HelpButtonOverlayPreview() {
     CloudbasePredictorTheme {
         HelpButtonOverlay(
             uiState = PreviewData.forecastUiStateForMode(ForecastMode.THERMIC),
+        )
+    }
+}
+
+@Preview(name = "Wind Help Source Levels", showBackground = true, widthDp = 320)
+@Composable
+@Suppress("FunctionNaming")
+private fun WindSourceLevelsHelpPreview() {
+    CloudbasePredictorTheme {
+        WindSourceLevelsHelp(
+            displayUnits = PreviewData.forecastUiStateForMode(ForecastMode.WIND).displayUnits,
         )
     }
 }

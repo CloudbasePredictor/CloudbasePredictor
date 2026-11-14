@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Chinese puts the sea-level and above-ground words before the height, as in the other Chinese altitude strings. -->
+    <bool name="wind_chart_words_before_height">true</bool>
+</resources>

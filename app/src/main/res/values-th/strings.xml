@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">ไม่ได้อัปเดตการพยากรณ์: รอ %1$.1f วินาทีก่อนเลื่อนแผนที่อีกครั้ง</string>
     <string name="forecast_map_update_too_close">ไม่ได้อัปเดตการพยากรณ์: เลื่อนออกจากจุดพยากรณ์ปัจจุบันอย่างน้อย %1$d ม.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">ไม่มีข้อมูล</string>
+    <string name="wind_chart_above_sea_level">รทก.</string>
+    <string name="wind_chart_above_ground">เหนือพื้นดิน</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">วันนี้</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">วิธีใช้การพยากรณ์ลม</string>
     <string name="help_wind_summary">สีของความเร็วลมไล่จากสีน้ำเงินผ่านสีเขียวไปจนถึงสีแดง สีแดงแสดงค่าสูงสุดของสเกล (km/h):</string>
-    <string name="help_wind_model_levels_info">เครื่องหมายด้านขวาแสดงระดับความสูงที่มีข้อมูลลมโดยตรงจากแบบจำลอง ค่าระหว่างระดับจะถูกประมาณแบบแทรกสำหรับชั่วโมงที่เลือก</string>
+    <string name="help_wind_source_levels_info">ลูกศรพร้อมค่าความเร็วแสดงระดับความสูงที่แบบจำลองมีข้อมูลลมในชั่วโมงนั้น</string>
+    <string name="help_wind_surface_row_info">แถว 10 m ที่ด้านล่างของแผนภูมิแสดงลมที่ระดับ 10 ม. เหนือพื้นดิน ส่วน — หมายถึงไม่มีข้อมูล</string>
+    <string name="help_wind_cursor_info">แตะหรือลากบนแผนภูมิเพื่ออ่านค่าที่แน่นอนที่ระดับความสูงเหล่านั้น ส่วน ≈ แสดงค่าที่ประมาณแบบแทรกระหว่างระดับ หรือขยายต่อเหนือหรือใต้ระดับเหล่านั้น</string>
     <string name="help_wind_moisture_title">สัญญาณความชื้น:</string>
     <string name="help_wind_ccl_line">เส้น CCL สีส้ม – ฐานเมฆคิวมูลัสโดยประมาณเมื่อมีการให้ความร้อนเพียงพอ</string>
 

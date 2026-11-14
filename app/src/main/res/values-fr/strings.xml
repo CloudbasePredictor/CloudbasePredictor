@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Prévisions non mises à jour : attendez %1$.1f secondes avant de déplacer à nouveau la carte.</string>
     <string name="forecast_map_update_too_close">Prévisions non mises à jour : déplacez-vous d\'au moins %1$d m du point de prévision actuel.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">Aucune donnée</string>
+    <string name="wind_chart_above_sea_level">alt.</string>
+    <string name="wind_chart_above_ground">sol</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Aujourd\'hui</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Aide sur les prévisions de vent</string>
     <string name="help_wind_summary">Les couleurs de la vitesse du vent vont du bleu au vert puis au rouge ; le rouge marque le maximum de l\'échelle (km/h) :</string>
-    <string name="help_wind_model_levels_info">Les repères à droite indiquent les altitudes disposant de données de vent directes du modèle. Les valeurs intermédiaires sont interpolées pour l\'heure choisie.</string>
+    <string name="help_wind_source_levels_info">Les flèches avec une valeur de vitesse marquent les altitudes où le modèle fournit des données de vent pour cette heure.</string>
+    <string name="help_wind_surface_row_info">La ligne « 10 m » en bas du graphique indique le vent à 10 m au-dessus du sol ; un tiret (—) signale l\'absence de données.</string>
+    <string name="help_wind_cursor_info">Appuyez ou faites glisser sur le graphique pour lire les valeurs exactes à ces altitudes ; ≈ signale des valeurs interpolées entre elles ou prolongées au-dessus ou en dessous.</string>
     <string name="help_wind_moisture_title">Indices d\'humidité :</string>
     <string name="help_wind_ccl_line">Ligne CCL orange – base estimée des cumulus lorsque le réchauffement est suffisant.</string>
 

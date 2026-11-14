@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Pronóstico no actualizado: espera %1$.1f segundos antes de volver a mover el mapa.</string>
     <string name="forecast_map_update_too_close">Pronóstico no actualizado: aléjate al menos %1$d m del punto de pronóstico actual.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">Sin datos</string>
+    <string name="wind_chart_above_sea_level">s.n.m.</string>
+    <string name="wind_chart_above_ground">del suelo</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Hoy</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Ayuda del pronóstico de viento</string>
     <string name="help_wind_summary">Los colores de la velocidad del viento van del azul al rojo pasando por el verde; el rojo marca el máximo de la escala (km/h):</string>
-    <string name="help_wind_model_levels_info">Los marcadores del borde derecho indican alturas con datos de viento directos del modelo. Los valores intermedios se interpolan para la hora seleccionada.</string>
+    <string name="help_wind_source_levels_info">Las flechas con un valor de velocidad marcan las alturas en las que el modelo tiene datos de viento para esa hora.</string>
+    <string name="help_wind_surface_row_info">La fila de 10 m en la parte inferior del gráfico muestra el viento a 10 m sobre el suelo; — indica que no hay datos.</string>
+    <string name="help_wind_cursor_info">Toca o arrastra el gráfico para leer los valores exactos en esas alturas; ≈ marca valores interpolados entre ellas o prolongados por encima o por debajo.</string>
     <string name="help_wind_moisture_title">Indicadores de humedad:</string>
     <string name="help_wind_ccl_line">Línea CCL naranja: base estimada de los cúmulos cuando el calentamiento es suficiente.</string>
 

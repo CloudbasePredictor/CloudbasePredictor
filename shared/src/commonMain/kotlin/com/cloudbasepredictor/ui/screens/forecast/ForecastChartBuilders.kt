@@ -365,22 +365,19 @@ fun buildThermicChartFromData(
 
 // --- Wind chart from real data ---
 
+/**
+ * Builds the wind chart of day [dayIndex] from model values only: the 10 m wind and every non-synthetic pressure
+ * level at or above the terrain, including levels above any visible altitude range, which support interpolation up
+ * to its top edge. A day without daytime hours falls back to the placeholder chart.
+ */
 fun buildWindChartFromData(
     hourlyData: HourlyForecastData,
     dayIndex: Int,
-    maxAltitudeKm: Float,
 ): WindForecastChartUiModel {
     val pointsByDate = hourlyData.pointsByDate()
-    val dates = pointsByDate.keys.sorted()
-    val dateKey = dates.getOrNull(dayIndex)
-        ?: return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-    val dayPoints = pointsByDate[dateKey]
-        ?: return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-
+    val dayPoints = pointsByDate.keys.sorted().getOrNull(dayIndex)?.let { pointsByDate[it] }.orEmpty()
     val daytimePoints = dayPoints.filter { it.hour in 6..22 }
-    if (daytimePoints.isEmpty()) {
-        return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
-    }
+    if (daytimePoints.isEmpty()) return buildPlaceholderWindForecastChart(dayIndex)
 
     val elevation = hourlyData.elevation ?: 0.0
     val elevationKm = elevation.toFloat() / 1000f
@@ -388,10 +385,8 @@ fun buildWindChartFromData(
 
     // Collect direct model levels only. Missing pressure levels may have been synthesized by the
     // response converter for thermodynamic calculations; the wind chart instead interpolates from
-    // real model samples so its right-edge markers retain an unambiguous meaning.
-    val altitudeSet = mutableSetOf<Float>()
+    // real model samples so its hourly source markers retain an unambiguous meaning.
     val cellList = mutableListOf<WindForecastCellUiModel>()
-    val pressureSamples = mutableListOf<WindPressureSample>()
 
     daytimePoints.forEach { hp ->
         // Surface wind
@@ -399,12 +394,12 @@ fun buildWindChartFromData(
         val surfWindDir = hp.windDirection10mDeg
         if (surfWindSpeed != null && surfWindDir != null) {
             val surfAlt = elevationKm + 0.01f // ~10m above terrain, ASL
-            altitudeSet.add(surfAlt)
             cellList += WindForecastCellUiModel(
                 hour = hp.hour,
                 altitudeKm = surfAlt,
                 speedKmh = surfWindSpeed.toFloat(),
                 directionDeg = surfWindDir.toFloat(),
+                isSurface10m = true,
             )
         }
 
@@ -413,43 +408,15 @@ fun buildWindChartFromData(
             val rawHeightAsl = (pl.geopotentialHeightM ?: return@pressureLevel).toFloat() / 1000f
             val speed = pl.windSpeedKmh ?: return@pressureLevel
             val dir = pl.windDirectionDeg ?: return@pressureLevel
-            pressureSamples += WindPressureSample(
+            if (!rawHeightAsl.isFinite() || rawHeightAsl < elevationKm) return@pressureLevel
+            // Keep levels above the viewport too: they support interpolation up to its top edge.
+            cellList += WindForecastCellUiModel(
                 hour = hp.hour,
-                pressureHpa = pl.pressureHpa,
-                heightAslKm = rawHeightAsl,
+                altitudeKm = rawHeightAsl,
                 speedKmh = speed.toFloat(),
                 directionDeg = dir.toFloat(),
             )
         }
-    }
-
-    val representativeAltitudeByPressure = pressureSamples
-        .groupBy { it.pressureHpa }
-        .mapValues { (_, samples) ->
-            // Use one altitude per pressure level for the whole day. Open-Meteo geopotential
-            // heights vary slightly by hour; using those raw per-hour heights as cell keys
-            // creates sparse rows and leaves unpainted holes in the wind chart.
-            val averageHeightKm = samples.map { it.heightAslKm }.average().toFloat()
-            kotlin.math.round(averageHeightKm * 20f) / 20f
-        }
-        .filterValues { heightAslKm ->
-            heightAslKm >= elevationKm && heightAslKm <= elevationKm + maxAltitudeKm
-        }
-
-    pressureSamples.forEach { sample ->
-        val heightAslKm = representativeAltitudeByPressure[sample.pressureHpa]
-            ?: return@forEach
-        altitudeSet.add(heightAslKm)
-        cellList += WindForecastCellUiModel(
-            hour = sample.hour,
-            altitudeKm = heightAslKm,
-            speedKmh = sample.speedKmh,
-            directionDeg = sample.directionDeg,
-        )
-    }
-
-    if (cellList.isEmpty()) {
-        return buildPlaceholderWindForecastChart(dayIndex, maxAltitudeKm = maxAltitudeKm)
     }
 
     // Freezing level (0 °C isotherm) — from API, ASL
@@ -473,37 +440,14 @@ fun buildWindChartFromData(
         WindLevelMarker(hour = hp.hour, altitudeKm = cclMslKm)
     }
 
-    // Compute altitude bands: each data level extends halfway to its neighbors
-    val sortedAlts = altitudeSet.toList().sorted()
-    val altitudeBands = sortedAlts.mapIndexed { idx, alt ->
-        val lowerDist = if (idx > 0) (alt - sortedAlts[idx - 1]) / 2f else 0.2f
-        val upperDist = if (idx < sortedAlts.lastIndex) (sortedAlts[idx + 1] - alt) / 2f else 0.2f
-        WindAltitudeBand(
-            centerKm = alt,
-            bottomKm = alt - lowerDist,
-            topKm = alt + upperDist,
-        )
-    }
-
     return WindForecastChartUiModel(
         hours = hours,
-        altitudeBandsKm = sortedAlts,
-        altitudeBands = altitudeBands,
-        modelLevelAltitudesKm = sortedAlts,
         cells = cellList,
         freezingLevelKm = freezingLevelMarkers,
         cclKm = cclMarkers,
         cclResults = cclResultsByHour.values.flatten(),
     )
 }
-
-private data class WindPressureSample(
-    val hour: Int,
-    val pressureHpa: Int,
-    val heightAslKm: Float,
-    val speedKmh: Float,
-    val directionDeg: Float,
-)
 
 private fun HourlyPoint.analyzeCclForForecast(
     elevationM: Float,

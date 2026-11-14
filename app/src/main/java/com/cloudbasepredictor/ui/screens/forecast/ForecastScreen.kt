@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Button
@@ -48,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,6 +66,7 @@ import com.cloudbasepredictor.ui.preview.PreviewData
 import com.cloudbasepredictor.ui.screens.forecast.views.CloudForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.StuveForecastView
 import com.cloudbasepredictor.ui.screens.forecast.views.ThermicForecastView
+import com.cloudbasepredictor.ui.screens.forecast.views.WindChartLabels
 import com.cloudbasepredictor.ui.screens.forecast.views.WindForecastView
 import com.cloudbasepredictor.ui.theme.CloudbasePredictorTheme
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -154,118 +158,124 @@ fun ForecastScreen(
     var mapPanelHeightPx by remember { mutableFloatStateOf(0f) }
     val mapPanelHeightDp = with(density) { mapPanelHeightPx.toDp() }
 
-    Surface(
-        modifier = modifier
-            .fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // Let short wind screens scroll instead of losing source labels and the 10 m row.
+        val scrollWindContent = uiState.selectedForecastMode == ForecastMode.WIND && maxHeight < 480.dp
+        val windPageScroll = rememberScrollState()
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
         ) {
-            ForecastTopBar(
-                placeName = uiState.selectedPlace?.name,
-                isFavorite = uiState.selectedPlace?.isFavorite == true,
-                selectedMode = uiState.selectedForecastMode,
-                onModeSelected = onForecastModeSelected,
-                onFavoriteClick = { showFavoriteDialog = true },
-                isRefreshEnabled = uiState.selectedPlace != null &&
-                    uiState !is ForecastLoadingUiState &&
-                    uiState !is ForecastNoPlaceUiState,
-                isRefreshing = (uiState as? ForecastReadyUiState)?.isRefreshing == true,
-                onRefresh = onRetryLoad,
-                onOpenMap = onOpenMap,
-            )
-
-            BoxWithConstraints(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .testTag(ForecastTestTags.FORECAST_CHART_AREA),
+                    .fillMaxSize()
+                    .then(if (scrollWindContent) Modifier.verticalScroll(windPageScroll) else Modifier)
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
             ) {
-                val forecastContentHeight = (maxHeight - mapPanelHeightDp).coerceAtLeast(0.dp)
+                ForecastTopBar(
+                    placeName = uiState.selectedPlace?.name,
+                    isFavorite = uiState.selectedPlace?.isFavorite == true,
+                    selectedMode = uiState.selectedForecastMode,
+                    onModeSelected = onForecastModeSelected,
+                    onFavoriteClick = { showFavoriteDialog = true },
+                    isRefreshEnabled = uiState.selectedPlace != null &&
+                        uiState !is ForecastLoadingUiState &&
+                        uiState !is ForecastNoPlaceUiState,
+                    isRefreshing = (uiState as? ForecastReadyUiState)?.isRefreshing == true,
+                    onRefresh = onRetryLoad,
+                    onOpenMap = onOpenMap,
+                )
 
-                when (uiState) {
-                    is ForecastLoadingUiState,
-                    is ForecastNoPlaceUiState -> {
-                        ForecastLoadingContent(
-                            placeName = uiState.selectedPlace?.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(forecastContentHeight),
-                        )
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // Reserve room for the controls, chart footer, and expanded map.
+                        .then(if (scrollWindContent) Modifier.height(420.dp) else Modifier.weight(1f))
+                        .testTag(ForecastTestTags.FORECAST_CHART_AREA),
+                ) {
+                    val forecastContentHeight = (maxHeight - mapPanelHeightDp).coerceAtLeast(0.dp)
+
+                    when (uiState) {
+                        is ForecastLoadingUiState,
+                        is ForecastNoPlaceUiState -> {
+                            ForecastLoadingContent(
+                                placeName = uiState.selectedPlace?.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(forecastContentHeight),
+                            )
+                        }
+                        is ForecastErrorUiState -> {
+                            ForecastErrorContent(
+                                errorMessage = uiState.errorMessage,
+                                onRetry = onRetryLoad,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(forecastContentHeight),
+                            )
+                        }
+                        is ForecastReadyUiState -> {
+                            ForecastReadyContent(
+                                uiState = uiState,
+                                onForecastViewportTopChanged = onForecastViewportTopChanged,
+                                onStuveHourChanged = onStuveHourChanged,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(forecastContentHeight),
+                            )
+                        }
                     }
-                    is ForecastErrorUiState -> {
-                        ForecastErrorContent(
-                            errorMessage = uiState.errorMessage,
-                            onRetry = onRetryLoad,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(forecastContentHeight),
-                        )
-                    }
-                    is ForecastReadyUiState -> {
-                        ForecastReadyContent(
-                            uiState = uiState,
-                            onForecastViewportTopChanged = onForecastViewportTopChanged,
-                            onStuveHourChanged = onStuveHourChanged,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(forecastContentHeight),
-                        )
-                    }
+
+                    ForecastMapPanel(
+                        currentPlace = uiState.selectedPlace,
+                        favoritePlaces = uiState.favoritePlaces,
+                        mapLayer = uiState.mapLayer,
+                        onLocationChanged = onMapLocationChanged,
+                        initiallyExpanded = initiallyExpandedMap,
+                        onPanelHeightChanged = { mapPanelHeightPx = it },
+                        modifier = Modifier.fillMaxSize().testTag(ForecastTestTags.MAP_PANEL),
+                    )
+
+                    ModelSelectorOverlay(
+                        selectedModel = uiState.selectedModel,
+                        resolvedModel = uiState.resolvedModel,
+                        onModelSelected = onModelSelected,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 8.dp, end = 8.dp),
+                    )
                 }
 
-                ForecastMapPanel(
-                    currentPlace = uiState.selectedPlace,
+                // Keep the day picker on screen across loading transitions (e.g. when moving
+                // the map panel or switching day) so its row doesn't disappear and shift the
+                // whole layout. Reuse the last known day chips until fresh ones arrive.
+                var lastDayChips by remember { mutableStateOf<List<ForecastDayChipUiModel>>(emptyList()) }
+                if (uiState is ForecastReadyUiState) {
+                    lastDayChips = uiState.dayChips
+                }
+                if (lastDayChips.isNotEmpty()) {
+                    ForecastDatePicker(
+                        dayChips = lastDayChips,
+                        selectedDayIndex = uiState.selectedDayIndex,
+                        onDateSelected = onDateSelected,
+                    )
+                }
+            }
+
+            if (showFavoriteDialog) {
+                val place = uiState.selectedPlace
+                SaveFavoriteDialog(
+                    currentName = favoriteDialogInitialName(place),
+                    isFavorite = place?.isFavorite == true,
                     favoritePlaces = uiState.favoritePlaces,
-                    mapLayer = uiState.mapLayer,
-                    onLocationChanged = onMapLocationChanged,
-                    initiallyExpanded = initiallyExpandedMap,
-                    onPanelHeightChanged = { mapPanelHeightPx = it },
-                    modifier = Modifier.fillMaxSize().testTag(ForecastTestTags.MAP_PANEL),
-                )
-
-                ModelSelectorOverlay(
-                    selectedModel = uiState.selectedModel,
-                    resolvedModel = uiState.resolvedModel,
-                    onModelSelected = onModelSelected,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 8.dp, end = 8.dp),
+                    selectedPlaceId = place?.id,
+                    onSave = onSaveFavorite,
+                    onDelete = onDeleteFavorite,
+                    onFavoriteSelected = onFavoriteSelected,
+                    onDismiss = { showFavoriteDialog = false },
                 )
             }
-
-            // Keep the day picker on screen across loading transitions (e.g. when moving
-            // the map panel or switching day) so its row doesn't disappear and shift the
-            // whole layout. Reuse the last known day chips until fresh ones arrive.
-            var lastDayChips by remember { mutableStateOf<List<ForecastDayChipUiModel>>(emptyList()) }
-            if (uiState is ForecastReadyUiState) {
-                lastDayChips = uiState.dayChips
-            }
-            if (lastDayChips.isNotEmpty()) {
-                ForecastDatePicker(
-                    dayChips = lastDayChips,
-                    selectedDayIndex = uiState.selectedDayIndex,
-                    onDateSelected = onDateSelected,
-                )
-            }
-        }
-
-        if (showFavoriteDialog) {
-            val place = uiState.selectedPlace
-            SaveFavoriteDialog(
-                currentName = favoriteDialogInitialName(place),
-                isFavorite = place?.isFavorite == true,
-                favoritePlaces = uiState.favoritePlaces,
-                selectedPlaceId = place?.id,
-                onSave = onSaveFavorite,
-                onDelete = onDeleteFavorite,
-                onFavoriteSelected = onFavoriteSelected,
-                onDismiss = { showFavoriteDialog = false },
-            )
         }
     }
 }
@@ -376,9 +386,21 @@ private fun ForecastReadyContent(
                     )
                 }
                 ForecastMode.WIND -> {
+                    val noData = stringResource(R.string.wind_chart_no_data)
+                    val aboveSeaLevel = stringResource(R.string.wind_chart_above_sea_level)
+                    val aboveGround = stringResource(R.string.wind_chart_above_ground)
+                    val wordsBeforeHeight = booleanResource(R.bool.wind_chart_words_before_height)
                     WindForecastView(
                         uiState = uiState,
                         onVisibleTopAltitudeChange = onForecastViewportTopChanged,
+                        labels = remember(noData, aboveSeaLevel, aboveGround, wordsBeforeHeight) {
+                            WindChartLabels(
+                                noData = noData,
+                                aboveSeaLevel = aboveSeaLevel,
+                                aboveGround = aboveGround,
+                                wordsBeforeHeight = wordsBeforeHeight,
+                            )
+                        },
                         overlayBackHandler = { enabled, onBack ->
                             BackHandler(enabled = enabled, onBack = onBack)
                         },

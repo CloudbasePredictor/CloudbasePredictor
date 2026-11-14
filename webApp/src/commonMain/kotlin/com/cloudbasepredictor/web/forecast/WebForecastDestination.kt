@@ -4,6 +4,7 @@ package com.cloudbasepredictor.web.forecast
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -235,7 +236,10 @@ private fun WebForecastReadyContent(
     val shownDayCount = maxOf(visibleDayCount, uiState.selectedDayIndex + 1)
         .coerceAtMost(uiState.dayChips.size)
 
-    Box(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // As on Android, short wind screens scroll the page so the chart keeps a usable fixed height.
+        val scrollWindContent = routeState.mode == ForecastMode.WIND && maxHeight < 480.dp
+        val windPageScroll = rememberScrollState()
         Column(
             // Cap and center the content on wide desktop screens so the header actions no longer
             // drift to the far edge and the chart stops stretching edge-to-edge. Mirrors the
@@ -245,6 +249,7 @@ private fun WebForecastReadyContent(
                 .align(Alignment.TopCenter)
                 .widthIn(max = ForecastContentMaxWidth)
                 .fillMaxSize()
+                .then(if (scrollWindContent) Modifier.verticalScroll(windPageScroll) else Modifier)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -310,7 +315,7 @@ private fun WebForecastReadyContent(
                 onHourChanged = { hour -> onRouteChanged(routeState.copy(hour = hour)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .then(if (scrollWindContent) Modifier.height(ShortScreenWindChartHeight) else Modifier.weight(1f)),
             )
             Text(
                 text = "${uiState.forecastText} · ${strings.forecastDataAttribution}",
@@ -480,6 +485,7 @@ private fun ForecastChart(
             ForecastMode.WIND -> WindForecastView(
                 uiState = uiState,
                 onVisibleTopAltitudeChange = onVisibleTopAltitudeChange,
+                labels = strings.windChartLabels,
                 modifier = Modifier.fillMaxSize(),
             )
             ForecastMode.CLOUD -> CloudForecastView(
@@ -498,6 +504,10 @@ private val COMPACT_FORECAST_ACTIONS_MAX_WIDTH = 600.dp
 // Shared with the Settings/About destinations (DestinationMaxWidth / ContentMaxWidth) so every web
 // screen caps and centers its content at the same width on wide desktop displays.
 private val ForecastContentMaxWidth = 1_080.dp
+
+// The Android wind view height on short screens (ForecastScreen.kt): its 420 dp chart area minus the 24 dp
+// collapsed map handle. The web map panel sits outside the scrolling content, so the chart gets it directly.
+private val ShortScreenWindChartHeight = 396.dp
 
 @Composable
 private fun ScrollableChipRow(content: @Composable () -> Unit) {
@@ -590,6 +600,30 @@ private fun WebForecastReadyContentPreview() {
         WebForecastReadyContent(
             routeState = WebPreviewData.forecastRoute,
             uiState = ForecastPreviewData.readyState,
+            fromCache = false,
+            refreshFailed = false,
+            isRefreshing = false,
+            isFavorite = true,
+            onRouteChanged = {},
+            onForecastModelSelected = {},
+            onFavoriteToggle = {},
+            onShareRequested = {},
+            onRefreshRequested = {},
+            onVisibleTopAltitudeChanged = {},
+            onJumpToFavorite = {},
+            otherFavorites = emptyList(),
+        )
+    }
+}
+
+// A landscape phone browser: the page scrolls and the wind chart keeps its fixed short-screen height.
+@Preview(name = "Web forecast short wind", showBackground = true, widthDp = 844, heightDp = 218)
+@Composable
+private fun WebForecastShortWindPreview() {
+    ForecastPreviewTheme {
+        WebForecastReadyContent(
+            routeState = WebPreviewData.windForecastRoute,
+            uiState = ForecastPreviewData.stateForMode(ForecastMode.WIND),
             fromCache = false,
             refreshFailed = false,
             isRefreshing = false,

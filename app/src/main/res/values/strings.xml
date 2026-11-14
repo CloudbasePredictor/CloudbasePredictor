@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">Forecast not updated: wait %1$.1f seconds before moving the map again.</string>
     <string name="forecast_map_update_too_close">Forecast not updated: move at least %1$d m from the current forecast point.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">No data</string>
+    <string name="wind_chart_above_sea_level">ASL</string>
+    <string name="wind_chart_above_ground">AGL</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">Today</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">Wind forecast help</string>
     <string name="help_wind_summary">Wind speed colors run from blue through green to red; red marks the scale maximum (km/h):</string>
-    <string name="help_wind_model_levels_info">Right-edge markers show heights with direct model wind data. Values between them are interpolated for the selected hour.</string>
+    <string name="help_wind_source_levels_info">Arrows with a speed label mark the heights where the model has wind data for that hour.</string>
+    <string name="help_wind_surface_row_info">The 10 m row at the bottom of the chart shows the wind 10 m above ground; — means no data.</string>
+    <string name="help_wind_cursor_info">Tap or drag the chart to read exact values at those heights; ≈ marks values interpolated between them or extended above or below them.</string>
     <string name="help_wind_moisture_title">Moisture cues:</string>
     <string name="help_wind_ccl_line">Orange CCL line - estimated cumulus base when heating is sufficient.</string>
 

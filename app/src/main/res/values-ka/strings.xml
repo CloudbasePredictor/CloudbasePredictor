@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">პროგნოზი არ განახლდა: დაელოდეთ %1$.1f წამს, სანამ რუკას ხელახლა გადააადგილებთ.</string>
     <string name="forecast_map_update_too_close">პროგნოზი არ განახლდა: გადაინაცვლეთ მიმდინარე პროგნოზის წერტილიდან მინიმუმ %1$d მ.</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">მონაცემები არ არის</string>
+    <string name="wind_chart_above_sea_level">ASL</string>
+    <string name="wind_chart_above_ground">AGL</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">დღეს</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">ქარის პროგნოზის დახმარება</string>
     <string name="help_wind_summary">ქარის სიჩქარის ფერები გადადის ლურჯიდან მწვანეზე და წითელზე; წითელი აღნიშნავს სკალის მაქსიმუმს (km/h):</string>
-    <string name="help_wind_model_levels_info">მარჯვენა კიდის ნიშნები აჩვენებს სიმაღლეებს, სადაც მოდელის ქარის პირდაპირი მონაცემებია. შუალედური მნიშვნელობები არჩეული საათისთვის ინტერპოლირდება.</string>
+    <string name="help_wind_source_levels_info">ისრები სიჩქარის მნიშვნელობით აღნიშნავს სიმაღლეებს, სადაც მოდელს ამ საათისთვის ქარის მონაცემები აქვს.</string>
+    <string name="help_wind_surface_row_info">დიაგრამის ქვედა ნაწილში „10 m“ სტრიქონი აჩვენებს ქარს მიწიდან 10 მ სიმაღლეზე; — ნიშნავს, რომ მონაცემები არ არის.</string>
+    <string name="help_wind_cursor_info">შეეხეთ ან გადაათრიეთ დიაგრამაზე ამ სიმაღლეებზე ზუსტი მნიშვნელობების სანახავად; ≈ აღნიშნავს მნიშვნელობებს, რომლებიც მათ შორის ინტერპოლირებულია ან მათ ზემოთ ან ქვემოთ გაგრძელებულია.</string>
     <string name="help_wind_moisture_title">ტენიანობის ნიშნები:</string>
     <string name="help_wind_ccl_line">ნარინჯისფერი CCL ხაზი – კუმულუსის სავარაუდო ფუძე, როდესაც გათბობა საკმარისია.</string>
 

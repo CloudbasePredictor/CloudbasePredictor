@@ -35,7 +35,7 @@ Screenshot capture (require running emulator/device, uses simulated data):
 - Capture all screens:
   `./gradlew :app:connectedScreenshotTest`
 - Capture a single screen (e.g. Stüve):
-  `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.cloudbasepredictor.screenshot.ScreenshotCaptureTest#captureStuveForecast`
+  `./gradlew :app:connectedScreenshotTest -Pandroid.testInstrumentationRunnerArguments.class=com.cloudbasepredictor.screenshot.ScreenshotCaptureTest#captureStuveForecast`
 - Pull screenshots from device to local folder:
   `adb pull /sdcard/Pictures/CloudbaseScreenshots/ app/screenshots/`
 - Screenshots are saved to `app/screenshots/` which is gitignored.

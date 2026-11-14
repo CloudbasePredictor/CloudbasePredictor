@@ -95,6 +95,11 @@
     <string name="forecast_map_update_too_frequent">预报未更新：请等待 %1$.1f 秒后再移动地图。</string>
     <string name="forecast_map_update_too_close">预报未更新：请从当前预报点移动至少 %1$d 米。</string>
 
+    <!-- Wind chart cursor readout ("2357 m ASL", "10 m AGL") and altitude axis title ("km ASL"); keep these words short. They follow the height unless bool/wind_chart_words_before_height is true. -->
+    <string name="wind_chart_no_data">无数据</string>
+    <string name="wind_chart_above_sea_level">海拔</string>
+    <string name="wind_chart_above_ground">离地</string>
+
     <!-- Forecast summary -->
     <string name="forecast_summary_today">今天</string>
     <string name="forecast_summary_temperature_celsius">%1$s°C</string>
@@ -181,7 +186,9 @@
     <!-- Help dialog - Wind -->
     <string name="help_wind_title">风预报帮助</string>
     <string name="help_wind_summary">风速颜色从蓝色经绿色到红色；红色标记色阶最大值（km/h）：</string>
-    <string name="help_wind_model_levels_info">右侧标记表示具有模型直接风数据的高度。标记之间的数值按所选小时插值。</string>
+    <string name="help_wind_source_levels_info">带风速标签的箭头标出该小时模型有风数据的高度。</string>
+    <string name="help_wind_surface_row_info">图表底部的“10 m”行显示离地 10 米处的风；— 表示无数据。</string>
+    <string name="help_wind_cursor_info">点击或拖动图表可读取这些高度的精确值；≈ 表示在这些高度之间插值，或向上、向下延伸得到的数值。</string>
     <string name="help_wind_moisture_title">湿度提示：</string>
     <string name="help_wind_ccl_line">橙色 CCL 线 — 加热充足时估算的积云底。</string>
 
