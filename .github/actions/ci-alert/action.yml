@@ -1,0 +1,32 @@
+name: CI alert issue
+description: >
+  Keeps one tracking issue per failing workflow. The first failure opens it, later failures refresh
+  its body without posting comments, and the next success closes it.
+
+inputs:
+  title:
+    description: Issue title. It identifies the alert, so it must stay the same for a given workflow.
+    required: true
+  status:
+    description: '"failure" opens or refreshes the issue, "success" closes it, any other value does nothing.'
+    required: true
+  details:
+    description: Optional Markdown appended to the issue body.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Update the alert issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ALERT_TITLE: ${{ inputs.title }}
+        ALERT_STATUS: ${{ inputs.status }}
+        ALERT_DETAILS: ${{ inputs.details }}
+        ALERT_WORKFLOW: ${{ github.workflow }}
+        ALERT_EVENT: ${{ github.event_name }}
+        ALERT_REF: ${{ github.ref_name }}
+        ALERT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: bash "$GITHUB_ACTION_PATH/alert.sh"

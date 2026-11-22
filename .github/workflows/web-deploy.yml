@@ -1,13 +1,15 @@
 name: Deploy Web to GitHub Pages
 
+# This workflow has no `schedule` trigger on purpose. GitHub disables every workflow that has one
+# after 60 days without repository activity, and a disabled workflow ignores pushes too: that is how
+# a merge to the default branch once stopped reaching the site without anything turning red. The
+# weekly dataset refresh lives in web-snapshot-refresh.yml, which starts this workflow through
+# `workflow_dispatch`.
 on:
   push:
     branches:
       - main
       - master
-  schedule:
-    # Weekly refresh of the ParaglidingEarth launch-site snapshot (Mondays 03:17 UTC).
-    - cron: "17 3 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -20,7 +22,8 @@ concurrency:
 jobs:
   # Fetches, validates, and tiles the live ParaglidingEarth dataset, then runs every web gate against
   # the resulting distribution. If ParaglidingEarth is unreachable or the snapshot comes back
-  # degraded, this fails before anything is published and the previously deployed site stays live.
+  # degraded, the snapshot the site already publishes is reused, so a deploy never waits for a third
+  # party. If a gate fails, nothing is published and the previously deployed site stays live.
   # The browser never contacts ParaglidingEarth; only GitHub Actions does.
   verify:
     name: Verify web distribution
@@ -31,6 +34,7 @@ jobs:
     with:
       snapshot: live
       min-sites: 8000
+      deployed-snapshot-url: https://cloudbasepredictor.github.io/CloudbasePredictor/data/launch-sites
       dist-artifact: pages-web-production
       dist-retention-days: 1
       reports-artifact: pages-web-verification-reports
@@ -68,3 +72,55 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # A failed gate skips `publish` instead of failing it, and nobody watches the Actions tab. One
+  # issue per outage is visible on the repository page: it is opened by the first failing run and
+  # closed by the next deploy that succeeds.
+  report:
+    name: Report deploy status
+    needs:
+      - verify
+      - publish
+    if: always() && needs.verify.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Open or close the alert issue
+        uses: ./.github/actions/ci-alert
+        with:
+          title: Web deploy is failing
+          status: ${{ contains(needs.*.result, 'failure') && 'failure' || (needs.publish.result == 'success' && 'success' || 'skip') }}
+          details: "Job results: verify `${{ needs.verify.result }}`, publish `${{ needs.publish.result }}`."
+
+  # Scheduled workflows are disabled by GitHub after 60 days without repository activity. A push to
+  # the default branch is such activity, so this is the moment to switch the dataset refresh and the
+  # freshness watchdog back on; otherwise they would stay off until someone remembered them.
+  # Enabling an enabled workflow is a no-op. A failure here must not mark the deploy as failed.
+  enable-scheduled-workflows:
+    name: Re-enable scheduled workflows
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      actions: write
+
+    steps:
+      - name: Enable the dataset refresh and the freshness watchdog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for workflow in web-snapshot-refresh.yml web-freshness.yml; do
+            if gh api --method PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/enable" --silent; then
+              echo "Enabled ${workflow}"
+            else
+              echo "::warning title=Scheduled workflow may be disabled::Could not enable ${workflow}; enable it on the Actions tab."
+            fi
+          done

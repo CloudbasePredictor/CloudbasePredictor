@@ -12,6 +12,15 @@ name: Verify deployed site is current
 # It is deliberately outcome-based: it does not care *why* the site is stale — a failed gate, a
 # skipped deploy, a broken cron, a Pages outage — so it also catches whatever the next unforeseen
 # failure mode turns out to be.
+#
+# It also fails when the launch-site dataset on the site has not been refreshed for too long. A
+# deploy reuses the published dataset while ParaglidingEarth is unavailable, so without this check
+# an outage of the weekly refresh would be invisible.
+#
+# A failing run opens one tracking issue; the next passing run closes it.
+#
+# GitHub disables this workflow after 60 days without repository activity, like every workflow with
+# a `schedule` trigger. web-deploy.yml enables it again with the next push to the default branch.
 
 on:
   schedule:
@@ -31,6 +40,9 @@ jobs:
     name: Compare the live site against the default branch
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       # Full history so the check can report how many commits the live site is behind.
@@ -44,5 +56,13 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Compare the deployed commit with the default branch
+      - name: Compare the deployed commit and dataset age with the default branch
         run: node scripts/web/check-deployed-freshness.mjs
+
+      - name: Open or close the alert issue
+        if: always()
+        uses: ./.github/actions/ci-alert
+        with:
+          title: Deployed web site is stale
+          status: ${{ job.status }}
+          details: The log of the failing run says whether the site is behind the default branch or the launch-site dataset is too old.
